@@ -1,0 +1,118 @@
+
+
+20120920 
+all chips: remove the setting of double LVDS clock swing from panel.h to main board
+
+20120914
+1. tsum2: MHL port( MHL/HDMI input) EQ set to 0 to prevent EQ too strong.
+2. B/2: add Hscaling setting for OD 333 mode
+
+20120831
+1. all chips: short line tune coef. default 3, set to 4.
+
+20120816
+1. 2 type: update MHL driver(follow trunk 0810), f/w read id to do different setting.
+
+20120815
+1. all chips: ISR flags must be bit data type to aovid race condition.
+
+
+20120418
+1. U type add REG_05CD[4] audio source select,
+to aovid may be changed,
+change function:
+drvmStar_SetupInputPort_VGA()
+drvmStar_SetupInputPort_DVI() 
+drvmStar_SetupInputPort_HDMI()
+
+2. U type add mute and fading setting,
+change function: 
+DPRxInit()
+
+20120417
+1. ITE update porting guide to V0005, follow up.
+
+20120416
+1. touch key porting follow ITE porting guide, 
+wait for test result from BQ Lenovo model.
+
+
+20120413
+1. TSUM2 MHL follow trunk,
+and add patch "DMHL_HTC_FLYER_PATCH" for flyer reboot(let edid current read initial address add 1).
+2. TSUM2 gamma is same with U-type.
+3. update msscalar_2.c mStar_SetScalingFactor() for switching aspect raio
+4. update drvDC.C add "ENABLE_ADC_RESET" for high temp may cause display white. 
+5. add drvmsOVD for U/B/TSUM2.
+6. touch key porting follow ITE porting guide.
+
+20120410
+1. TSUM2 MHL follow trunk.
+2. add touch key for ITE,
+others should have the same functions as touchkey.h
+
+20120409
+1. TSUM2 MHL follow trunk.
+
+20120406
+1. U type: modified "mStar_LPLL1_Setting" function for SSC step cannot reach 3% 
+in 2560x1440 panel( 4 ch LVDS ) application.
+
+20120403
+1. TSUM2 type: add eland uart debug command.
+2. FRAME_BFFLESS case should #define DOWN_COUNTER_V_SYNC	0
+
+
+20120330
+1. U/TSUM2 type: modified DDR SSC formula
+#define DDFSPAN             (((DWORD)MPLL_FREQ_MHZ*131072*1024)/(DDFSET*F_MODULATION)) // 120330 coding modified 1000 to 1024
+
+2. all chip: avoid to divide zero, all chip
+#define HFreq(hPeriod)  ((hPeriod)?(((DWORD)XTAL_CLOCK_KHZ*10+hPeriod/2)/hPeriod):(1)) // 120330 coding modified to avoid divide 0
+#define VFreq(hFreq, vTotal)    ((SrcVTotal)?(((DWORD)hFreq*1000+SrcVTotal/2)/SrcVTotal):(1)) // 120330 coding modified to avoid divide 0
+
+
+20120327
+1. all chip: modified panel SSC formula and step unit from 1% to 0.1%,
+U/B/Y could select 429MHz(1E37[7]=0) or 214MHz(1E37[7]=1)
+V/TSUM2 fixed in 429MHz
+void mStar_SetPanelSSC( BYTE freqMod, BYTE range )
+
+2. TSUM2 type: modified HDMI audio init setting for different design in TSUM2
+void msAudio_I2S_SPDIF_Init(void)
+{
+	...
+#if CHIP_ID == CHIP_TSUM2    
+    msWriteByte( REG_05F7, 0x03 ); // [7:4]:DDIV = 2, [3:0]:FBDIV = 6
+#else
+    msWriteByte( REG_05F7, 0x26 ); // [7:4]:DDIV = 2, [3:0]:FBDIV = 6
+#endif
+	...
+}
+
+
+Touch Key for ITE porting guide
+1. there are several define in DefaultComplierOption.h
+"ENABLE_TOUCH_KEY" set to 1 for touch key function.
+"TOUCH_KEY_SOURCE" default select to ITE.
+"ENABLE_LOW_CONTACT" default set to 1, use to do base line calibration.
+"MOBILE_INTERFERENCE" default set to 0, use to avoid mobile interference.
+"TOUCH_KEY_CTRL_LED", use your original functions.
+2. it needs to add 8 files
+"TouchKey.c", "TouchKey.h", it doesn't need to follow ITE.
+"IT7230_I2C.c", "IT7230_I2C.h" driver function, it doesn't need to follow ITE.
+"IT7230_SettingTable.c", "IT7230_SettingTable.h" follow ITE.
+"IT7230_TouchKey.c", "IT7230_TouchKey.h" follow ITE.
+3. polling touch key interval is around 20~80ms,
+it needs 50ms timer event to down count for restore touch key regsiter,
+1s timer event to down count for low detect peroid( ITE suggest 20S ).
+4. just add "TouchKey.c" to complier.
+
+
+wait to do
+1. color setting should separate to a header file.
+2. MOD follow RD ap note.
+3. DLC setting to hal.
+4. OD function check Hscaling setting.
+5. DP mute and fading event setting.
+6. audio dac earphone setting.

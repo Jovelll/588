@@ -1,0 +1,3530 @@
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MS_PM
+OBJECT MODULE PLACED IN .\Obj\Ms_PM.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\Ms_PM.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTE
+                    -M\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\I
+                    -NC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\Ms_PM.lst) TABS(2) OBJECT(.\Obj\Ms_PM.obj
+                    -)
+
+line level    source
+
+   1          ///////////////////////////////////////////////////////////////////////////////////////////////////
+   2          ///
+   3          /// file    Ms_PM.c
+   4          /// @author MStar Semiconductor Inc.
+   5          /// @brief  PM Function
+   6          ///////////////////////////////////////////////////////////////////////////////////////////////////
+   7          
+   8          //-------------------------------------------------------------------------------------------------
+   9          //  Include Files
+  10          //-------------------------------------------------------------------------------------------------
+  11          #define _MS_PM_C_
+  12          #include "board.h"
+  13          #include <math.h>
+  14          #include <string.h>
+  15          #include "types.h"
+  16          #include "mode.h"
+  17          #include "common.h"
+  18          #include "UserPrefDef.h"
+  19          #include "global.h"
+  20          #include "Misc.h"
+  21          #include "ms_reg.h"
+  22          #include "ms_rwreg.h"
+  23          #include "Debug.h"
+  24          #include "menu.h"
+  25          #include "userpref.h"
+  26          #include "Power.h"
+  27          #include "DDC2Bi.h"
+  28          #include "Ms_PM.h"
+  29          #include "MenuDef.h"
+  30          #include "MenuFunc.h"
+  31          #include "Mcu.h"
+  32          #include "Mstar.h"
+  33          #include "Detect.h"
+  34          #include "Keypad.h"     // Provides: Key_GetKeypadStatus()
+  35          #include "KeypadDef.h"  // Provides: KeypadMask
+  36          #include "GPIO_Def.h"
+  37          #include "msHDCP.h"
+  38          #if ENABLE_DP_INPUT
+              #include "drvDPRxApp.h"
+              #endif
+  41          #include "drvmStar.h"
+  42          #if ENABLE_EDP_OUTPUT
+              #include "DPTxApp.h"
+              #endif
+  45          
+  46          #if ENABLE_SUPER_RESOLUTION
+              extern BYTE xdata SRmodeContent;
+              #endif
+  49          extern BYTE xdata GammaContent;
+  50          extern void Main_SlowTimerHandler(void);
+  51          
+  52          #if (MS_PM)
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 2   
+
+  53          #if (FRAME_BFF_SEL == FRAME_BUFFER) || ENABLE_RTE
+              extern  Bool msMemoryBist(void);
+              #endif
+  56          extern void msDVISetMux( InputPortType inport );
+  57          //extern void msPM_ClearStatus(Bool bResetPM);
+  58          extern BYTE Key_GetKeypadStatus( void );
+  59          extern Bool ExecuteKeyEvent(MenuItemActionType menuAction);
+  60          
+  61          #if  ENABLE_DP_INPUT
+              #if  DPENABLEMCCS
+              extern void DDC2BI_DP(void);
+              #if ((CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID==CHIP_TSUMJ))
+              #if D2B_XShared_DDCBuffer
+              extern BYTE *DDCBuffer;
+              #else
+              extern BYTE xdata DDCBuffer[DDC_BUFFER_LENGTH];
+              #endif
+              #else
+              extern BYTE xdata DDCBuffer[DDC_BUFFER_LENGTH];
+              #endif
+              #endif
+              #endif
+  75          //-------------------------------------------------------------------------------------------------
+  76          //  Local Defines
+  77          //-------------------------------------------------------------------------------------------------
+  78          #define PM_DEBUG    1
+  79          #if ENABLE_DEBUG&&PM_DEBUG
+  80              #define PM_printData(str, value)   printData(str, value)
+  81              #define PM_printMsg(str)           printMsg(str)
+  82          #else
+                  #define PM_printData(str, value)
+                  #define PM_printMsg(str)
+              #endif
+  86          
+  87          #define XBYTE             ((unsigned char volatile xdata *) 0)
+  88          
+  89          
+  90          //--------PM Option----------------
+  91          /*Choice MCU clock when enter into PM_MODE*/
+  92          //extern BYTE xdata MenuPageIndex ;
+  93          
+  94          //extern BYTE xdata MenuItemIndex ;
+  95          
+  96          
+  97          //---------------------------------
+  98          #define VCP_SET             0x03
+  99          #define VCP_DPMS            0xD6
+ 100          #define VCP_DPMS_ON         0x01
+ 101          //-------------------------------------------------------------------------------------------------
+ 102          #define IS_SOURCE_AUTOSWITCH() (TRUE)
+ 103          #define IS_SOURCE_VGA()        (FALSE) //(UserPreference.InputSync == ANALOG)
+ 104          #define IS_SOURCE_DVI0()       (FALSE) //(UserPreference.InputSync == DIGITAL)
+ 105          #define IS_SOURCE_DVI1()       (FALSE) //(UserPreference.InputSync == DIGITAL2)
+ 106          
+ 107          //-------------------------------------------------------------------------------------------------
+ 108          //  Local Structures
+ 109          //-------------------------------------------------------------------------------------------------
+ 110          
+ 111          
+ 112          
+ 113          
+ 114          XDATA sPM_Info  sPMInfo;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 3   
+
+ 115          XDATA ePMStatus ucWakeupStatus;
+ 116          #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK)
+              XDATA BYTE ucComboSelect=0;
+              #endif
+ 119          //-------------------------------------------------------------------------------------------------
+ 120          //  External Variables
+ 121          //-------------------------------------------------------------------------------------------------
+ 122          #if !ENABLE_DEBUG
+              extern BYTE rxIndex;
+              #if CHIP_ID==CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID == CHIP_TSUMD||CHIP_ID==CHIP_TSUMJ
+              #if D2B_XShared_DDCBuffer
+              extern BYTE *DDCBuffer;
+              #else
+              extern BYTE xdata DDCBuffer[];
+              #endif
+              #else
+              extern BYTE xdata DDCBuffer[];
+              #endif
+              #endif
+ 134          
+ 135          #ifndef PM_SUPPORT_ADC_TIME_SHARE
+              #define PM_SUPPORT_ADC_TIME_SHARE  0
+              #endif
+ 138          
+ 139          #if IR_FUNC_EN  //20130824
+              extern bit bIrHoldFlag;
+              extern bit bIrEndFlag;
+              extern unIrDataType idata unIrData;
+              extern WORD idata g_IRRawdata[2];
+              extern WORD xdata g_IRdata[2];
+              #endif
+ 146          
+ 147          Bool msPM_IsState_IDLE(void)
+ 148          {
+ 149   1          if(sPMInfo.ePMState == ePM_IDLE)
+ 150   1              return TRUE;
+ 151   1          return FALSE;
+ 152   1      }
+ 153          
+ 154          //**************************************************************************
+ 155          //  [Function Name]:
+ 156          //                  msPM_Init()
+ 157          //  [Description]
+ 158          //                  msPM_Init
+ 159          //  [Arguments]:
+ 160          //
+ 161          //  [Return]:
+ 162          //
+ 163          //**************************************************************************
+ 164          void  msPM_Init(void)
+ 165          {
+ 166   1          sPMInfo.sPMConfig.bHVSync_enable =0;
+ 167   1      #if( PM_SUPPORT_WAKEUP_DVI )
+ 168   1          sPMInfo.sPMConfig.bDVI_enable =0;
+ 169   1      #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+ 170   1          sPMInfo.sPMConfig.bDP_enable=0;
+ 171   1          sPMInfo.sPMConfig.bSOG_enable =0;
+ 172   1          sPMInfo.sPMConfig.bSAR_enable =0;
+ 173   1          sPMInfo.sPMConfig.bGPIO_enable =0;
+ 174   1          sPMInfo.sPMConfig.bMCCS_enable =0;
+ 175   1      #if( PM_SUPPORT_AC2DC )
+                  sPMInfo.sPMConfig.bACtoDC_enable=0;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 4   
+
+              #endif  // end of #if( PM_SUPPORT_AC2DC )
+ 178   1          sPMInfo.sPMConfig.bMCUSleep=0;
+ 179   1      
+ 180   1          sPMInfo.ucPMMode = ePM_POWERON;
+ 181   1          sPMInfo.ePMState = ePM_IDLE;
+ 182   1          //sPMInfo.sPMWakeUpCheck.wPMGPIOWakeupSta = msRead2Byte(REG_0164)&EN_GPIO_DET_MASK;
+ 183   1      
+ 184   1          #if PM_0W_Mode_Enable
+                  if (msReadByte(REG_018A)&BIT7)
+                  {
+                      //Set_PowerOnFlag();
+                      //Clr_PowerSavingFlag();
+                      Clr_ForcePowerSavingFlag();
+                  }
+                  #endif
+ 192   1      }
+ 193          //**************************************************************************
+ 194          //  [Function Name]:
+ 195          //                  msPM_SetPMSandby()
+ 196          //  [Description]
+ 197          //                  msPM_SetPMSandby_ForceDVI0
+ 198          //  [Arguments]:
+ 199          //
+ 200          //  [Return]:
+ 201          //
+ 202          //**************************************************************************
+ 203          void
+ 204          msPM_SetFlag_Standby(void)
+ 205          {
+ 206   1      #if ENABLE_MHL_CTS_TEST || ENABLE_DP_CTS_TEST
+                  BYTE ctstest = 1;
+                  if(ctstest)
+                      return;
+              #endif
+ 211   1      
+ 212   1          PM_printMsg(" msPM_SetFlag_Standby");
+ 213   1          if (UserPrefInputPriorityType==Input_Priority_Auto||(UserPrefInputPriorityType!=Input_Priority_Auto &&
+             - (UserPrefInputType == Input_VGA)))
+ 214   1          {
+ 215   2              sPMInfo.sPMConfig.bHVSync_enable =1;
+ 216   2          }
+ 217   1          else
+ 218   1          {
+ 219   2              sPMInfo.sPMConfig.bHVSync_enable =0;
+ 220   2          }
+ 221   1      #if( PM_SUPPORT_WAKEUP_DVI )
+ 222   1          if (UserPrefInputPriorityType==Input_Priority_Auto\
+ 223   1          ||(UserPrefInputPriorityType!=Input_Priority_Auto && ((UserPrefInputType == Input_DVI)||(UserPrefInput
+             -Type == Input_DVI2)||(UserPrefInputType == Input_DVI3)))\
+ 224   1          ||(UserPrefInputPriorityType!=Input_Priority_Auto && ((UserPrefInputType == Input_HDMI)||(UserPrefInpu
+             -tType == Input_HDMI2)||(UserPrefInputType == Input_HDMI3))))
+ 225   1          {
+ 226   2              sPMInfo.sPMConfig.bDVI_enable =1;
+ 227   2          }
+ 228   1          else
+ 229   1          {
+ 230   2              sPMInfo.sPMConfig.bDVI_enable =0;
+ 231   2          }
+ 232   1      #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+ 233   1      
+ 234   1          if (UserPrefInputPriorityType==Input_Priority_Auto||(UserPrefInputPriorityType!=Input_Priority_Auto &&
+             - (UserPrefInputType == Input_Displayport||UserPrefInputType == Input_Displayport3)))
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 5   
+
+ 235   1          {
+ 236   2              sPMInfo.sPMConfig.bDP_enable=PM_SUPPORT_WAKEUP_DP;
+ 237   2          }
+ 238   1          else
+ 239   1          {
+ 240   2              sPMInfo.sPMConfig.bDP_enable=0;
+ 241   2          }
+ 242   1          if (UserPrefInputPriorityType==Input_Priority_Auto||(UserPrefInputPriorityType!=Input_Priority_Auto &&
+             - (UserPrefInputType == Input_VGA)))
+ 243   1          {
+ 244   2              sPMInfo.sPMConfig.bSOG_enable =PM_POWERSAVING_WAKEUP_SOG;
+ 245   2          }
+ 246   1          else
+ 247   1          {
+ 248   2              sPMInfo.sPMConfig.bSOG_enable =0;
+ 249   2          }
+ 250   1          sPMInfo.sPMConfig.bSAR_enable =PM_POWERSAVING_WAKEUP_SAR;
+ 251   1          sPMInfo.sPMConfig.bGPIO_enable =PM_POWERSAVING_WAKEUP_GPIO;
+ 252   1          sPMInfo.sPMConfig.bMCCS_enable =PM_POWERSAVING_WAKEUP_MCCS;
+ 253   1      #if( PM_SUPPORT_AC2DC )
+                  sPMInfo.sPMConfig.bACtoDC_enable=0;
+              #endif  // end of #if( PM_SUPPORT_AC2DC )
+ 256   1          sPMInfo.sPMConfig.bMCUSleep=0;
+ 257   1      #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID==CHIP_TSUMF)
+ 258   1          sPMInfo.sPMConfig.bEDID_enable = ENABLE_CABLE_5V_EDID;
+ 259   1      #else
+                  sPMInfo.sPMConfig.bEDID_enable = 0;
+              #endif
+ 262   1          sPMInfo.sPMConfig.ePMDVImode = ePMDVI_DVI0;
+ 263   1          sPMInfo.sPMConfig.ePMSARmode = PM_POWERSAVING_SARmode;
+ 264   1          sPMInfo.ucPMMode = ePM_STANDBY;//PM_POWERSAVING_SARmode;
+ 265   1          sPMInfo.ePMState = ePM_ENTER_PM;
+ 266   1      //    PM_printData("\r\n==>sPMInfo.ePMState STD %d", sPMInfo.bCABLE_SAR_VALUE);
+ 267   1      }
+ 268          
+ 269          
+ 270          //**************************************************************************
+ 271          //  [Function Name]:
+ 272          //                  msPM_SetPMDCoff()
+ 273          //  [Description]
+ 274          //                  msPM_SetPMDCoff
+ 275          //  [Arguments]:
+ 276          //
+ 277          //  [Return]:
+ 278          //
+ 279          //**************************************************************************
+ 280          void  msPM_SetFlag_PMDCoff(void)
+ 281          {
+ 282   1      #if ENABLE_MHL_CTS_TEST || ENABLE_DP_CTS_TEST
+                  BYTE ctstest = 1;
+                  if(ctstest)
+                      return;
+              #endif
+ 287   1      
+ 288   1          PM_printMsg(" msPM_SetFlag_PMDCoff");
+ 289   1          sPMInfo.sPMConfig.bHVSync_enable =0;
+ 290   1      #if( PM_SUPPORT_WAKEUP_DVI )
+ 291   1          sPMInfo.sPMConfig.bDVI_enable =0;
+ 292   1      #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+ 293   1          sPMInfo.sPMConfig.bDP_enable=0;
+ 294   1          sPMInfo.sPMConfig.bSOG_enable =PM_POWEROFF_WAKEUP_SOG;
+ 295   1          sPMInfo.sPMConfig.bSAR_enable =PM_POWEROFF_WAKEUP_SAR;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 6   
+
+ 296   1          sPMInfo.sPMConfig.bGPIO_enable =PM_POWEROFF_WAKEUP_GPIO;
+ 297   1          sPMInfo.sPMConfig.bMCCS_enable =PM_POWEROFF_WAKEUP_MCCS;
+ 298   1      #if( PM_SUPPORT_AC2DC )
+                  sPMInfo.sPMConfig.bACtoDC_enable=0;
+              #endif  // end of #if( PM_SUPPORT_AC2DC )
+ 301   1          sPMInfo.sPMConfig.bMCUSleep=0;
+ 302   1      #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID==CHIP_TSUMF)
+ 303   1          sPMInfo.sPMConfig.bEDID_enable = ENABLE_CABLE_5V_EDID;
+ 304   1      #else
+                  sPMInfo.sPMConfig.bEDID_enable = 0;
+              #endif
+ 307   1          sPMInfo.sPMConfig.ePMDVImode = ePMDVI_DVI0;
+ 308   1          sPMInfo.sPMConfig.ePMSARmode = PM_POWEROFF_SARmode;
+ 309   1          sPMInfo.ucPMMode = ePM_POWEROFF;
+ 310   1          sPMInfo.ePMState = ePM_ENTER_PM;
+ 311   1          PM_printData("\r\n sPMInfo.ePMState DCOFF %d", sPMInfo.ePMState);
+ 312   1      
+ 313   1      }
+ 314          //**************************************************************************
+ 315          //  [Function Name]:
+ 316          //                  msPM_EnableHVSyncDetect(BOOL bEnable)
+ 317          //  [Description]
+ 318          //                  msPM_EnableSyncDetect
+ 319          //  [Arguments]:
+ 320          //
+ 321          //  [Return]:
+ 322          //
+ 323          //**************************************************************************
+ 324          void msPM_EnableHVSyncDetect(BOOL bEnable)
+ 325          {
+ 326   1          if(bEnable)
+ 327   1          {
+ 328   2            #if (CHIP_ID ==CHIP_TSUMU  || CHIP_ID ==CHIP_TSUMB  || CHIP_ID ==CHIP_TSUMY)
+                      msWriteByteMask(REG_PM_8E, 0x00, 0xF0);         // Sync clock not gating
+                    #endif
+ 331   2              msWriteByteMask(REG_SYNC_DET, EN_SYNC_DET_SET, EN_SYNC_DET_MASK);
+ 332   2          }
+ 333   1          else
+ 334   1          {
+ 335   2            #if (CHIP_ID ==CHIP_TSUMU  || CHIP_ID ==CHIP_TSUMB || CHIP_ID ==CHIP_TSUMY)
+                      msWriteByteMask(REG_PM_8E, 0xB0, 0xF0);         // Sync clock gating
+                    #endif
+ 338   2              msWriteByteMask(REG_SYNC_DET, 0, EN_SYNC_DET_MASK);
+ 339   2          }
+ 340   1      }
+ 341          
+ 342          
+ 343          //**************************************************************************
+ 344          //  [Function Name]:
+ 345          //                  msPM_EnableSOGDetect(BOOL bEnable)
+ 346          //  [Description]
+ 347          //                  Enable SOG Detect: need power ADC VREF & BANGAP
+ 348          //  [Arguments]:
+ 349          //
+ 350          //  [Return]:
+ 351          //
+ 352          //**************************************************************************
+ 353          void msPM_EnableSOGDetect(BOOL bEnable)
+ 354          {
+ 355   1          if(bEnable)
+ 356   1          {
+ 357   2      #if( !PM_SUPPORT_SOG_TIME_SHARE )
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 7   
+
+ 358   2              msWriteBit(REG_PM_E9, FALSE, _BIT7);   // disable SoG time sharing option of VREF/BGAP to save pow
+             -er of SoG wakeup
+ 359   2      #else
+                      msWriteBit(REG_PM_E9, TRUE, _BIT7);   // enable SoG time sharing option of VREF/BGAP to save power
+             - of SoG wakeup
+                      msPM_EnableDVIClockAmp( TRUE );       // enable DVI clock amplifier control, because SoG time shar
+             -ing requires DVI clock amplifier control.
+              
+              #endif
+ 364   2              msWriteByteMask(REG_ADC_ATOP_04_L, 0, (_BIT1|_BIT0)); // power on ADC BGAP and VREF
+ 365   2              msWriteByteMask(REG_ADC_ATOP_04_H, 0, (_BIT2|_BIT1)); // power on online SOG DAC and main
+ 366   2      
+ 367   2              msWriteByteMask(REG_SYNC_DET, EN_SOG_DET, EN_SOG_DET);
+ 368   2          }
+ 369   1          else
+ 370   1          {
+ 371   2              msWriteBit(REG_PM_E9, FALSE, _BIT7);   // disable SoG time sharing option of VREF/BGAP to save pow
+             -er of SoG wakeup
+ 372   2              msWriteByteMask(REG_ADC_ATOP_04_L, (_BIT1|_BIT0), (_BIT1|_BIT0)); // power down ADC BGAP and VREF
+ 373   2              msWriteByteMask(REG_ADC_ATOP_04_H, (_BIT2|_BIT1), (_BIT2|_BIT1)); // power down online SOG DAC and
+             - main
+ 374   2      
+ 375   2              msWriteByteMask(REG_SYNC_DET, 0, EN_SOG_DET);
+ 376   2          }
+ 377   1      }
+ 378          
+ 379          //**************************************************************************
+ 380          //  [Function Name]:
+ 381          //                  msPM0W_Mode_PassWord(BOOL bEnable)
+ 382          //  [Description]
+ 383          //
+ 384          //  [Arguments]:
+ 385          //
+ 386          //  [Return]:
+ 387          //
+ 388          //**************************************************************************
+ 389          #if PM_0W_Mode_Enable
+              void msPM0W_Mode_PassWord(BOOL bEnable)
+              {
+                  if(bEnable)
+                  {
+              
+                      PM_printMsg(">>>>>Enter 0W Mode");
+              
+                      msWriteByte(REG_PM_8B,0xA5);
+                      msWriteByte(REG_PM_8B,0x5E);
+                  }
+                  else
+                  {
+              
+              
+                  }
+              }
+              #endif
+ 407          
+ 408          //**************************************************************************
+ 409          //  [Function Name]:
+ 410          //                  msPM_EnableDVIClockAmp(BOOL bEnable)
+ 411          //  [Description]
+ 412          //                  Enable DVI clock amplifier control
+ 413          //  [Arguments]:
+ 414          //
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 8   
+
+ 415          //  [Return]:
+ 416          //
+ 417          //**************************************************************************
+ 418          
+ 419          
+ 420          #if( ENABLE_DVI || ENABLE_HDMI )
+ 421          void msPM_EnableDVIClockAmp(Bool bEnable)
+ 422          {
+ 423   1          if(!bEnable)
+ 424   1          {
+ 425   2            #if (CHIP_ID ==CHIP_TSUMU  || CHIP_ID ==CHIP_TSUMB    || CHIP_ID ==CHIP_TSUMY)
+                      msWriteByteMask(REG_PM_A8, BIT3, BIT3);  // DVI Controller Clock gating
+                    #endif
+ 428   2              msWrite2ByteMask(REG_DVI_CTRL, 0x00, BIT5 ); // disable DVI clock amplifier
+ 429   2          }
+ 430   1          else
+ 431   1          {
+ 432   2            #if (CHIP_ID ==CHIP_TSUMU  || CHIP_ID ==CHIP_TSUMB      || CHIP_ID ==CHIP_TSUMY)
+                      msWriteByteMask(REG_PM_A8, 0x00, 0x0F);  // DVI Controller Clock Not gating
+                    #endif
+ 435   2              msWrite2ByteMask(REG_DVI_CTRL, EN_DVI_CTRL_SET, EN_DVI_CTRL_MASK ); // enable DVI clock amplifier
+ 436   2          }
+ 437   1      }
+ 438          #endif
+ 439          
+ 440          #if( ENABLE_DVI || ENABLE_HDMI )
+ 441          #if( PM_SUPPORT_WAKEUP_DVI )
+ 442          void msPM_EnableRterm(BOOL bEnable)
+ 443          {
+ 444   1      #if CHIP_ID >= CHIP_TSUMC
+ 445   1          if(bEnable)
+ 446   1          {
+ 447   2              msWriteByteMask(REG_PM_8E, 0x00, 0x0F); // DVI clock not gating
+ 448   2              drvDVI_PowerCtrl(DVI_POWER_STANDBY);
+ 449   2          #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUM9||C
+             -HIP_ID==CHIP_TSUMF)
+ 450   2              #if DISABLE_AUTO_SWITCH
+                      if(FIXED_PORT == Input_HDMI)
+                      {
+                          ComboInputControl(COMBO_INPUT_DIGITAL_A);
+                      }
+                      else if(FIXED_PORT == Input_HDMI2)
+                      {
+                          ComboInputControl(COMBO_INPUT_DIGITAL_B);
+                      }
+                      else if(FIXED_PORT == Input_HDMI3)
+                      {
+                          ComboInputControl(COMBO_INPUT_DIGITAL_C);
+                      }
+                      #else // !DISABLE_AUTO_SWITCH
+ 464   2              ComboInputControl(COMBO_INPUT_POWERSAVING);
+ 465   2              #endif
+ 466   2          #endif
+ 467   2          #if (CHIP_ID == CHIP_TSUMJ)
+                      drvDVI_PortMuxControl(DVI_INPUT_PORT0);
+                  #endif
+ 470   2          }
+ 471   1          else
+ 472   1          {
+ 473   2              msWriteByteMask(REG_PM_8E, 0x0B, 0x0F); // DVI clock gating
+ 474   2              drvDVI_PowerCtrl(DVI_POWER_DOWN);
+ 475   2          #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUM9||C
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 9   
+
+             -HIP_ID==CHIP_TSUMF)
+ 476   2              ComboInputControl(COMBO_INPUT_OFF);
+ 477   2          #endif
+ 478   2          #if (CHIP_ID == CHIP_TSUMJ)
+                      drvDVI_PortMuxControl(DVI_INPUT_NONE);
+                  #endif
+ 481   2          }
+ 482   1      // 111004 coding check with Shadow
+ 483   1      #else
+                  #if CHIP_ID == CHIP_TSUMV || CHIP_ID == CHIP_TSUM2
+                  msWriteByteMask(REG_PM_B2, BIT3, BIT3);//Power down DVI PLL band-gap first can reduce 0.4mA
+                  msWriteByteMask(REG_PM_B2, 0x00, BIT3);//power on DVI PLL band-gap
+                  #endif
+              
+                  if(bEnable)
+                  {
+                      msWriteByteMask(REG_PM_8E, 0x00, 0x0F); // DVI clock not pass
+              #if DVI_PORT
+                #if DVI_PORT==TMDS_PORT_A || DVI_PORT==TMDS_PORT_B
+                  #if DVI_PORT==TMDS_PORT_A
+                      msWriteByteMask(REG_PM_B3, BIT4, BIT4);//Switch to(A)[4]
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT0);//Not power down RCK(A)[0]
+                  #else
+                      msWriteByteMask(REG_PM_B3, BIT5, BIT5);//Switch to(B)[5]
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT1);//Not power down RCK(B)[1]
+                  #endif
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT2);//Not power down CLKIN(A/B)[2]
+                      msWriteByteMask(REG_PM_8F, 0x00, 0x0F);// DVI RAW clock (A/B) pass
+                #else
+                      msWriteByteMask(REG_PM_B3, 0x00, BIT0);//Not power down RCK(B)[1]
+                      msWriteByteMask(REG_PM_B3, 0x00, BIT2);//Not power down CLKIN(C)[2]
+                      msWriteByteMask(REG_PM_8C, 0x00, 0x0F);// DVI RAW clock (C) pass
+                #endif
+              #endif
+              
+              #if HDMI_PORT
+                #if HDMI_PORT==TMDS_PORT_A || HDMI_PORT==TMDS_PORT_B
+                  #if HDMI_PORT==TMDS_PORT_A
+                      msWriteByteMask(REG_PM_B3, BIT4, BIT4);//Switch to(A)[4]
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT0);//Not power down RCK(A)[0]
+                  #else
+                      msWriteByteMask(REG_PM_B3, BIT5, BIT5);//Switch to(B)[5]
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT1);//Not power down RCK(B)[1]
+                  #endif
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT2);//Not power down CLKIN(A/B)[2]
+                      msWriteByteMask(REG_PM_8F, 0x00, 0x0F);// DVI RAW clock (A/B) pass
+                #else
+                      msWriteByteMask(REG_PM_B3, 0x00, BIT0);//Not power down RCK(B)[1]
+                      msWriteByteMask(REG_PM_B3, 0x00, BIT2);//Not power down CLKIN(C)[2]
+                      msWriteByteMask(REG_PM_8C, 0x00, 0x0F);// DVI RAW clock (C)pass
+                #endif
+              #endif
+                  }
+                  else
+                  {
+                      msWriteByteMask(REG_PM_8E, 0x0B, 0x0F);// DVI clock gating
+                      msWriteByteMask(REG_PM_B2, BIT2|BIT1|BIT0, BIT2|BIT1|BIT0);// power down DVI(A/B) [0][1]:RCK,[2]:C
+             -LK
+                      msWriteByteMask(REG_PM_8F, 0x0B, 0x0F);// DVI RAW clock(A/B)gating
+                  #if DVI_PORT==TMDS_PORT_C || HDMI_PORT==TMDS_PORT_C
+                      msWriteByteMask(REG_PM_B3, BIT2|BIT0, BIT2|BIT0);// power down DVI(C) [0]:RCK,[2]:CLKIN
+                      msWriteByteMask(REG_PM_8C, 0x0B, 0x0F);// DVI RAW clock(C)gating
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 10  
+
+                  #endif
+                  }
+              #endif
+ 539   1      }
+ 540          
+ 541          //**************************************************************************
+ 542          //  [Function Name]:
+ 543          
+ 544          //                  msPM_EnableDVIDetect(BOOL bEnable)
+ 545          //  [Description]
+ 546          //                  Enable DVI Clock Detect -using DVI control clock
+ 547          //  [Arguments]:
+ 548          //
+ 549          //  [Return]:
+ 550          //
+ 551          //**************************************************************************
+ 552          void msPM_EnableDVIDetect(BOOL bEnable)
+ 553          {
+ 554   1          if( bEnable)
+ 555   1          {
+ 556   2              //PM_DVIRAW1_CLK_GATE_EN(FALSE);//msWriteByteMask(REG_PM_8C, 0x00, 0x0F);   // DVI RAW clock (C)no
+             -t gating
+ 557   2              msWriteByteMask(REG_PM_8F, 0x00, 0x0F);   // DVI RAW clock (A/B)not gating
+ 558   2              //msWriteByteMask(REG_PM_8E, 0x00, 0x0F);   // DVI clock not gating
+ 559   2              msPM_EnableRterm(TRUE);
+ 560   2      #if 0
+              #if (CHIP_ID == CHIP_TSUMV) // 110901 coding, check it again
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT3|BIT2|BIT1|BIT0); // NOT power down DVI(A/B) CKIN and RCK
+              #else
+                      msWriteByteMask(REG_PM_B2, 0x00, BIT2|BIT1|BIT0); // NOT power down DVI(A/B) CKIN and RCK
+              #endif
+                      msWriteByteMask(REG_PM_B3, 0x00, BIT2|BIT0);      // NOT power down DVI( C) CLKIN and RCK
+                      msWriteByteMask(REG_PM_B3, BIT4, BIT5|BIT4);
+              #endif
+ 569   2              msWriteByteMask(REG_DVI_DET, EN_DVI_DET_SET, EN_DVI_DET_MASK); // Detection channel selection
+ 570   2      #if !PM_SUPPORT_DVI_TIME_SHARE
+ 571   2              msPM_EnableDVIClockAmp(FALSE);  // Not Controlled by amplifier
+ 572   2          #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD)
+                      msWriteByteMask(REG_PM_CC, 0x00, 0x0F);
+                  #elif (CHIP_ID == CHIP_TSUMJ)
+                      msWriteByteMask(REG_PM_CC, 0x00, 0x1F);
+                  #elif (CHIP_ID != CHIP_TSUM9 && CHIP_ID != CHIP_TSUMF)
+                      msWriteByteMask(REG_PM_AD, 0x00, 0x07);
+                  #endif
+ 579   2      #else
+                      msPM_EnableDVIClockAmp(TRUE);   // Controlled by amplifier
+                  #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD)
+                      msWriteByteMask(REG_PM_CC, 0x0F, 0x0F);
+                  #elif (CHIP_ID == CHIP_TSUMJ)
+                      msWriteByteMask(REG_PM_CC, BIT4, 0x1F); // [4]: bg_ctl, [3]: clkin_ctrl, [2:0]: clkin and clk r-te
+             -rm can not support time sharing mode in Ravi
+                  #elif (CHIP_ID != CHIP_TSUM9 && CHIP_ID != CHIP_TSUMF)
+                      msWriteByteMask(REG_PM_AD, 0x07, 0x07);
+                  #endif
+                  #if (CHIP_ID < CHIP_TSUMC)  // DVICLK_CTL_CHEN is not used in Russell, Junior and Ravi
+                      switch(sPMInfo.sPMConfig.ePMDVImode)
+                      {
+                      case ePMDVI_DVI0:
+                          msWriteByteMask(REG_DVI_CHEN, BIT0, EN_DVI_CHEN_MASK);
+                          break;
+                      case ePMDVI_DVI1:
+                          msWriteByteMask(REG_DVI_CHEN, BIT1, EN_DVI_CHEN_MASK);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 11  
+
+                          break;
+                      case ePMDVI_DVI0_DVI1:
+                          msWriteByteMask(REG_DVI_CHEN, BIT1|BIT0, EN_DVI_CHEN_MASK);
+                          break;
+                      default: ;
+                      }
+                  #endif
+              #endif
+ 604   2      #if 0//!ENABLE_MHL
+                      hw_Set_HdcpHpd();//PortA
+                      hw_Set_HdcpHpd2();//PortB
+                      hw_Set_HdcpHpd3();//PortC
+              #endif
+ 609   2          }
+ 610   1          else
+ 611   1          {
+ 612   2              msWriteByteMask(REG_DVI_DET, 0, EN_DVI_DET_MASK);
+ 613   2              msPM_EnableRterm(FALSE);
+ 614   2      #if 0//!ENABLE_MHL
+                      hw_Clr_HdcpHpd();//PortA
+                      hw_Clr_HdcpHpd2();//PortB
+                      hw_Clr_HdcpHpd3();//PortC
+              #endif
+ 619   2          }
+ 620   1      }
+ 621          #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+ 622          #endif  // end of #if ENABLE_HDMI
+ 623          
+ 624          //**************************************************************************
+ 625          //  [Function Name]:
+ 626          //                  msPM_EnableSARDetect(BOOL bEnable)
+ 627          //  [Description]
+ 628          //                  msPM_EnableSARDetect
+ 629          //  [Arguments]:
+ 630          //
+ 631          //  [Return]:
+ 632          //
+ 633          //**************************************************************************
+ 634          void
+ 635          msPM_EnableSARDetect(BOOL bEnable)
+ 636          {
+ 637   1          if (bEnable)
+ 638   1          {
+ 639   2              switch(sPMInfo.sPMConfig.ePMSARmode)
+ 640   2              {
+ 641   3                  case ePMSAR_SAR0:
+ 642   3                      msWriteByteMask(REG_SINGLE_KEY, EN_SAR_SINGLE_SET, EN_SAR_SINGLE_MASK);
+ 643   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_14V, EN_SAR_CMP_MASK);
+ 644   3                      msWriteByteMask(REG_SAR_ANYKEY, 0, EN_SAR_ANYKEY_MASK);
+ 645   3                      break;
+ 646   3                  case ePMSAR_SAR1:
+ 647   3                      msWriteByteMask(REG_SINGLE_KEY, 0x11, EN_SAR_SINGLE_MASK);
+ 648   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_05V, EN_SAR_CMP_MASK);
+ 649   3                      msWriteByteMask(REG_SAR_ANYKEY, 0, EN_SAR_ANYKEY_MASK);
+ 650   3                      break;
+ 651   3                  case ePMSAR_SAR2:
+ 652   3                      msWriteByteMask(REG_SINGLE_KEY, 0x12, EN_SAR_SINGLE_MASK);
+ 653   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_05V, EN_SAR_CMP_MASK);
+ 654   3                      msWriteByteMask(REG_SAR_ANYKEY, 0, EN_SAR_ANYKEY_MASK);
+ 655   3                      break;
+ 656   3                  case ePMSAR_SAR3:
+ 657   3                      msWriteByteMask(REG_SINGLE_KEY, 0x13, EN_SAR_SINGLE_MASK);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 12  
+
+ 658   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_05V, EN_SAR_CMP_MASK);
+ 659   3                      msWriteByteMask(REG_SAR_ANYKEY, 0, EN_SAR_ANYKEY_MASK);
+ 660   3                      break;
+ 661   3                  case ePMSAR_SAR12:
+ 662   3                      msWriteByteMask(REG_SINGLE_KEY, 0, EN_SAR_SINGLE_MASK);
+ 663   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_14V, EN_SAR_CMP_MASK);
+ 664   3                      msWriteByteMask(REG_SAR_ANYKEY, EN_SAR_2CH_SET, EN_SAR_ANYKEY_MASK);
+ 665   3                      msWriteByteMask(REG_3A64,0,BIT2);
+ 666   3                      break;
+ 667   3                  case ePMSAR_SAR123:
+ 668   3                      msWriteByteMask(REG_SINGLE_KEY, 0, EN_SAR_SINGLE_MASK);
+ 669   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_14V, EN_SAR_CMP_MASK);
+ 670   3                      msWriteByteMask(REG_SAR_ANYKEY, EN_SAR_3CH_SET, EN_SAR_ANYKEY_MASK);
+ 671   3                      msWriteByteMask(REG_3A64,0,BIT2);
+ 672   3                      break;
+ 673   3                  case ePMSAR_SAR01:
+ 674   3                      msWriteByteMask(REG_SINGLE_KEY, 0, EN_SAR_SINGLE_MASK);
+ 675   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_05V, EN_SAR_CMP_MASK);
+ 676   3                      msWriteByteMask(REG_SAR_ANYKEY, EN_SAR_2CH_SET, EN_SAR_ANYKEY_MASK);
+ 677   3                      msWriteByteMask(REG_3A64,BIT2,BIT2);
+ 678   3                      break;
+ 679   3                  case ePMSAR_SAR012:
+ 680   3                      msWriteByteMask(REG_SINGLE_KEY, 0, EN_SAR_SINGLE_MASK);
+ 681   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_05V, EN_SAR_CMP_MASK);
+ 682   3                      msWriteByteMask(REG_SAR_ANYKEY, EN_SAR_3CH_SET, EN_SAR_ANYKEY_MASK);
+ 683   3                      msWriteByteMask(REG_3A64,BIT2,BIT2);
+ 684   3                  break;
+ 685   3              }
+ 686   2              msWriteByteMask(REG_3A62,sPMInfo.sPMConfig.ePMSARmode,0x0F);
+ 687   2              msWriteByteMask(REG_SAR_GPIO, EN_SAR_DET_SET, EN_SAR_DET_MASK);
+ 688   2          }
+ 689   1          else
+ 690   1          {
+ 691   2              msWriteByteMask(REG_SINGLE_KEY, 0, EN_SAR_SINGLE_MASK);
+ 692   2              msWriteByteMask(REG_SAR_GPIO, 0, EN_SAR_DET_MASK);
+ 693   2              msWriteByteMask(REG_SAR_ANYKEY, 0, EN_SAR_ANYKEY_MASK);
+ 694   2          }
+ 695   1      }
+ 696          
+ 697          #if PM_CABLEDETECT_USE_GPIO
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msPM_EnableGPIODetect(BOOL bEnable)
+              //  [Description]
+              //                  msPM_EnableGPIODetect
+              //  [Arguments]:
+              //
+              //  [Return]:
+              
+              //**************************************************************************
+              void
+              msPM_CableDetectStates()
+              
+              {
+              
+                         WORD INV_GPIO_POL_SET_Temp=INV_GPIO_POL_SET;
+              #if !(CABLE_DETECT_VGA_USE_SAR)
+                         if(hwDSUBCable_Pin)
+              
+                                   INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_VGACBL_DET;
+              #endif
+              #if !(CABLE_DETECT_VGA_USE_SAR)
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 13  
+
+                         if(hwDVICable_Pin)
+              
+                                   INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_DVICBL_DET;
+                  #endif
+              #if ENABLE_DP_INPUT
+                  //if(!(DP_CABLE_NODET))
+                  if(!hwDPCable_Pin)
+                      INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_DPCBL_DET;
+              #endif
+              #if 0
+                         if(DET_HDMIA)
+              
+                                   INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_HDMIACBL_DET;
+              
+                         if(DET_HDMIB)
+              
+                                   INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_HDMIBCBL_DET;
+              
+                         if(DET_HDMIC)
+              
+                                   INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_HDMICCBL_DET;
+              #endif
+              
+              
+                         msWrite2ByteMask(REG_PM_62,INV_GPIO_POL_SET_Temp, INV_GPIO_POL_MASK);
+              
+              }
+              #endif
+ 748          void
+ 749          msPM_EnableGPIODetect(BOOL bEnable)
+ 750          {
+ 751   1          if(bEnable)
+ 752   1          {
+ 753   2              msWrite2ByteMask(REG_PM_60 , EN_GPIO_DET_SET , EN_GPIO_DET_MASK);
+ 754   2              msWrite2ByteMask(REG_PM_62, INV_GPIO_POL_SET, INV_GPIO_POL_MASK);
+ 755   2            #if  PM_CABLEDETECT_USE_GPIO
+                      msPM_CableDetectStates();
+                    #endif
+ 758   2          }
+ 759   1          else
+ 760   1          {
+ 761   2              msWrite2ByteMask(REG_PM_60 , 0x00, EN_GPIO_DET_MASK);
+ 762   2              msWrite2ByteMask(REG_PM_62, 0x00, INV_GPIO_POL_MASK);
+ 763   2          }
+ 764   1      }
+ 765          
+ 766          
+ 767          //**************************************************************************
+ 768          //  [Function Name]:
+ 769          //                  msPM_EnableMCCSDetect(BOOL bEnable)
+ 770          //  [Description]
+ 771          //                  msPM_EnableMCCSDetect
+ 772          //  [Arguments]:
+ 773          //
+ 774          //  [Return]:
+ 775          //
+ 776          //**************************************************************************
+ 777          void
+ 778          msPM_EnableMCCSDetect(BOOL bEnable)
+ 779          {
+ 780   1          if(bEnable)
+ 781   1          {
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 14  
+
+ 782   2              msWriteByte(REG_3E0A, 0xB7);  // enable DDC2Bi for A0
+ 783   2              msWriteByte(REG_3E0C, 0xB7);  // enable DDC2Bi for D0
+ 784   2              msWriteByte(REG_3E0D, 0xB7);  // enable DDC2Bi for D1
+ 785   2              msWriteByte(REG_3E52, 0xB7);  // enable DDC2Bi for D2
+ 786   2              msWriteByteMask(REG_3E09, 0, (BIT1|BIT0)); //disable No ACK ,Hold CLK
+ 787   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD|| CHIP_ID == CHIP_TSUMJ || CHIP
+             -_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+ 788   2              msWriteByteMask(REG_3EC1, BIT7|BIT6, BIT7|BIT6); // enable A0, D0
+ 789   2              msWriteByteMask(REG_3EEF, BIT7|BIT6, BIT7|BIT6); // enable D1, D2
+ 790   2            #else
+                      msWriteByteMask(REG_3EC1, (BIT4|BIT3|BIT2), (BIT4|BIT3|BIT2)); // enable MCCS wakeup by power key 
+             -04, 05
+                    #endif
+ 793   2          }
+ 794   1          else
+ 795   1          {
+ 796   2              msWriteBit(REG_3E0A, 0, BIT7);  // disable DDC2Bi for A0
+ 797   2              msWriteBit(REG_3E0C, 0, BIT7);  // disable DDC2Bi for D0
+ 798   2              msWriteBit(REG_3E0D, 0, BIT7);  // disable DDC2Bi for D1
+ 799   2              msWriteBit(REG_3E52, 0, BIT7);  // disable DDC2Bi for D2
+ 800   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD|| CHIP_ID == CHIP_TSUMJ || CHIP
+             -_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+ 801   2              msWriteByteMask(REG_3EC1, 0, BIT7|BIT6); // disable A0, D0
+ 802   2              msWriteByteMask(REG_3EEF, 0, BIT7|BIT6); // disable D1, D2
+ 803   2            #else
+                      msWriteByteMask(REG_3EC1, 0, (BIT4|BIT3|BIT2) ); // disable MCCS wakeup by power key 04, 05
+                    #endif
+ 806   2          }
+ 807   1      }
+ 808          
+ 809          
+ 810          //**************************************************************************
+ 811          //  [Function Name]:
+ 812          //                  msPM_EDID_READ()
+ 813          //  [Description]
+ 814          //                  msPM_EDID_READ
+ 815          //  [Arguments]:
+ 816          //
+ 817          //  [Return]:
+ 818          //
+ 819          //**************************************************************************
+ 820          void
+ 821          msPM_Enable_EDID_READ(BOOL bEnable)
+ 822          {
+ 823   1          if(bEnable)
+ 824   1          {
+ 825   2              msWriteByteMask(REG_3E45, BIT7, BIT7);  // enable DDC function for DVI_0
+ 826   2              msWriteByteMask(REG_3E4D, BIT7, BIT7);  // enable DDC function for DVI_1
+ 827   2              msWriteByteMask(REG_3E49, BIT7, BIT7);  // enable DDC function for ADC_0
+ 828   2      #if(CHIP_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9|| CHIP_ID == CHIP_TSUMF)
+ 829   2              msWriteByteMask(REG_3E60, BIT7, BIT7);//reply ACK while source accesses A0_EDID with address is ov
+             -er 128
+ 830   2      #endif
+ 831   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD|| CHIP_ID == CHIP_TSUMJ)
+                      msWriteByteMask(REG_3E58, BIT7, BIT7);  // enable DDC function for DVI_2
+                    #endif
+ 834   2          }
+ 835   1          else
+ 836   1          {
+ 837   2              msWriteByteMask(REG_3E45, 0x00, BIT7);  // disable DDC function for DVI_0
+ 838   2              msWriteByteMask(REG_3E4D, 0x00, BIT7);  // disable DDC function for DVI_1
+ 839   2              msWriteByteMask(REG_3E49, 0x00, BIT7);  // disable DDC function for ADC_0
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 15  
+
+ 840   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD|| CHIP_ID == CHIP_TSUMJ)
+                      msWriteByteMask(REG_3E58, 0x00, BIT7);  // disable DDC function for DVI_2
+                    #endif
+ 843   2          }
+ 844   1      }
+ 845          
+ 846          //**************************************************************************
+ 847          //  [Function Name]:
+ 848          //                  msPM_OutputTriState()
+ 849          //  [Description]
+ 850          //                  msPM_OutputTriState
+ 851          //  [Arguments]:
+ 852          //
+ 853          //  [Return]:
+ 854          //
+ 855          //**************************************************************************
+ 856          void msPM_OutputTriState(void)
+ 857          {
+ 858   1      
+ 859   1      }
+ 860          
+ 861          
+ 862          //**************************************************************************
+ 863          //  [Function Name]:
+ 864          //                  msPM_PowerDownMacro()
+ 865          //  [Description]
+ 866          //                  msPM_PowerDownMacro
+ 867          //  [Arguments]:
+ 868          //
+ 869          //  [Return]:
+ 870          //
+ 871          //**************************************************************************
+ 872          void  msPM_PowerDownMacro(void)
+ 873          {
+ 874   1          msPM_InterruptEnable(FALSE);
+ 875   1          #if (CHIP_ID == CHIP_TSUMB || ENABLE_RTE)
+                  msWriteByteMask( REG_1207, BIT4, BIT4 ); // 闽超笆篈筿家Α
+                  msWriteByteMask( REG_1200, 0, BIT1 );   //Bank12: reg_cke =1
+                  msWriteByteMask( REG_1203, 0, BIT4 );   //reg_cke_oenz=0
+                  msWriteByteMask( REG_1203, BIT5, BIT5 ); //reg_dq_eonz=1
+                  msWriteByteMask( REG_1203, BIT6, BIT6 ); //reg_adr_oenz=1
+                  msWriteByteMask( REG_1203, BIT7, BIT7 ); //reg_cko_oenz=1
+                  msWriteByteMask( REG_1100, BIT4, BIT4 ); //Gpio mode砞1
+                  msWriteByteMask( REG_1133, BIT5, BIT5 ); //Reg_ddrpll_reset砞1
+                  msWriteByteMask( REG_1133, BIT7, BIT7 ); //Reg_ddrpll_pd 砞1
+                  msWriteByteMask( REG_121E, BIT0, BIT0 ); //Reset 砞1
+                  msWriteByteMask( REG_1205, BIT2, BIT2 ); //Reg_mcp_en砞0
+                  msWriteByteMask( REG_1203, BIT4, BIT4 ); //reg_cke_oenz=0
+              #endif
+ 889   1      #if CHIP_ID==CHIP_TSUMU
+              #if PM_SUPPORT_SOG_TIME_SHARE
+                  msWriteByteMask(REG_2509, 0xFF, ~BIT7);
+                  msWriteByte(REG_2508, 0xFF);    //Power down ADC_vref /vref/adc_rgb/phase_digitizer/adc_pll/dpl_bg
+              #else
+                  msWriteByteMask(REG_2509, 0xFF, ~(BIT7|BIT2|BIT1)); //dont power down SOG main/DAC
+                  msWriteByteMask(REG_2508, 0xFF, ~BIT1);             //dont power down band gap
+              #endif
+              
+               if( sPMInfo.sPMConfig.bHVSync_enable || sPMInfo.sPMConfig.bSOG_enable )
+                      msWriteByteMask(REG_2508, 0x00, BIT1);
+               if( !sPMInfo.sPMConfig.bSOG_enable )
+                      msWriteByteMask(REG_2560, BIT0, BIT0);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 16  
+
+               else
+               {
+                      msWriteByteMask(REG_2560, 0x00, BIT0);
+                      msWriteByteMask(REG_2509, 0x00, BIT1|BIT2);
+               }
+                  //DVI
+                  msWriteByteMask(REG_29C0, 0xFF, ~BIT3);
+                  msWriteByteMask(REG_29C1, 0xFF, ~(BIT5|BIT6));
+              
+                  msWriteByteMask(REG_29D2, 0xFF, ~BIT3);
+                  msWriteByteMask(REG_29D3, 0xFF, ~(BIT4|BIT5|BIT6));
+              
+                  //MOD ATOP
+              
+                  msWriteByte(REG_3200, 0x00); // sub bank 0
+                  msWriteByteMask(REG_3265, 0x00, BIT2|BIT6);
+                  msWriteByteMask(REG_3250, 0xFF, 0x1F);
+                  msWriteByteMask(REG_3264, 0x00, 0x1F);
+                  msWriteByteMask(REG_3250, 0xFF, 0x3F);
+                  msWrite2Byte(REG_3220, 0x0000); // TTL
+                  msWrite2Byte(REG_3222, 0x0000);
+                  msWrite2Byte(REG_3224, 0x0000);
+                  msWrite2Byte(REG_3230, 0x0000);
+                  msWrite2Byte(REG_3232, 0x0000);
+                  msWrite2Byte(REG_3234, 0x0000);
+                  msWrite2Byte(REG_3236, 0x0000);
+                  msWrite2Byte(REG_3238, 0x0000);
+                  msWrite2Byte(REG_323A, 0x0000);
+                  msWrite2Byte(REG_3228, 0xFFFF);
+                  msWrite2Byte(REG_322A, 0xFFFF);
+                  msWrite2Byte(REG_322C, 0xFFFF);
+                  msWriteByteMask(REG_3265, 0xFF, BIT2|BIT6);
+              
+              
+                  //DPRX
+              #if ENABLE_DP_INPUT
+              
+                  msWriteByte(REG_356C, 0xCF);
+                  msWriteByteMask( REG_35E0, 0, BIT2 );
+                  msWriteByteMask( REG_35E1, 0, BIT2 | BIT3 | BIT6 ); //if turn off, DP can't wake up
+                  msWriteByte(REG_3580, 0x1E);
+                  msWriteByteMask( REG_35FA, 0, 0xC0 );
+                      msWrite2Byte(REG_37E8, 0xFFFF);
+                      msWrite2Byte(REG_37EA, 0xFFFF);
+              //#if   ENABLE_DP_INPUT
+                      msWriteByteMask(REG_356D, BIT0, BIT0);
+              //#else
+                  //msWriteByteMask(REG_356D, BIT1|BIT0, BIT1|BIT0);   //Mark Bit 1 , when Turn off Bit, we have wake up
+             - issue.
+              
+              #endif
+              
+              
+                  //Audio
+                  msWrite2Byte(REG_2C60, ~0x2727);
+                  msWrite2Byte(REG_2C62, ~0x00FE);
+                  msWrite2Byte(REG_2C64, ~0x1800);
+                  msWrite2Byte(REG_2C66, 0xFFFF);
+                  msWrite2Byte(REG_2C68, ~0x2003);
+                  msWrite2Byte(REG_2C6A, ~0x0850);
+                  msWrite2Byte(REG_2C6C, ~0x0800);
+              
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 17  
+
+                  //HDMI PLL
+                  msWriteByteMask(REG_05B9, BIT0, BIT0);
+                  //AU PLL
+                  msWriteByteMask(REG_05F0, BIT3, BIT3);
+                  //dprx Video AUPLL
+                  msWriteByteMask(REG_35D1, BIT0, BIT0);
+                  //dprx Audio AUPLL
+                  msWriteByteMask(REG_35B3, BIT0, BIT0);
+                  //MOD LPLL
+                  msWriteByteMask(REG_3881, BIT0, BIT0);
+              
+                  //SCALAR LPLL
+                  msWriteByteMask(REG_38A3, BIT7, BIT7);
+                  //MPLL
+                 // msWriteByteMask(REG_1ED1, BIT0, BIT0);
+                  msWriteByteMask(REG_1EDC, BIT4|BIT5, BIT4|BIT5);
+              
+                  //DDR ATOP
+                  msWriteByteMask(REG_1100, 0xFF, BIT5|BIT4|BIT3);
+                  msWriteByteMask(REG_1108, 0x00, 0x3F);
+                  msWriteByteMask(REG_110E, 0x00, BIT0);
+                  msWriteByteMask(REG_1154, BIT4, BIT4);
+                  msWriteByteMask(REG_1160, BIT1, BIT1);
+                  msWriteByteMask(REG_1133, BIT7, BIT7);
+                  //SDR
+                  msWriteByteMask(REG_1205, 0x00, BIT2);
+                  //ClK Gen
+                  msWriteByteMask(REG_1E24, BIT0, BIT0);
+                  msWriteByteMask(REG_1E25, BIT2, BIT2);
+                  msWriteByteMask(REG_1E26, BIT4|BIT0, BIT4|BIT0);
+                  msWriteByteMask(REG_1E27, BIT4, BIT4);
+                  msWriteByteMask(REG_1E28, BIT0, BIT0);
+                  msWriteByteMask(REG_1E29, BIT0, BIT0);
+                  msWriteByteMask(REG_1E2A, BIT0, BIT0);
+                  msWriteByteMask(REG_1E2B, BIT0, BIT0);
+                  msWriteByteMask(REG_1E2C, BIT0, BIT0);
+                  msWriteByteMask(REG_1E35, BIT0, BIT0);
+                  msWriteByteMask(REG_1E36, BIT0, BIT0);
+                  msWriteByteMask(REG_1E37, BIT0, BIT0);
+                  msWriteByteMask(REG_1E3B, BIT6, BIT6);
+                  msWriteByteMask(REG_1E3E, BIT0, BIT0);
+                  msWriteByteMask(REG_1E3F, BIT0, BIT0);
+                  msWriteByteMask(REG_1E40, BIT4|BIT0, BIT4|BIT0);
+                  msWriteByteMask(REG_1E41, BIT0, BIT0);
+                  msWriteByteMask(REG_1E44, BIT0, BIT0);
+                  msWriteByteMask(REG_1E45, BIT6, BIT6);
+                  msWriteByteMask(REG_1E46, BIT4|BIT0, BIT4|BIT0);
+                  msWriteByteMask(REG_1E47, BIT4|BIT0, BIT4|BIT0);
+                  //dont remove this setting , Garstin need setting  !!
+                  //crc collection of all the PM enable setting , if crc wrong , auto reset MCU w/o event trigger!!
+                  msWriteBit(REG_0381, TRUE, _BIT7);   //crc function disable
+              #elif (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD) /*||CHIP_ID == CHIP_TSUMJ  *
+             -/
+                  //Audio
+              
+              
+              
+                  //HPLL power on
+                  msWriteByteMask( REG_1707, BIT0, BIT0 );
+                  msWriteByteMask( REG_1783, BIT0, BIT0 );
+                  //LPLL
+                  msWriteByteMask( REG_3806, BIT5, BIT5);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 18  
+
+                  //MPLL
+                  msWriteByteMask(REG_1EDC, BIT4|BIT5, BIT4|BIT5);
+                  //DPLL
+              
+                  //DDR ATOP
+                  msWrite2Byte(REG_1206,0x3420); //cke always on
+                  msWrite2Byte(REG_1246,0xFFFE);
+                  ForceDelay1ms(1);
+                  msWrite2Byte(REG_1218,0x0400);
+                  msWrite2Byte(REG_1200,0x002F);//off auto refresh
+                  msWrite2Byte(REG_1200,0x052E);//triggle precharge all
+                  msWrite2Byte(REG_1200,0x002E);
+                  msWrite2Byte(REG_1200,0x032E);//triggle refresh
+                  msWrite2Byte(REG_1200,0x002E);//cke always on
+                  ForceDelay1ms(1);
+                  msWrite2Byte(REG_1246,0xFFFF);
+                  msWrite2Byte(REG_1200,0x202E);//self refresh on
+                  msWriteByteMask(REG_1100, BIT5|BIT4|BIT3, BIT5|BIT4|BIT3);
+              #if CHIP_ID == CHIP_TSUMD
+                  msWriteByteMask(REG_1101, BIT7, BIT7);
+                  msWriteByteMask(REG_1108, 0, 0x3F);
+                  msWriteByteMask(REG_110E, 0, BIT0);
+              #endif
+                  msWriteByteMask(REG_1133, BIT7, BIT7);
+              
+              #if CHIP_ID == CHIP_TSUMD
+                  //ldo ddr
+                  msWriteByteMask(REG_1E02, 0, BIT3);
+              #endif
+                  //ClK Gen
+                  msWriteByteMask(REG_1E24, BIT4|BIT0, BIT4|BIT0);
+                  msWriteByteMask(REG_1E25, BIT2, BIT2);
+              #if CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK 
+                  msWriteByteMask(REG_1E26, BIT4|BIT0, BIT4|BIT0);
+              #endif
+                  msWriteByteMask(REG_1E28, BIT0, BIT0);
+              #if CHIP_ID == CHIP_TSUMD
+                  msWriteByteMask(REG_1E2A, BIT0, BIT0);
+              #endif
+                  msWriteByteMask(REG_1E35, BIT0, BIT0);
+                  msWriteByteMask(REG_1E37, BIT2|BIT0, BIT2|BIT0);
+                  msWriteByteMask(REG_1E3E, BIT0, BIT0);
+                  msWriteByteMask(REG_1E40, BIT4|BIT0, BIT4|BIT0);
+                  msWriteByteMask(REG_1E46, BIT0, BIT0);
+                  msWriteByteMask(REG_1E47, BIT0, BIT0);
+                  //audio CLK Gen
+                  msWriteByteMask(REG_2C07, 0x00, 0xFF);
+              #elif (CHIP_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+1072   1      
+1073   1      
+1074   1      
+1075   1          //>>>ADC---------------------------------------------------------------------------------
+1076   1          if( sPMInfo.sPMConfig.bHVSync_enable || sPMInfo.sPMConfig.bSOG_enable )
+1077   1          {
+1078   2              msWriteByteMask(REG_2509, 0xFF&(~(BIT7|BIT2|BIT1))  , 0xFF);
+1079   2              msWriteByteMask(REG_2508, 0xFF&(~(BIT2|BIT1))           , 0xFF);
+1080   2              msWriteByteMask(REG_2560, 0x00                      , BIT0);
+1081   2              msWriteByteMask(REG_250C, 0xFF                      , 0xFF);
+1082   2              msWriteByteMask(REG_250D, 0xFF                      , 0xFF);
+1083   2      #if _NEW_SOG_DET_
+1084   2              msWrite2ByteMask(REG_25F0, 0x0002                   , 0xFFFF);
+1085   2              msWrite2ByteMask(REG_25F2, 0x00C8                   , 0xFFFF);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 19  
+
+1086   2              msWriteByteMask(REG_25F4, 0x04                      , 0x0E);
+1087   2      #endif
+1088   2          }
+1089   1          else
+1090   1          {
+1091   2              msWriteByteMask(REG_2509, 0xFF  , 0xFF);
+1092   2              msWriteByteMask(REG_2508, 0xFF  , 0xFF);
+1093   2              msWriteByteMask(REG_2560, BIT0  , BIT0);
+1094   2              msWriteByteMask(REG_250C, 0xFF  , 0xFF);
+1095   2              msWriteByteMask(REG_250D, 0xFF  , 0xFF);
+1096   2      #if _NEW_SOG_DET_
+1097   2              msWrite2ByteMask(REG_25F0, 0x000    , 0xFFFF);
+1098   2              msWrite2ByteMask(REG_25F2, 0x000    , 0xFFFF);
+1099   2              msWriteByteMask(REG_25F4, 0x00  , 0x0E);
+1100   2      #endif
+1101   2          }
+1102   1          //<<<ADC---------------------------------------------------------------------------------
+1103   1      /*  //>>>DVI ATOP---------------------------------------------------------------------------------
+1104   1          //confirming with RD Ocasi
+1105   1          #if( PM_SUPPORT_WAKEUP_DVI )
+1106   1          if( sPMInfo.sPMConfig.bDVI_enable)
+1107   1          {
+1108   1              msWriteByteMask(REG_01C2,BIT5 ,BIT6|BIT5);
+1109   1              msWriteByteMask(REG_01C3,0x00 ,BIT7|BIT5|BIT4);
+1110   1              msWriteByteMask(REG_01CD,0x00 ,BIT0);
+1111   1              msWriteByteMask(REG_01CC,0x00 ,BIT2|BIT1|BIT0);
+1112   1              msWriteByteMask(REG_01CE, BIT3 ,BIT3|BIT2|BIT1|BIT0);    //diff
+1113   1              msWriteByteMask(REG_17BE, BIT0 ,BIT0);
+1114   1              msWriteByteMask(REG_17C0, 0xA7 ,BIT7|BIT5|BIT2|BIT1|BIT0);   //diff
+1115   1              msWriteByteMask(REG_17C1, 0x3F ,BIT5|BIT4|BIT3|BIT2|BIT1|BIT0);
+1116   1          }
+1117   1          else
+1118   1          #endif
+1119   1          {
+1120   1              msWriteByteMask(REG_01C2,0x00 ,BIT6|BIT5);
+1121   1              msWriteByteMask(REG_01C3,0x0B ,BIT7|BIT5|BIT4);
+1122   1              msWriteByteMask(REG_01CD,0x00 ,BIT0);
+1123   1              msWriteByteMask(REG_01CC,0x00 ,BIT2|BIT1|BIT0);
+1124   1              msWriteByteMask(REG_01CE, 0x0F ,BIT3|BIT2|BIT1|BIT0);     //Diff
+1125   1              msWriteByteMask(REG_17BE, BIT0 ,BIT0);
+1126   1              msWriteByteMask(REG_17C0, 0xA7 ,BIT7|BIT5|BIT2|BIT1|BIT0);    //Diff
+1127   1              msWriteByteMask(REG_17C1, 0x3F ,BIT5|BIT4|BIT3|BIT2|BIT1|BIT0);
+1128   1          }
+1129   1      */  //<<<DVI---------------------------------------------------------------------------------
+1130   1          //>>>MOD ATOP---------------------------------------------------------------------------------
+1131   1          //msWriteByteMask(REG_30F0, BIT0, BIT0);
+1132   1          //msWriteByteMask(REG_30EE, 0x00, BIT2|BIT1|BIT0);
+1133   1          //msWriteByteMask(REG_30DA, 0x00, 0xFF);
+1134   1          #if CHIP_ID==CHIP_TSUMJ
+                  msWrite2ByteMask(REG_308C, 0x00, 0xFFFF);
+                  msWriteByteMask(REG_308E, 0x00, 0x1F);
+                  #endif
+1138   1          msWriteByteMask(REG_308A,  BIT5|BIT4, BIT5|BIT4);
+1139   1          //<<<MOD ATOP---------------------------------------------------------------------------------
+1140   1          //>>>KeyPad SAR---------------------------------------------------------------------------------
+1141   1          msWriteByteMask(REG_3A60,0x00, BIT6);       //[6]SAR_PD
+1142   1          //<<<KeyPad SAR---------------------------------------------------------------------------------
+1143   1      //#if 1
+1144   1      
+1145   1          //>>>MPLL_PD---------------------------------------------------------------------------------
+1146   1          //msWriteByteMask(REG_1ED1,BIT0, BIT0);             // [4]: MPLL power DOWN   //move to msPM_SetPMCloc
+             -k()
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 20  
+
+1147   1          msWriteByteMask(REG_1EDC, BIT5|BIT4, BIT5|BIT4);                //[5][4]:Power Down MPLL 216/432
+1148   1          //<<<MPLL_PD---------------------------------------------------------------------------------
+1149   1          //>>>Clock Gen---------------------------------------------------------------------------------
+1150   1          msWriteByteMask(REG_1E24,BIT0, BIT0);
+1151   1          msWriteByteMask(REG_1E3E,BIT0, BIT0);
+1152   1          msWriteByteMask(REG_1E35,BIT0, BIT0);
+1153   1          msWriteByteMask(REG_1E37,BIT2|BIT0, BIT2|BIT0);
+1154   1          msWriteByteMask(REG_1E47,BIT0, BIT0);
+1155   1          msWriteByteMask(REG_1E25,BIT2, BIT2);
+1156   1      
+1157   1          msWriteByteMask(REG_1E28,BIT0, BIT0);
+1158   1          msWriteByteMask(REG_1E46,BIT0, BIT0);
+1159   1          msWriteByteMask(REG_1E24,BIT4, BIT4);
+1160   1      #if (CHIP_ID == CHIP_TSUMJ)
+                  msWriteByteMask(REG_1E40,BIT4|BIT0, BIT4|BIT0); // LED
+                  msWriteByteMask(REG_1E2A,BIT0, BIT0);
+              #endif
+1164   1      #if (CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+1165   1      #if ENABLE_DP_INPUT
+                  DPRxOutputEnable( FALSE );
+              #endif
+1168   1          msWriteByteMask(REG_1ECA, 0x1F, 0x1F);  // osc432m power down
+1169   1      #endif
+1170   1      //  #endif
+1171   1          //<<<Clock Gen---------------------------------------------------------------------------------
+1172   1      #else
+              
+                  #if PM_SUPPORT_SOG_TIME_SHARE
+                      msWriteByteMask(REG_2509, 0xFF, ~BIT7);
+                      msWriteByte(REG_2508, 0xFF);    //Power down ADC_vref /vref/adc_rgb/phase_digitizer/adc_pll/dpl_bg
+                  #else
+                      msWriteByteMask(REG_2509, 0xFF, ~(BIT7|BIT2|BIT1)); //dont power down SOG main/DAC
+                      msWriteByteMask(REG_2508, 0xFF, ~BIT1);             //dont power down band gap
+                  #endif
+                  if( sPMInfo.sPMConfig.bHVSync_enable || sPMInfo.sPMConfig.bSOG_enable )
+                      msWriteByteMask(REG_2508, 0x00, BIT1);
+                  if( !sPMInfo.sPMConfig.bSOG_enable )
+                      msWriteByteMask(REG_2560, BIT0, BIT0);
+                  else
+                  {
+                      msWriteByteMask(REG_2560, 0x00, BIT0);
+                      msWriteByteMask(REG_2509, 0x00, BIT1|BIT2);
+                  }
+                  //DVI
+                  msWriteByteMask(REG_29C0, 0xFF, ~BIT3);
+                  msWriteByteMask(REG_29C1, 0xFF, ~(BIT5|BIT6));
+              
+                      msWriteByteMask(REG_29FE, 0xFF, ~(BIT7|BIT6));
+              #if CHIP_ID == CHIP_TSUMV && ! (USE_MOD_HW_CAL)
+                      msWriteByteMask(REG_306C, 0, BIT6);
+              #endif
+                      msWriteByteMask(REG_306B, BIT2, BIT2);  //Power Down MOD IGEN
+              
+                      //ClK Gen
+                      msWriteByteMask(REG_1E24,BIT0, BIT0);//[0]clk_osd_gate_l
+                      msWriteByteMask(REG_1E35,BIT0, BIT0);//[0]clk_fclk_gate
+              #if CHIP_ID!=CHIP_TSUMV
+                      msWriteByteMask(REG_1E36,BIT0, BIT0);//[0]clk_mod_gate
+              #endif
+                      msWriteByteMask(REG_1E37,BIT0, BIT0);//[0]clk_odclk1_I_gate
+              #if CHIP_ID!=CHIP_TSUMV
+                      msWriteByteMask(REG_1E3B,BIT6, BIT6);//[7]clk_miu_rec_gate
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 21  
+
+              #endif
+                      msWriteByteMask(REG_1E3E,BIT0, BIT0);//[0]clk_idclk_i_gate
+                      msWriteByteMask(REG_1E3F,BIT0, BIT0);//[0]clk_hspclk_gate
+              #if CHIP_ID!=CHIP_TSUMV
+                      msWriteByteMask(REG_1E41,BIT0, BIT0);//[0]clk_led_gate
+                      msWriteByteMask(REG_1E45,BIT6, BIT6);//[6]clk_patgen_bias_gate
+              #endif
+                      msWriteByteMask(REG_1E47,BIT0, BIT0);//[0]clk_sysclk_ip_ga
+              
+               #if CHIP_ID == CHIP_TSUMY
+                  msWriteByteMask(REG_1E40, _BIT0, _BIT0);    //LED clock gating
+                  msWriteByteMask(REG_0A60, _BIT6, _BIT6);    //LED SAR power down
+                  msWrite2Byte(REG_0A80, 0x0000);          //Dimming PWM Disable
+                  msWriteByteMask(REG_0A87, 0, _BIT7);        //Boost clock  Disable
+                  msWriteByteMask(REG_0A95, 0, _BIT7);         //Boost PWM  Disable
+                  msWriteByteMask(REG_0AE1, 0, _BIT7|_BIT6);   //Bias current and External resistor Disable
+                  msWriteByteMask(REG_0A65, 0, _BIT6);            //Over temperature protectioni Disable
+              #endif
+              
+              #if ( CHIP_ID == CHIP_TSUMB ) // 111216 coding, trunk
+                  msWriteByteMask(REG_1E25,BIT2, BIT2);               //[2]ckg_mclk_gate
+                  msWriteByteMask(REG_1E28,BIT4|BIT0, BIT4|BIT0);   //[0]CLK_MEMPLL_gate [4]clk_led216_gate
+              #endif
+              
+              #endif
+1234   1      
+1235   1      }
+1236          //**************************************************************************
+1237          //  [Function Name]:
+1238          //                  msPM_PowerUpMacro()
+1239          //  [Description]
+1240          //                  msPM_PowerUpMacro
+1241          //  [Arguments]:
+1242          //
+1243          //  [Return]:
+1244          //
+1245          //**************************************************************************
+1246          void msPM_PowerUpMacro(void)
+1247          {
+1248   1      #if CHIP_ID==CHIP_TSUMU
+              #ifndef FPGA
+              #if (FRAME_BFF_SEL == FRAME_BUFFER)
+                  BYTE ucDDR3InitCount;
+                  BOOL bDDR3InitState = FALSE;
+              #endif
+              #endif
+                  // PRINT_MSG("Enter msPM_PowerUpMacro");
+                  //ADC
+                  msWriteByte(REG_2508, 0x00);    //Power down ADC_vref /vref/adc_rgb/phase_digitizer/adc_pll/dpl_bg
+                  msWriteByteMask(REG_2509, 0x00, ~BIT7);
+                  msWriteByteMask(REG_2560, 0x00, BIT0);
+                  msWriteByteMask(REG_03E9, 0x00, BIT7);
+                  //DVI
+                  msWriteByteMask(REG_29C0, 0x00, ~BIT3);
+                  msWriteByteMask(REG_29C1, 0x00, ~(BIT5|BIT6));
+                  msWriteByteMask(REG_29D2, 0x00, ~BIT3);
+                  msWriteByteMask(REG_29D3, 0x00, ~(BIT4|BIT5|BIT6));
+                  //MOD ATOP
+              
+                  msWriteByte(REG_3200, 0x00); // sub bank 0
+              #if 0  //For dc on  Panel power sequence
+                  msWriteByteMask(REG_3250, 0x00, 0x1F);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 22  
+
+                  msWriteByteMask(REG_3264, 0xFF, 0x1F);
+                  msWriteByteMask(REG_3265, 0x00, BIT2|BIT6);
+                  msWriteByteMask(REG_3250, 0x00, 0x3F);
+              #else
+                  msWriteByteMask(REG_3265, 0x00, BIT2|BIT6);
+                  msWriteByteMask(REG_3250, 0x00, 0x30);
+              #endif
+                      //DPRX
+              #if ENABLE_DP_INPUT
+              
+              
+                  msWriteByteMask(REG_1FE3, BIT7, BIT7);//Temp for DP wake up issue
+                  msWriteByte(REG_356C, 0x00);
+                  msWrite2Byte(REG_37E8, 0x0000);
+                  msWrite2Byte(REG_37EA, 0x0000);
+                  msWriteByte(REG_356D, 0x00);
+                  msWriteByteMask( REG_35E0, BIT2, BIT2 );
+                  msWriteByteMask( REG_35E1, BIT2 | BIT3 | BIT6, BIT2 | BIT3 | BIT6 ); //if turn off, DP can't wake up
+                  msWriteByte( REG_3580, 0x00 );
+                  msWriteByteMask( REG_35FA, 0xC0, 0xC0 );
+                  //dprx Audio AUPLL
+                  msWriteByteMask(REG_35B3, 0x00, BIT0);
+                  //dprx Video AUPLL
+                  msWriteByteMask(REG_35D1, 0x00, BIT0);
+              
+              #endif
+                  //Audio
+                  msWrite2Byte(REG_2C60, 0x2727);
+                  msWrite2Byte(REG_2C62, 0x2F06);
+                  msWrite2Byte(REG_2C64, 0x1800);
+                  msWrite2Byte(REG_2C66, 0x0000);
+                  msWrite2Byte(REG_2C68, ((0x0A<<8)|(msReadByte(REG_2C68)&0x0B)));
+                  msWrite2Byte(REG_2C6A, 0x6406);
+                  msWrite2Byte(REG_2C6C, 0x0400);
+                  //HDMI PLL
+                  msWriteByteMask(REG_05B9, 0x00, BIT0);
+                  //AU PLL
+                  msWriteByteMask(REG_05F0, 0x00, BIT3);
+                  //MOD LPLL
+                  msWriteByteMask(REG_3881, 0x00, BIT0);
+                  //SCALAR LPLL
+                  msWriteByteMask(REG_38A3, 0x00, BIT7);
+                  //MPLL
+                  //msWriteByteMask(REG_1ED1, 0x00, BIT0);
+                  msWriteByteMask(REG_1EDC, 0x00, BIT4|BIT5);
+                  //DDR ATOP
+                  msWriteByteMask(REG_1154, 0x00, BIT4);
+                  msWriteByteMask(REG_1160, 0x00, BIT1);
+                  msWriteByteMask(REG_1133, 0x00, BIT7);
+                  //SDR
+                  msWriteByteMask(REG_1205, BIT2, BIT2);
+                  //ClK Gen
+                  msWriteByteMask(REG_1E24, 0x00, BIT0);
+                  msWriteByteMask(REG_1E25, 0x00, BIT2);
+                  msWriteByteMask(REG_1E26, 0x00, BIT4|BIT0);
+                  msWriteByteMask(REG_1E27, 0x00, BIT4);
+                  msWriteByteMask(REG_1E28, 0x00, BIT0);
+                  msWriteByteMask(REG_1E29, 0x00, BIT0);
+                  msWriteByteMask(REG_1E2A, 0x00, BIT0);
+                  msWriteByteMask(REG_1E2B, 0x00, BIT0);
+                  msWriteByteMask(REG_1E2C, 0x00, BIT0);
+                  msWriteByteMask(REG_1E35, 0x00, BIT0);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 23  
+
+                  msWriteByteMask(REG_1E36, 0x00, BIT0);
+                  msWriteByteMask(REG_1E37, 0x00, BIT0);
+                  msWriteByteMask(REG_1E3B, 0x00, BIT6);
+                  msWriteByteMask(REG_1E3E, 0x00, BIT0);
+                  msWriteByteMask(REG_1E3F, 0x00, BIT0);
+                  msWriteByteMask(REG_1E40, 0x00, BIT4|BIT0);
+                  msWriteByteMask(REG_1E41, 0x00, BIT0);
+                  msWriteByteMask(REG_1E44, 0x00, BIT0);
+                  msWriteByteMask(REG_1E45, 0x00, BIT6);
+                  msWriteByteMask(REG_1E46, 0x00, BIT4|BIT0);
+                  msWriteByteMask(REG_1E47, 0x00, BIT4|BIT0);
+              
+                  //110316 The image has garbage issue after Leave PM mode.
+              
+                  msWrite2Byte(REG_3220, 0x5555); // TTL
+                  msWrite2Byte(REG_3222, 0x5555);
+                  msWrite2Byte(REG_3224, 0x5555);
+                mcuSetSystemSpeed(SPEED_NORMAL_MODE); // add for MST9570S 8757T
+                
+              #ifndef FPGA
+              #if (FRAME_BFF_SEL == FRAME_BUFFER)
+                  msWriteByte( REG_1133, 0x00 );
+              #if !PANEL_3D_PASSIVE_4M
+                  msWriteByte( REG_1205, 0x00 );
+              #endif
+                  msWriteByte( REG_1100, 0x01 );  //miu_0_atop  start
+                  msWriteByte( REG_1108, 0x3F );
+                  msWriteByte( REG_110E, 0xE5 );
+                  msWriteByte( REG_1154, 0x00 );
+                  msWriteByte( REG_1160, 0x70 );
+                  msWriteByte( REG_110E, 0xA5 );  // 2/2 reg_en_mask clr bit6 eg_dqsm_rst_sel
+              
+                  //Initial MIU
+                  Delay1ms( 1 );                          //delay 1ms
+                  msWriteByteMask( REG_121E, 0x01, 0x01 );
+                  msWriteByteMask( REG_121E, 0x00, 0x01 );
+                  Delay1ms( 1 );                          //delay 200us
+                  msWriteByteMask( REG_1200, 0x10, 0x10 );
+                  Delay1ms( 1 );                          //delay 500us
+                  msWriteByteMask( REG_1200, 0x08, 0x08 );
+                  Delay1ms( 1 );                          //delay 500us
+                  msWriteByteMask( REG_1200, 0x04, 0x04 );
+                  Delay1ms( 1 );                          //delay 500us
+                  msWriteByteMask( REG_1200, 0x02, 0x02 );
+                  Delay1ms( 1 );                          //delay 1us
+                  msWriteByteMask( REG_1200, 0x01, 0x01 );
+              
+                  //BIST
+                  ucDDR3InitCount = 1;
+                  while(!bDDR3InitState)
+                  {
+                      if(msMemoryBist())
+                          bDDR3InitState=TRUE;
+              
+                      if(ucDDR3InitCount++>=30)
+                      if(!bDDR3InitState)
+                          bDDR3InitState = TRUE;
+                  }
+              #elif ((FRAME_BFF_SEL == FRAME_BFFLESS)&&ENABLE_RTE)
+                msInitMemory();
+              #endif
+              #endif
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 24  
+
+              #elif (CHIP_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)  //follow power down list to u
+             -pdate it
+1396   1          //>>>ADC---------------------------------------------------------------------------------
+1397   1          msWriteByteMask(REG_2509, 0x00  , 0xFF);
+1398   1          msWriteByteMask(REG_2508, 0x00  , 0xFF);
+1399   1          msWriteByteMask(REG_2560, 0x00  , BIT0);
+1400   1          msWriteByteMask(REG_01E9, 0x00  , BIT7);
+1401   1          msWriteByteMask(REG_250C, 0x00 , 0xFF);
+1402   1          msWriteByteMask(REG_250D, 0x00  , 0xFF);
+1403   1      #if _NEW_SOG_DET_
+1404   1          msWrite2ByteMask(REG_25F0, 0x0002       , 0xFFFF);
+1405   1          msWrite2ByteMask(REG_25F2, 0x00C8       , 0xFFFF);
+1406   1          msWriteByteMask(REG_25F4, 0x04  , 0x0E);
+1407   1      #endif
+1408   1          //<<<ADC---------------------------------------------------------------------------------
+1409   1      /*      //>>>DVI ATOP---------------------------------------------------------------------------------
+1410   1          msWriteByteMask(REG_01C2,BIT5,BIT6|BIT5);
+1411   1          msWriteByteMask(REG_01C3,0x00 ,BIT7|BIT5|BIT4);
+1412   1          msWriteByteMask(REG_01CD,0x00 ,BIT0);
+1413   1          msWriteByteMask(REG_01CC,0x00 ,BIT2|BIT1|BIT0);
+1414   1          msWriteByteMask(REG_01CE,0x00 ,BIT3|BIT2|BIT1|BIT0);      //Diff
+1415   1          msWriteByteMask(REG_17BE, 0x00 ,BIT0);
+1416   1          msWriteByteMask(REG_17C0, 0x00 ,BIT7|BIT5|BIT2|BIT1|BIT0);    //Diff
+1417   1          msWriteByteMask(REG_17C1, 0x00 ,BIT5|BIT4|BIT3|BIT2|BIT1|BIT0);
+1418   1      */      //<<<DVI---------------------------------------------------------------------------------
+1419   1          //>>>MOD ATOP---------------------------------------------------------------------------------
+1420   1          //msWriteByteMask(REG_30F0, 0x00, BIT0);
+1421   1          //msWriteByteMask(REG_30EE, BIT2|BIT1|BIT0, BIT2|BIT1|BIT0);
+1422   1          //msWriteByteMask(REG_30DA, 0xFF, 0xFF);
+1423   1          #if CHIP_ID==CHIP_TSUMJ
+                  msWrite2ByteMask(REG_308C, 0xFFFF, 0xFFFF);
+                  msWriteByteMask(REG_308E, 0xFF, 0x1F);
+                  #endif
+1427   1          msWriteByteMask(REG_308A,  0x00, BIT5|BIT4);
+1428   1          //<<<MOD ATOP---------------------------------------------------------------------------------
+1429   1          //>>>KeyPad SAR---------------------------------------------------------------------------------
+1430   1          msWriteByteMask(REG_3A60,0x00, BIT6);       //[6]SAR_PD
+1431   1          //<<<KeyPad SAR---------------------------------------------------------------------------------
+1432   1          //>>>MPLL_PD---------------------------------------------------------------------------------
+1433   1          //#if 1
+1434   1          //msWriteByteMask(REG_1ED1,BIT0, BIT0);             // [4]: MPLL power DOWN   //move to msPM_SetPMCloc
+             -k()
+1435   1          msWriteByteMask(REG_1EDC, 0x00, BIT5|BIT4);             //[5][4]:Power Down MPLL 216/432
+1436   1          //<<<MPLL_PD---------------------------------------------------------------------------------
+1437   1          //>>>Clock Gen---------------------------------------------------------------------------------
+1438   1          msWriteByteMask(REG_1E24,0x00, BIT0);
+1439   1          msWriteByteMask(REG_1E3E,0x00, BIT0);
+1440   1          msWriteByteMask(REG_1E35,0x00, BIT0);
+1441   1          msWriteByteMask(REG_1E37,0x00, BIT2|BIT0);
+1442   1          msWriteByteMask(REG_1E47,0x00, BIT0);
+1443   1          msWriteByteMask(REG_1E25,0x00, BIT2);
+1444   1          msWriteByteMask(REG_1E28,0x00, BIT0);
+1445   1          msWriteByteMask(REG_1E46,0x00, BIT0);
+1446   1          msWriteByteMask(REG_1E24,0x00, BIT4);
+1447   1      #if (CHIP_ID == CHIP_TSUMJ)
+                  msWriteByteMask(REG_1E40,0x00, BIT4|BIT0); // LED
+                  msWriteByteMask(REG_1E2A,0x00, BIT0);
+              #endif
+1451   1          //#endif
+1452   1      #if (CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+1453   1      #if ENABLE_DP_INPUT
+                  DPRxOutputEnable( TRUE );
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 25  
+
+              #endif
+1456   1          msWriteByteMask(REG_1ECA, 0x00, 0x1F);  // osc432m power up
+1457   1      #endif
+1458   1          //<<<Clock Gen---------------------------------------------------------------------------------
+1459   1          MPLL_POWER_UP(_ENABLE);
+1460   1          mcuSetSystemSpeed(SPEED_NORMAL_MODE);
+1461   1          mStar_Init();  // remove it to speed up powering on time????
+1462   1      #else//endMST8556
+              
+                  //ADC
+                  msWriteByte(REG_2508, 0x00);    //Power down ADC_vref /vref/adc_rgb/phase_digitizer/adc_pll/dpl_bg
+                  msWriteByteMask(REG_2509, 0x00, ~BIT7);
+                  msWriteByteMask(REG_2560, 0x00, BIT0);
+                  msWriteByteMask(REG_03E9, 0x00, BIT7);
+                  //DVI
+                  msWriteByteMask(REG_29C0, 0x00, ~BIT3);
+                  msWriteByteMask(REG_29C1, 0x00, ~(BIT5|BIT6));
+                  msWriteByteMask(REG_29FE, 0x00, ~(BIT7|BIT6));      //111011 Rick add power up condition - C_FOS_018
+              #if CHIP_ID == CHIP_TSUMV && !(USE_MOD_HW_CAL)
+                  msWriteByteMask(REG_306C, BIT6, BIT6);
+              #endif
+                  msWriteByteMask(REG_306B, 0, BIT2);  //Disable Power Down MOD IGEN
+              
+                  //ClK Gen
+                  msWriteByteMask(REG_1E24,0x00, BIT0);//[0]clk_osd_gate_l
+                  msWriteByteMask(REG_1E35,0x00, BIT0);//[0]clk_fclk_gate
+              #if CHIP_ID!=CHIP_TSUMV
+                  msWriteByteMask(REG_1E36,0x00, BIT0);//[0]clk_mod_gate
+              #endif
+                  msWriteByteMask(REG_1E37,0x00, BIT2|BIT0);//[0]clk_odclk1_I_gate
+              #if CHIP_ID!=CHIP_TSUMV
+                      msWriteByteMask(REG_1E3B,0x00, BIT6);//[7]clk_miu_rec_gate
+              #endif
+                  msWriteByteMask(REG_1E3E,0x00, BIT0);//[0]clk_idclk_i_gate
+                  msWriteByteMask(REG_1E3F,0x00, BIT0);//[0]clk_hspclk_gate
+              #if CHIP_ID!=CHIP_TSUMV
+                  msWriteByteMask(REG_1E41,0x00, BIT0);//[0]clk_led_gate
+                  msWriteByteMask(REG_1E45,0x00, BIT6);//[6]clk_patgen_bias_gate
+              #endif
+                  msWriteByteMask(REG_1E47,0x00, BIT0);//[0]clk_sysclk_ip_gate
+              
+              #if CHIP_ID == CHIP_TSUMY
+                  msWriteByteMask(REG_1E40, 0x00  , BIT0);                //LED clock gating
+                  msWriteByteMask(REG_0A60, 0x00  , BIT6);                //LED SAR power On
+                  //msWriteWord(REG_0A81, 0xFFFF);                    //Dimming PWM enable,  select CH?
+                  //msWriteByteMask(REG_0A87, BIT7, BIT7);            //Boost clock  enable
+                  //msWriteByteMask(REG_0A95, BIT7, BIT7);            //Boost PWM  enable
+                  msWriteByteMask(REG_0AE1, BIT7|BIT6,BIT7|BIT6);     //Bias current and External resistor enable
+                  msWriteByteMask(REG_0A65, BIT6, BIT6);         //Over temperature protectioni enable
+              #endif
+              
+              #if ( CHIP_ID == CHIP_TSUMB ) // 111216 coding, trunk
+                  msWriteByteMask(REG_1E25,0x00, BIT2);               //[2]ckg_mclk_gate
+                  msWriteByteMask(REG_1E28,0x00, BIT4|BIT0);   //[0]CLK_MEMPLL_gate [4]clk_led216_gate
+                  msWriteByteMask( REG_1207, 0, BIT4 );   // ゴ秨笆篈筿家Α
+              #endif
+              
+                  MPLL_POWER_UP(_ENABLE);
+                  mcuSetSystemSpeed(SPEED_NORMAL_MODE);
+                  mStar_Init();
+              
+              #endif
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 26  
+
+1517   1      
+1518   1          DDC2Bi_Init();
+1519   1          msPM_InterruptEnable(TRUE);
+1520   1      }
+1521          //**************************************************************************
+1522          //  [Function Name]:
+1523          //                  msPM_MCCSReset()
+1524          //  [Description]
+1525          //                  msPM_MCCSReset
+1526          //  [Arguments]:
+1527          //
+1528          //  [Return]:
+1529          //
+1530          //**************************************************************************
+1531          void msPM_MCCSReset(void)
+1532          {
+1533   1      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD|| CHIP_ID == CHIP_TSUMJ || CHIP
+             -_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+1534   1          msWriteByte(REG_3EC0, 0xFF); // clear status of A0, D0
+1535   1          msWriteByte(REG_3EC0, 0x00);
+1536   1          msWriteByte(REG_3EEE, 0xFF); // clear status of D1, D2
+1537   1          msWriteByte(REG_3EEE, 0x00);
+1538   1      #else
+                  msWriteByteMask(REG_0381,BIT7,BIT7);  //PM wakeup status clear.
+                  msWriteByteMask( REG_3EC1, (BIT5|BIT1|BIT0), (BIT5|BIT1|BIT0) );    //Clear DDC2BI D6 Comamnd 04,05  f
+             -lag
+              #endif
+1542   1      }
+1543          
+1544          #if( PM_SUPPORT_AC2DC )
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msPM_EnableAC2DC()
+              //  [Description]
+              //                  msPM_EnableAC2DC
+              //  [Arguments]:
+              //
+              //  [Return]:
+              //
+              //**************************************************************************
+              void
+              msPM_EnableAC2DC(Bool bEnable)
+              {
+                  if(bEnable)   /*Turn On PM*/
+                  {
+                      msWriteByteMask(REG_PM_A8, 0x00, 0xF0);       /*AC2DC controler clock bypass*/
+                      msWriteByte(REG_PM_C0, AC2DC_MODE);     //AC2DC controler enable
+                      msWriteByte(REG_PM_C2, OFF_PERIOD);     //AC2DC Off period
+                      msWriteByte(REG_PM_C6, 0x88);       //AC detect voltage
+                      msWriteByte(REG_PM_C4, AC2DC_PAD);          //AC2DC pad function enable(GPIO2)
+                  }
+                  else /*Turn Off PM*/
+                  {
+                      msWriteByteMask(REG_PM_A8, 0xB0, 0xF0);       /*AC2DC controler clock bypass*/
+                      msWriteByte(REG_PM_C4, 0x00);           //AC2DC pad function disable(GPIO2)
+                      msWriteByte(REG_PM_C0, OFF_MODE);       //AC2DC controler disable
+                      msWriteByte(REG_PM_C2, 0x00);       /*Off period*/
+                      msWriteByte(REG_PM_C6, 0x00);
+                  }
+              }
+              #endif  // end of #if( PM_SUPPORT_AC2DC )
+1576          
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 27  
+
+1577          
+1578          //**************************************************************************
+1579          //  [Function Name]:
+1580          //                  msPM_GetPMStatus()
+1581          //  [Description]
+1582          //                  msPM_GetPMStatus
+1583          //  [Arguments]:
+1584          //
+1585          //  [Return]:
+1586          //
+1587          //**************************************************************************
+1588          #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK)
+              #define LOOP_CNT   10
+              BYTE Count =0;
+              #endif
+1592          Bool msPM_GetPMStatus(void)
+1593          {
+1594   1          BOOL bResault = FALSE;
+1595   1      
+1596   1          BYTE ucStatus_85;
+1597   1          BYTE ucStatus_86;
+1598   1          volatile WORD ucStatus_GPIO;
+1599   1       #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK)
+                      if(((++Count)%LOOP_CNT)==0)
+                      {
+                          ucComboSelect = (ucComboSelect + 1 ) % 3;
+              
+                          if(ucComboSelect == 0)
+                          {
+                               msWriteByteMask(REG_01C2, BIT5, BIT5 | BIT6 | BIT7);  // Turn on Port 0 Port Mux
+                          }
+                          else if(ucComboSelect == 1)
+                          {
+                               msWriteByteMask(REG_01C2, BIT6, BIT5 | BIT6 | BIT7);  // Turn on Port 1 Port Mux
+                          }
+                          else if(ucComboSelect == 2)
+                          {
+                               msWriteByteMask(REG_01C2, BIT7, BIT5 | BIT6 | BIT7);  // Turn on Port 2 Port Mux
+                          }
+                      }
+               #endif
+1618   1          ucWakeupStatus = ePMSTS_NON;
+1619   1      
+1620   1          ucStatus_85   = msReadByte(REG_EVENT1);
+1621   1          ucStatus_86   = msReadByte(REG_EVENT2);
+1622   1          ucStatus_GPIO = msRead2Byte( REG_PM_64 );
+1623   1      
+1624   1      #if PM_POWERkEY_GETVALUE
+1625   1          if(PowerKey==0)
+1626   1          {
+1627   2              KeypadButton = BTN_Nothing;                //110914 Rick add for enable OSDLock function while PM 
+             -On - A023
+1628   2              Key_ScanKeypad();
+1629   2              ucWakeupStatus =ePMSTS_POWERGPIO_ACT;
+1630   2              bResault = TRUE;
+1631   2              PM_printData("ePMSTS_POWERGPIO_ACT:%d", ePMSTS_POWERGPIO_ACT);
+1632   2          }
+1633   1          else
+1634   1      #endif
+1635   1          #if PM_CABLE_DETECT_USE_SAR
+                  if((abs(sPMInfo.bCABLE_SAR_VALUE-CABLE_DET_SAR)>5)&&(PowerOnFlag))
+                      {
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 28  
+
+                            ucWakeupStatus =ePMSTS_CABLESAR_ACT;
+                      bResault = TRUE;
+                      PM_printData("ePMSTS_CABLESAR_ACT:%d", ePMSTS_CABLESAR_ACT);
+                  }
+                  else
+                  #endif
+1644   1          if(ucStatus_85 & (HSYNC_DET_0|VSYNC_DET_0|SOG_DET_0|HV_DET_0))
+1645   1          {
+1646   2              ucWakeupStatus = ePMSTS_VGA_ACT;
+1647   2              SrcInputType = Input_Analog1;
+1648   2              bResault = TRUE;
+1649   2              PM_printData("ePMSTS_VGA_ACT:%d", ePMSTS_VGA_ACT);
+1650   2          }
+1651   1          #if  0
+              #if CHIP_ID==CHIP_TSUMU
+                  else if( ucStatus_GPIO & ( PMGPIO00_INT \
+                                            |PMGPIO01_INT \
+                                            |PMGPIO02_INT \
+                                            |PMGPIO03_INT \
+                                            |PMGPIO04_INT \
+                                            |PMGPIO05_INT \
+                                            |PMGPIO06_INT \
+                                            |PMGPIO07_INT \
+                                            |PMGPIO24_INT \
+                                            |PMGPIO25_INT \
+                                            |PMGPIO26_INT \
+                                            |PMGPIO27_INT ) )
+              #else
+                  else if( ucStatus_GPIO & (PMGPIO04_INT\
+                                  |GPIO22_INT\
+                                  | PMGPIO02_INT \
+                                  |PMGPIO06_INT\
+                                  |GPIO00_INT\
+                                  |GPIO11_INT\
+                                  |PMGPIO03_INT ) )
+              
+              #endif
+              #endif
+1676   1          else if( ucStatus_GPIO&EN_GPIO_DET_MASK)
+1677   1          {
+1678   2              ucWakeupStatus = ePMSTS_GPIO_ACT;
+1679   2              bResault = TRUE;
+1680   2              PM_printData("ePMSTS_GPIO_ACT:%d", ePMSTS_GPIO_ACT);
+1681   2          }
+1682   1          else
+1683   1          {
+1684   2      
+1685   2              if( ucStatus_86 & CEC_WAKEUP )
+1686   2              {
+1687   3                  ucWakeupStatus = ePMSTS_CEC_ACT;
+1688   3                  bResault = TRUE;
+1689   3              PM_printData("ePMSTS_CEC_ACT:%d", ePMSTS_CEC_ACT);
+1690   3              }
+1691   2              else if( ucStatus_86 & D2B_WAKEUP )
+1692   2              {
+1693   3                #if CHIP_ID == CHIP_TSUMV
+                          volatile BYTE VGA_mccsWakeUpStatus = msReadByte( REG_3EC4 );
+                          volatile BYTE DVI_mccsWakeUpStatus = msReadByte( REG_3EC5 );
+                          if( (VGA_mccsWakeUpStatus == 0x01) || (DVI_mccsWakeUpStatus == 0x01) )
+                              ucWakeupStatus = ePMSTS_MCCS01_ACT;
+                          else if( (VGA_mccsWakeUpStatus == 0x04) || (DVI_mccsWakeUpStatus == 0x04) )
+                              ucWakeupStatus = ePMSTS_MCCS04_ACT;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 29  
+
+                          else if( (VGA_mccsWakeUpStatus == 0x05) || (DVI_mccsWakeUpStatus == 0x05) )
+                              ucWakeupStatus = ePMSTS_MCCS05_ACT;
+                        #elif CHIP_ID == CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID == CHIP_TSUMD||CHIP_ID == CHIP_TSUMJ||
+             -CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF
+1703   3                  volatile BYTE mccsWakeUpStatus;
+1704   3                  if(msReadByte(REG_3EC2)&BIT2) // A0
+1705   3                      mccsWakeUpStatus = msReadByte( REG_3EC4 );
+1706   3                  else if(msReadByte(REG_3EC2)&BIT3) // D0
+1707   3                      mccsWakeUpStatus = msReadByte( REG_3EC5 );
+1708   3                  else if(msReadByte(REG_3EF0)&BIT2) // D1
+1709   3                      mccsWakeUpStatus = msReadByte( REG_3EF2 );
+1710   3                  else if(msReadByte(REG_3EF0)&BIT3) // D2
+1711   3                      mccsWakeUpStatus = msReadByte( REG_3EF3 );
+1712   3      
+1713   3                  if( mccsWakeUpStatus == 0x05 )
+1714   3                      ucWakeupStatus = ePMSTS_MCCS05_ACT;
+1715   3                  else if( mccsWakeUpStatus == 0x04 )
+1716   3                      ucWakeupStatus = ePMSTS_MCCS04_ACT;
+1717   3                  else
+1718   3                      ucWakeupStatus = ePMSTS_MCCS01_ACT;
+1719   3                #else
+                          volatile BYTE mccsWakeUpStatus = msReadByte( REG_3EC1 );
+                          if( mccsWakeUpStatus & BIT7 )
+                              ucWakeupStatus = ePMSTS_MCCS05_ACT;
+                          else if( mccsWakeUpStatus & BIT6 )
+                              ucWakeupStatus = ePMSTS_MCCS04_ACT;
+                          else
+                              ucWakeupStatus = ePMSTS_MCCS01_ACT;
+                        #endif
+1728   3                  bResault = TRUE;
+1729   3              PM_printData("D2B_WAKEUP:%d", ucWakeupStatus);
+1730   3              }
+1731   2      
+1732   2              else if( ucStatus_86 & SAR_IN_DET )
+1733   2              {
+1734   3                  ucWakeupStatus = ePMSTS_SAR_ACT;
+1735   3                  Set_SARwakeupFlag();
+1736   3                  bResault = TRUE;
+1737   3                  PM_printData("ePMSTS_SAR_ACT:%d", ePMSTS_SAR_ACT);
+1738   3             }
+1739   2              //================================================================================
+1740   2              //  Move DP wake up checking first before DVI, because DVI clock detected bit would report 1 when 
+             -DP plug in.
+1741   2              //================================================================================
+1742   2          #if ((CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) ||(CHIP_ID == CHIP_TSUMD))
+                  #if( PM_SUPPORT_WAKEUP_DP &&ENABLE_DP_INPUT)
+                   else if(
+                  #if DISABLE_AUTO_SWITCH
+                               sPMInfo.sPMConfig.bDP_enable && (((FIXED_PORT == Input_Displayport)&&(DP_GetSquelchPortB(
+             -1))&&((msReadByte( REG_06E3)&0x03)==0x01))||((FIXED_PORT == Input_Displayport3)&&(DP_GetSquelchPortC(1))&&((msReadByte( 
+             -REG_07E3)&0x03)==0x01)))
+                  #else
+                               sPMInfo.sPMConfig.bDP_enable && (((DP_GetSquelchPortB(1))&&((msReadByte( REG_06E3)&0x03)=
+             -=0x01))||((DP_GetSquelchPortC(1))&&((msReadByte( REG_07E3)&0x03)==0x01)))
+                  #endif
+                              )
+                      {      // Normal Trining Wake up
+                             ucWakeupStatus = ePMSTS_DP_ACT;
+                              if((msReadByte( REG_06E3)&0x03)==0x01)
+                                  SrcInputType = Input_Displayport;
+                              else
+                                  SrcInputType = Input_Displayport3;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 30  
+
+                                 bResault = TRUE;
+                          PM_printData("ePMSTS_DP_ACT NormalTraining:%d", ePMSTS_DP_ACT);
+                      }
+                      else if(
+                  #if DISABLE_AUTO_SWITCH
+                                  (FIXED_PORT == Input_Displayport) &&
+                  #endif
+                              ((DP_GetSquelchPortB(0x1FFF))&& sPMInfo.sPMConfig.bDP_enable))
+                      {      // fast Trining Wake up
+                          ucWakeupStatus = ePMSTS_DP_ACT;
+                          SrcInputType = Input_Displayport;
+                          bResault = TRUE;
+                          PM_printData("ePMSTS_DP_ACT FastTraining DP:%d", ePMSTS_DP_ACT);
+                      }
+                      else if(
+                  #if DISABLE_AUTO_SWITCH
+                                  (FIXED_PORT == Input_Displayport3) &&
+                  #endif
+                              ((DP_GetSquelchPortC(0x1FFF))&& sPMInfo.sPMConfig.bDP_enable))
+                      {
+                          ucWakeupStatus = ePMSTS_DP_ACT;
+                          SrcInputType = Input_Displayport3;
+                          bResault = TRUE;
+                          PM_printData("ePMSTS_DP_ACT FastTraining DP3:%d", ePMSTS_DP_ACT);
+                       }
+                 #endif
+                  #endif
+1784   2      
+1785   2      
+1786   2      
+1787   2          #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID==CHIP_TSUMF)
+1788   2          #if( PM_SUPPORT_WAKEUP_DP &&ENABLE_DP_INPUT)
+                   else if(
+                  //#if DISABLE_AUTO_SWITCH
+                   //            sPMInfo.sPMConfig.bDP_enable && (((FIXED_PORT == Input_Displayport)&&(DP_GetSquelchPort
+             -B(1))&&((msReadByte( REG_06E3)&0x03)==0x02)))
+                  //#else
+                               sPMInfo.sPMConfig.bDP_enable && (((DP_GetSquelchPortB(1))&&((msReadByte( REG_06E3)&0x03)=
+             -=0x02)))
+                  //#endif
+                              )
+                      {      // Normal Trining Wake up
+                                  ucWakeupStatus = ePMSTS_DP_ACT;
+                                  SrcInputType = Input_Displayport;
+                                 bResault = TRUE;
+                                 PM_printData("ePMSTS_DP_ACT NormalTraining:%d", ePMSTS_DP_ACT);
+                      }
+              
+                      else if(
+                  #if DISABLE_AUTO_SWITCH
+                                  (FIXED_PORT == Input_Displayport) &&
+                  #endif
+                              ((DP_GetSquelchPortB(0x1FFF))&& sPMInfo.sPMConfig.bDP_enable))
+                      {      // fast Trining Wake up
+                          ucWakeupStatus = ePMSTS_DP_ACT;
+                          SrcInputType = Input_Displayport;
+                          bResault = TRUE;
+                          PM_printData("ePMSTS_DP_ACT FastTraining DP:%d", ePMSTS_DP_ACT);
+                      }
+              
+                  #endif
+1816   2          #endif
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 31  
+
+1817   2      
+1818   2      
+1819   2      
+1820   2      #if( PM_SUPPORT_WAKEUP_DVI )
+1821   2              else if( ucStatus_86 & DVI_CLK_DET_0 )
+1822   2              {
+1823   3                  ucWakeupStatus = ePMSTS_DVI_0_ACT;
+1824   3                  bResault = TRUE;
+1825   3                  PM_printData("ePMSTS_DVI_0_ACT:%d", ePMSTS_DVI_0_ACT);
+1826   3              }
+1827   2              else if( ucStatus_86 & DVI_CLK_DET_1 )
+1828   2              {
+1829   3                  ucWakeupStatus = ePMSTS_DVI_1_ACT;
+1830   3                  bResault = TRUE;
+1831   3                  PM_printData("ePMSTS_DVI_1_ACT:%d", ePMSTS_DVI_1_ACT);
+1832   3              }
+1833   2      #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+1834   2      
+1835   2      
+1836   2      #if CHIP_ID == CHIP_TSUMU
+              #if( PM_SUPPORT_WAKEUP_DP &&ENABLE_DP_INPUT)
+                      else if( (g_bDPAUXVALID && sPMInfo.sPMConfig.bDP_enable ))//||(!(msRegs[REG_1FA5]&_BIT3)))
+                      {
+                          ucWakeupStatus = ePMSTS_DP_ACT;
+                          SrcInputType = Input_Displayport;
+                          bResault = TRUE;
+                      }
+                      if((!g_bDPAUXVALID) && sPMInfo.sPMConfig.bDP_enable && (msReadByte( REG_1FE0)&BIT4))
+                      {
+                          msWriteByteMask(REG_1FE0,0,BIT4);
+                      }
+              #endif
+              #endif
+1850   2      
+1851   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUMJ || CHI
+             -P_ID == CHIP_TSUM9 ||CHIP_ID==CHIP_TSUMF)
+1852   2      #if ENABLE_MHL
+                      if(sPMInfo.ucPMMode != ePM_POWEROFF)
+                      {
+                          BYTE tempport;
+                          if(mapi_mhl_WakeupDetect(TRUE, &tempport))
+                          {
+                              //if(tempport == Input_HDMI || tempport == Input_HDMI2)
+                              {
+                                  SrcInputType = tempport;
+                                  ucWakeupStatus = ePMSTS_MHL_ACT;
+                                  bResault = TRUE;
+                                  PM_printData("ePMSTS_MHL_ACT PowerSaving:%d", ePMSTS_MHL_ACT);
+                                  PM_printData("MHL wakeup port:%d", SrcInputType);
+                              }
+                          }
+                      }
+                      else
+                      {
+                          mapi_mhl_ChargePortDetect();
+                      }
+              #endif
+1873   2      #endif
+1874   2          }
+1875   1      
+1876   1          return  bResault;
+1877   1      }
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 32  
+
+1878          
+1879          //**************************************************************************
+1880          //  [Function Name]:
+1881          //                  msPM_SetPMClock()
+1882          //  [Description]
+1883          //                  msPM_SetPMClock
+1884          //  [Arguments]:
+1885          //
+1886          //  [Return]:
+1887          //
+1888          //**************************************************************************
+1889          void msPM_SetPMClock(BYTE clk_sel)
+1890          #if 1
+1891          {
+1892   1          if (clk_sel == RCOSC)
+1893   1          {
+1894   2              PM_printMsg(" \r\n***PM Clock =>RCOSC ");
+1895   2      
+1896   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUM9 ||CHIP
+             -_ID==CHIP_TSUMF)
+1897   2              mcuSetSystemSpeed(SPEED_12MHZ_MODE);
+1898   2      #else
+                      mcuSetSystemSpeed(SPEED_4MHZ_MODE);
+              #endif
+1901   2      
+1902   2              msPM_SetPMClockLive(CLK_LIVE_RCOSC_4M);     // mcu clk Live select ROSC
+1903   2      #if (CHIP_ID != CHIP_TSUMC && CHIP_ID!=CHIP_TSUMK && CHIP_ID != CHIP_TSUMD && CHIP_ID != CHIP_TSUMJ && CHI
+             -P_ID != CHIP_TSUM9&& CHIP_ID != CHIP_TSUMF)
+                      msWriteByteMask(REG_PM_8D, 0x00, 0xF0);     // pm CLK select RCOSC mux
+              #endif
+1906   2          }
+1907   1          else
+1908   1          {
+1909   2              PM_printMsg(" \r\n***PM Clock =>XTAL ");
+1910   2      #if 1
+1911   2              mcuSetSystemSpeed(SPEED_XTAL_MODE);
+1912   2      #else
+                      mcuSetSpiSpeed( IDX_SPI_CLK_XTAL );
+                      mcuSetMcuSpeed(IDX_MCU_CLK_XTAL) ;          // see function body for detail description
+              #endif
+1916   2      
+1917   2              msPM_SetPMClockLive(CLK_LIVE_XTAL);         // mcu clk Live select XTAL
+1918   2      #if (CHIP_ID != CHIP_TSUMC && CHIP_ID!=CHIP_TSUMK && CHIP_ID != CHIP_TSUMD && CHIP_ID != CHIP_TSUMJ && CHI
+             -P_ID != CHIP_TSUM9 && CHIP_ID != CHIP_TSUMF)
+                      msWriteByteMask(REG_PM_8D, 0x30, 0xF0);     // pm CLK select xtal
+              #endif
+1921   2          }
+1922   1          Delay1ms(1);
+1923   1          msWriteByteMask(REG_1ED1,_BIT4|_BIT0 , _BIT4|_BIT0);    // power down LPLL and MPLL
+1924   1          msWriteByteMask(SC0_F0, 0, BIT1|BIT0);
+1925   1          msWriteByte(SC0_F1, 0x01);
+1926   1          msWriteByte(SC0_F1, 0x00);
+1927   1          msWriteByteMask(SC0_F0, BIT4|BIT1|BIT0, BIT4|BIT1|BIT0);
+1928   1      }
+1929          #else
+              {
+              #if PM_CLOCK == RCOSC
+                  PM_printMsg(" \r\n***PM Clock =>RCOSC ");
+                  mcuSetSpiSpeed( SPI_CLK_4M );
+                  mcuSetMcuSpeed( MCU_CLK_4M );
+                  msWriteByteMask(REG_PM_8D, 0x00, 0xF0); // pm CLK select RCOSC mux
+                  msWriteByteMask(REG_03A6, 0, _BIT2);    // SW XTAL off
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 33  
+
+              #else
+                  PM_printMsg(" \r\n***PM Clock =>XTAL ");
+                  mcuSetSpiSpeed( SPI_CLK_XTAL );
+                  mcuSetMcuSpeed( MCU_CLK_XTAL );
+                  msWriteByteMask(REG_PM_8D, 0x00, 0xF0); // pm CLK select xtal
+                  msWriteByteMask(REG_PM_A5, 0xff, BIT2); //SET_PM_REG_FORCE_XTAL_ON();
+              #endif
+                  Delay1ms(1);
+                  msWriteByteMask(REG_1ED1,_BIT4|_BIT0 , _BIT4|_BIT0); // power down LPLL and MPLL
+                  msWriteByteMask(SC0_F0, 0, BIT1|BIT0);
+                  msWriteByte(SC0_F1, 0x01);
+                  msWriteByte(SC0_F1, 0x00);
+                  msWriteByteMask(SC0_F0, BIT4|BIT1|BIT0, BIT4|BIT1|BIT0);
+              }
+              #endif
+1952          
+1953          
+1954          //**************************************************************************
+1955          //  [Function Name]:
+1956          //                  msPM_ClearStatus()
+1957          //  [Description]
+1958          //                  msPM_ClearStatus
+1959          //  [Arguments]:
+1960          //
+1961          //  [Return]:
+1962          //
+1963          //**************************************************************************
+1964          void msPM_ClearStatus(Bool bResetPM)
+1965          {
+1966   1          msWriteBit(REG_PM_81, TRUE, BIT7);
+1967   1          msWriteBit(REG_PM_81, 0   , BIT7);
+1968   1           //*********************************************************
+1969   1          //Software reset PM //Sky110719                       _                             //
+1970   1          ////                                                                 | |                           //
+1971   1          //Some wake up event just report a pulse    ____| |___,                    //
+1972   1          //if wake up event keep happen after Wake up status Clear,              //
+1973   1          //wake up report register will not update status.                               //
+1974   1          //software reset can solve it                                                           //
+1975   1          //*********************************************************
+1976   1          if(bResetPM)
+1977   1              msWriteBit(REG_PM_83, TRUE, BIT1);
+1978   1      
+1979   1          msWriteBit(REG_PM_83, 0, BIT1);
+1980   1      }
+1981          
+1982          //**************************************************************************
+1983          //  [Function Name]:
+1984          //                  msPM_EnableDPDetect(BOOL bEnable)
+1985          //  [Description]
+1986          //                  Enable DP detect
+1987          //  [Arguments]:
+1988          //
+1989          //  [Return]:
+1990          //
+1991          //**************************************************************************
+1992          
+1993          void msPM_EnableDPDetect(BOOL bEnable)//if not enable can reduce 10mA
+1994          {
+1995   1      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD)
+                  if(bEnable)
+                   {
+              #if DISABLE_AUTO_SWITCH
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 34  
+
+                      if(FIXED_PORT == Input_Displayport)
+                      {
+                          ComboInputControl(COMBO_INPUT_DIGITAL_B);
+                      }
+                      else if(FIXED_PORT == Input_Displayport3)
+                      {
+                          ComboInputControl(COMBO_INPUT_DIGITAL_C);
+                      }
+              #endif
+                    }
+              #else
+2010   1          if(bEnable)
+2011   1          {
+2012   2               msWriteByteMask(REG_356D, 0, BIT1);//Disable Power down CDR center bias gen
+2013   2          }
+2014   1          else
+2015   1          {
+2016   2               msWriteByteMask(REG_356D, BIT1, BIT1);//Power down CDR center bias gen
+2017   2          }
+2018   1      #endif
+2019   1      }
+2020          
+2021          //**************************************************************************
+2022          //  [Function Name]:
+2023          //                  msPM_XtalEnable()
+2024          //  [Description]
+2025          //                  In TSUM9 the register for SW enable XTAL has been changed
+2026          //                  to PM_B2[4:0] and need password to overwrite.
+2027          //  [Arguments]:
+2028          //
+2029          //  [Return]:
+2030          //
+2031          //**************************************************************************
+2032          #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID==CHIP_TSUMF)
+2033          static void msPM_XtalEnable(BOOL bEn)
+2034          {
+2035   1          if (!ENABLE_XTAL_LESS)
+2036   1          {
+2037   2              msWrite2Byte(REG_PM_B0, 0x5566);    // unlock system configuration protection
+2038   2      
+2039   2              if (bEn)
+2040   2              {
+2041   3                  msWriteByteMask(REG_PM_B2, 0x1F, 0x1F);     // enable XTAL
+2042   3                  ForceDelay1ms(2);
+2043   3              }
+2044   2              else
+2045   2              {
+2046   3                  msWriteByteMask(REG_PM_B2, 0x00, 0x1F);     // disable XTAL
+2047   3              }
+2048   2      
+2049   2              msWrite2Byte(REG_PM_B0, 0xAA99);    // lock system configuration protection
+2050   2          }
+2051   1      
+2052   1          return;
+2053   1      }
+2054          #endif
+2055          
+2056          //**************************************************************************
+2057          //  [Function Name]:
+2058          //                  msPM_SetPMMode()
+2059          //  [Description]
+2060          //                  msPM_SetPMMode
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 35  
+
+2061          //  [Arguments]:
+2062          //
+2063          //  [Return]:
+2064          //
+2065          //**************************************************************************
+2066          void msPM_SetPMMode(void)
+2067          {
+2068   1      
+2069   1      #if PM_SUPPORT_ADC_TIME_SHARE
+                  msWriteBit(REG_PM_FF,1,BIT2);
+                  msWrite2ByteMask(REG_DVI_CHEN, 0xE0|DVI_CTRL_PERIOD, 0xE7 );
+              #else
+2073   1          msWriteBit(REG_PM_FF,0,BIT2);
+2074   1          msWrite2ByteMask(REG_DVI_CHEN, 0x00|DVI_CTRL_PERIOD, 0xE7 );
+2075   1      #endif
+2076   1      
+2077   1          if (sPMInfo.sPMConfig.bHVSync_enable)
+2078   1          {
+2079   2              msPM_EnableHVSyncDetect(TRUE);
+2080   2          }
+2081   1          else
+2082   1          {
+2083   2              msPM_EnableHVSyncDetect(FALSE);
+2084   2          }
+2085   1      
+2086   1          if (sPMInfo.sPMConfig.bSOG_enable)
+2087   1          {
+2088   2              msPM_EnableSOGDetect(TRUE);
+2089   2          }
+2090   1          else
+2091   1          {
+2092   2              msPM_EnableSOGDetect(FALSE);
+2093   2          }
+2094   1      
+2095   1          if (sPMInfo.sPMConfig.bDP_enable)
+2096   1              msPM_EnableDPDetect(TRUE);
+2097   1          else
+2098   1              msPM_EnableDPDetect(FALSE);
+2099   1      
+2100   1      #if( ENABLE_DVI || ENABLE_HDMI )
+2101   1      #if( PM_SUPPORT_WAKEUP_DVI )
+2102   1          if (sPMInfo.sPMConfig.bDVI_enable)
+2103   1          {
+2104   2              msPM_EnableDVIDetect(TRUE);
+2105   2          }
+2106   1          else
+2107   1          {
+2108   2              msPM_EnableDVIDetect(FALSE);
+2109   2          }
+2110   1      #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+2111   1      #endif
+2112   1      
+2113   1          if (sPMInfo.ucPMMode == ePM_POWEROFF)
+2114   1              while (((Key_GetKeypadStatus()^KeypadMask)&KeypadMask)==KEY_POWER); //Wait power key released,avoi
+             -d power off and the power on again
+2115   1      
+2116   1          if (sPMInfo.sPMConfig.bGPIO_enable)
+2117   1          {
+2118   2              msPM_EnableGPIODetect(TRUE);
+2119   2          }
+2120   1          else
+2121   1          {
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 36  
+
+2122   2              msPM_EnableGPIODetect(FALSE);
+2123   2          }
+2124   1      
+2125   1          if (sPMInfo.sPMConfig.bSAR_enable)
+2126   1          {
+2127   2              msPM_EnableSARDetect(TRUE);
+2128   2          }
+2129   1          else
+2130   1          {
+2131   2              msPM_EnableSARDetect(FALSE);
+2132   2          }
+2133   1      
+2134   1          if (sPMInfo.sPMConfig.bMCCS_enable)
+2135   1          {
+2136   2              msPM_EnableMCCSDetect(TRUE);
+2137   2          }
+2138   1          else
+2139   1          {
+2140   2              msPM_EnableMCCSDetect(FALSE);
+2141   2          }
+2142   1      
+2143   1          msPM_MCCSReset();
+2144   1      
+2145   1      #if( PM_SUPPORT_AC2DC )
+                  if (sPMInfo.sPMConfig.bACtoDC_enable)
+                  {
+                      msPM_EnableAC2DC(TRUE);
+                  }
+                  else
+                  {
+                      msPM_EnableAC2DC(FALSE);
+                  }
+              #endif  // end of #if( PM_SUPPORT_AC2DC )
+2155   1      
+2156   1          if (sPMInfo.sPMConfig.bEDID_enable)
+2157   1          {
+2158   2              msPM_Enable_EDID_READ(TRUE);
+2159   2          }
+2160   1          else
+2161   1          {
+2162   2              msPM_Enable_EDID_READ(FALSE);
+2163   2          }
+2164   1      
+2165   1          if (sPMInfo.ucPMMode == ePM_POWERON) return;
+2166   1          //------------------------------------------------------
+2167   1      #if (CHIP_ID != CHIP_TSUMC) && (CHIP_ID!=CHIP_TSUMK) && (CHIP_ID != CHIP_TSUMD) && (CHIP_ID != CHIP_TSUMJ)
+             - && (CHIP_ID != CHIP_TSUM9) && (CHIP_ID != CHIP_TSUMF)
+                  if (!msPM_StartRCOSCCal())
+                      PM_printData("CALIBARYION RCOSC FAIL!",0);
+                  else
+                      PM_printData("CALIBARYION RCOSC Success!",0);
+              #endif
+2173   1      
+2174   1      #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || (CHIP_ID == CHIP_TSUMJ)
+             - || (CHIP_ID == CHIP_TSUM9) || (CHIP_ID == CHIP_TSUMF)
+2175   1      #if SPI_SSC_EN
+                  mcuSetSpiSpeed(IDX_SPI_CLK_XTAL);// change to other clock source before  DDR clk pd
+              #endif
+2178   1      #endif
+2179   1          msPM_PassWord(TRUE);
+2180   1          msPM_PowerDownMacro();
+2181   1          msPM_OutputTriState();
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 37  
+
+2182   1          msPM_ClearStatus(FALSE);
+2183   1      
+2184   1      #if 0//ENABLE_DP_INPUT
+                  DPRxClearAUXVliadStatus();
+              #endif
+2187   1      
+2188   1      #if 0//DEBUG_EN
+                  msPM_UART();
+              #endif
+2191   1      //--------------- Sacaler Reset Start--------------------------------
+2192   1      
+2193   1      //--------------- Sacaler Reset End--------------------------------
+2194   1      
+2195   1          if (sPMInfo.sPMConfig.bMCUSleep)
+2196   1          {
+2197   2              msWriteByteMask(REG_PM_A6, 0, _BIT0);
+2198   2              msPM_SetPMClock(RCOSC);
+2199   2              msWriteByteMask(REG_PM_AA, _BIT1, _BIT1);
+2200   2              msWriteByteMask(REG_PM_A6, _BIT7, _BIT7|_BIT6);  // Enable HW PM mode (Enable mcu gating)
+2201   2              //Set MCU sleep mode
+2202   2              PM_printMsg("Enter HW PM Mode");
+2203   2              CACHE_DISABLE();
+2204   2              msWriteByte(REG_PM_80, 0xA5);
+2205   2              msWriteByte(REG_PM_80, 0x56);
+2206   2          }
+2207   1          else
+2208   1          {
+2209   2              //Set MCU no die mode
+2210   2              msPM_SetPMClock(PM_CLOCK);
+2211   2              if(PM_CLOCK == XTAL)
+2212   2                  msWriteByteMask(REG_PM_A6, BIT2, _BIT2|BIT3);
+2213   2              else if((PM_CLOCK == RCOSC))
+2214   2      #if 0//   ENABLE_DP_INPUT     //111110 modified VS230 PM mode Clock speed   //20130118 need to disable XTA
+             -L to turn off in PM mode,otherwise the current of LLPL will increase 1.5mA
+                      {
+                          msWriteByteMask(REG_PM_A6, BIT2, _BIT2|BIT3);
+                      }
+              #else
+2219   2              {
+2220   3                  //msWriteByteMask(REG_PM_A6, 0, _BIT2|BIT3);
+2221   3                  msWriteByteMask(REG_PM_A6, _BIT2, _BIT2);
+2222   3          #if ENABLE_WATCH_DOG
+2223   3                  if(msReadByte(REG_3C60) == 0x55 && msReadByte(REG_3C61) == 0xAA) // turn on XTAL for WDT reset
+2224   3          #endif
+2225   3                  {   // disable XTAL
+2226   4                  #if (CHIP_ID == CHIP_TSUM9||CHIP_ID == CHIP_TSUMF)
+2227   4                      msPM_XtalEnable(FALSE);
+2228   4                  #else
+                              msWriteByteMask(REG_PM_A6, 0, _BIT2);
+                          #endif
+2231   4                  }
+2232   3      
+2233   3                  msWriteByteMask(REG_PM_A6, 0, BIT3);
+2234   3              }
+2235   2      #endif
+2236   2      
+2237   2              msWriteByteMask(REG_PM_A6, 0, _BIT0);
+2238   2              msWriteByteMask(REG_PM_A6, _BIT0, _BIT0); //Software power down mode
+2239   2      
+2240   2              PM_printMsg("Enter SW PM Mode");
+2241   2      
+2242   2      
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 38  
+
+2243   2              sPMInfo.ePMState = ePM_WAIT_EVENT;
+2244   2          }
+2245   1      
+2246   1      #if PM_0W_Mode_Enable   //use pass word to enter 0W mode and exit it use GPIO toggle
+                  msPM0W_Mode_PassWord(TRUE);
+              #endif
+2249   1      #if PM_CABLE_DETECT_USE_SAR
+                  sPMInfo.bCABLE_SAR_VALUE=CABLE_DET_SAR;
+              #endif
+2252   1      
+2253   1      #if ENABLE_POWER_BOARD_CONTROL
+                  if(!PowerOnFlag)
+                      Set_PowerBoardSaving_Pin();
+              #endif
+2257   1      
+2258   1      }
+2259          
+2260          //**************************************************************************
+2261          //  [Function Name]:
+2262          //                  msPM_Reset()
+2263          //  [Description]
+2264          //                  msPM_Reset
+2265          //  [Arguments]:
+2266          //
+2267          //  [Return]:
+2268          //      PM status
+2269          //
+2270          //**************************************************************************
+2271          BYTE msPM_Reset(void)
+2272          {
+2273   1          BYTE ucStatus = ePMSTS_INVAID;
+2274   1      
+2275   1          //msPM_EnableAC2DC(FALSE);
+2276   1      
+2277   1         // msWriteByte(SC0_F1, 0);
+2278   1        //  msWriteByte(REG_1ED1, 0x4);    //MPLL function enable
+2279   1         // msWriteByte(SC0_F0, 0);
+2280   1      
+2281   1         //  msWriteByteMask(REG_PM_A6, _BIT3|_BIT2|BIT1, _BIT3|_BIT2|BIT1);       //SW XTAL on
+2282   1         //  msWriteByteMask(REG_01BC, 0, _BIT6);           //Live cLK select XTAL
+2283   1      
+2284   1         // mcuSetSystemSpeed(SPEED_NORMAL_MODE);
+2285   1          //mcuSetMcuSpeed(MCU_SPEED_INDEX) ; // see function body for detail description
+2286   1          //mcuSetSpiSpeed(SPI_SPEED_INDEX) ; // see function body for detail description
+2287   1      
+2288   1        //  msWriteByteMask(REG_PM_A6, 0, _BIT7|_BIT0);  // PM SW power down mode  (MCU no die mode)
+2289   1        //  msWriteByte(SC0_06, 0x00);                  //power up idclk and odclk
+2290   1      
+2291   1          #if 0//Enable_Cache
+                  CACHE_ENABLE();//MCU_EnableCache(_ENABLE);
+                  #endif
+2294   1          msPM_PassWord(FALSE);
+2295   1          msPM_Init();
+2296   1          //msPM_SetPMMode();
+2297   1      
+2298   1          msPM_ClearStatus(TRUE);
+2299   1      
+2300   1          msPM_MCCSReset();
+2301   1          PM_printData("Enter PM ePM_PowerON mode!",0);
+2302   1          return ucStatus;
+2303   1      }
+2304          
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 39  
+
+2305          #if 1
+2306          void msPM_InterruptEnable(Bool benable)
+2307          {
+2308   1          benable = benable;
+2309   1       #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUMJ || CH
+             -IP_ID == CHIP_TSUM9 ||CHIP_ID == CHIP_TSUMF)
+2310   1          INT_IRQ_DISP_ENABLE(benable);
+2311   1          INT_IRQ_DVI_ENABLE(benable);
+2312   1      #endif
+2313   1      }
+2314          #endif
+2315          #if (CHIP_ID == CHIP_TSUM9||CHIP_ID == CHIP_TSUMF)
+2316          #define RECHECK_COUNT     30
+2317          #else
+              #define RECHECK_COUNT     5
+              #endif
+2320          Bool IsHVSyncActive(BYTE count)
+2321          {
+2322   1          Bool u8Rlt=FALSE;
+2323   1          WORD u16InputValue;
+2324   1          BYTE check_cnt;
+2325   1      
+2326   1          for(check_cnt=0; check_cnt<count; check_cnt++)
+2327   1          {
+2328   2      #if CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK
+                      TMDS_Config_For_PM();
+              #endif
+2331   2              ForceDelay1ms(20);
+2332   2      
+2333   2              u16InputValue = msRead2Byte(SC0_E4) & 0x1FFF;
+2334   2              if (u16InputValue == 0x1FFF || u16InputValue < 20)
+2335   2                 continue;
+2336   2              if(labs( (DWORD)u16InputValue-(msRead2Byte(SC0_E4) & 0x1FFF))>4)
+2337   2                  continue;
+2338   2      
+2339   2              u16InputValue = msRead2Byte(SC0_E2) & 0x7FF;
+2340   2              if (u16InputValue == 0x7FF || u16InputValue < 200)
+2341   2                  continue;
+2342   2      
+2343   2              u8Rlt=TRUE;
+2344   2      
+2345   2      
+2346   2              break;
+2347   2          }
+2348   1          return u8Rlt;
+2349   1      }
+2350          #if MS_VGA_SOG_EN
+2351          extern BYTE GetVSyncWidth(void);
+2352          #endif
+2353          Bool msPM_CheckAnalogSyncActive(void)
+2354          {
+2355   1          Bool u8Rlt=TRUE;
+2356   1          BYTE SyncTYPE = 0;
+2357   1      #if MS_VGA_SOG_EN
+2358   1          BYTE ucStatus;
+2359   1          BYTE w_VSyncWidth;
+2360   1      #endif
+2361   1      
+2362   1          msWriteByte(SC0_F3, 0x00);// for SOG+video timing can't wake up(no v count)
+2363   1          msWriteByte(SC0_F0,0x00);
+2364   1          msWriteByte(REG_2E02,0x00);
+2365   1          msWriteByte(REG_2508,0x00);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 40  
+
+2366   1          msWriteByte(REG_2509,0x00);
+2367   1          //msWriteByteMask(REG_1EDC, 0, _BIT5|_BIT4);                //Power On MPLL 216MHz/432MHz
+2368   1          //msWriteByteMask(REG_1ED1,0, _BIT4|_BIT0);               // power on LPLL and MPLL
+2369   1          msWriteByteMask(REG_1E47, _BIT2, 0x0F);         //Select clk source
+2370   1          mStar_SetupInputPort();
+2371   1          msWriteByteMask(REG_1E3E, 0, BIT0);//Sky110702 Modify for SOG can't Get V Sync
+2372   1      
+2373   1      
+2374   1          for (SyncTYPE=0; SyncTYPE<2; SyncTYPE++)
+2375   1          {
+2376   2              mStar_SetAnalogInputPort(SyncTYPE);
+2377   2              msWriteByteMask(SC0_ED,0,BIT5);
+2378   2              u8Rlt = IsHVSyncActive(RECHECK_COUNT);
+2379   2              if(u8Rlt)
+2380   2              {
+2381   3                  #if MS_VGA_SOG_EN
+2382   3                          ucStatus = SC0_READ_SYNC_STATUS();//msReadByte(SC0_E1);
+2383   3                  if (ucStatus&(SOGP_B)&& ucStatus&(CSP_B))
+2384   3                  {
+2385   4                      if (ucStatus&SOGD_B )
+2386   4                      {
+2387   5                          w_VSyncWidth = GetVSyncWidth();
+2388   5                          if (w_VSyncWidth>15 || w_VSyncWidth==0)//check SOG pulse width if bigger than 15  //dj
+             -yang 20080605
+2389   5                          {
+2390   6      
+2391   6                              return FALSE;
+2392   6                          }
+2393   5                          msWriteByteMask(SC0_ED,1,BIT5);
+2394   5                      }
+2395   4                  return TRUE;
+2396   4                  }
+2397   3                  #endif
+2398   3                  return u8Rlt;
+2399   3              }
+2400   2      
+2401   2           }
+2402   1      
+2403   1           return FALSE;
+2404   1      }
+2405          
+2406          Bool msPM_CheckDVISyncActive( )
+2407          {
+2408   1          Bool u8Rlt=FALSE;
+2409   1      #if 1 // 120117 coding test
+2410   1          BYTE count;
+2411   1      
+2412   1          msWriteByteMask(REG_1E3E, 0x00, BIT0);
+2413   1          msWriteByteMask(REG_1E47, _BIT2, 0x0F);
+2414   1      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUMJ)
+                  msWriteByteMask(REG_01A6,BIT3,BIT3);
+                  msWrite2Byte(REG_142A, 0x0017);
+                  msWrite2Byte(REG_17BC, 0x8000);
+                  msWrite2Byte(REG_17BE, 0x0000);
+                  msWrite2Byte(REG_01CE, 0x0020);
+              #elif CHIP_ID == CHIP_TSUM9||CHIP_ID == CHIP_TSUMF
+2421   1          mcuSetSystemSpeed(SPEED_NORMAL_MODE);
+2422   1          msTMDSInit();
+2423   1          msInitHDCPProductionKey();
+2424   1      #endif
+2425   1      
+2426   1      
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 41  
+
+2427   1      #if CHIP_ID!=CHIP_TSUMU && CHIP_ID < CHIP_TSUMC
+                  msWriteByteMask(REG_29FE, 0x00, ~(BIT7|BIT6));
+              #endif
+2430   1      
+2431   1          for(count=0; count<Input_Nums; count++)
+2432   1          {
+2433   2              if (UserPrefInputPriorityType==Input_Priority_Auto)
+2434   2              {
+2435   3                  SrcInputType = count;
+2436   3                  UserPrefInputType=SrcInputType;
+2437   3              }
+2438   2              else
+2439   2              {
+2440   3                  SrcInputType=UserPrefInputType;
+2441   3           #if DEBUG_PRINT_ENABLE
+2442   3                  printData("DVI check again ==%x \r\n",UserPrefInputType);
+2443   3           #endif
+2444   3              }
+2445   2      
+2446   2              if(CURRENT_INPUT_IS_TMDS())
+2447   2              {
+2448   3                  mStar_SetupInputPort();
+2449   3      
+2450   3                  u8Rlt = IsHVSyncActive(RECHECK_COUNT);
+2451   3                  if(u8Rlt == TRUE)
+2452   3                  {
+2453   4                      break;
+2454   4                  }
+2455   3              }
+2456   2          }
+2457   1      
+2458   1      
+2459   1      #if PM_DEBUG
+2460   1          PM_printData("PM_A2:%x", msReadByte(REG_PM_A2));
+2461   1          PM_printData("PM_A4:%x", msReadByte(REG_PM_A4));
+2462   1          if(u8Rlt == TRUE)
+2463   1              PM_printData("msPM_CheckDVISyncActive:%d", SrcInputType);
+2464   1      #endif
+2465   1      #else
+                  mStar_SetupInputPort();
+                  msWriteByteMask(REG_1E3E, 0x00, BIT0);
+                  msWriteByteMask(REG_1E47, 0x00, BIT4|BIT0);
+              #if CHIP_ID!=CHIP_TSUMU
+                  msWriteByteMask(REG_29FE, 0x00, ~(BIT7|BIT6));
+              #endif
+              
+                  if(DVI_DE_STABLE() == TRUE)
+                      u8Rlt=TRUE;
+              
+                  u8Rlt = IsHVSyncActive(RECHECK_COUNT);
+              #endif
+2478   1          return u8Rlt;
+2479   1      
+2480   1      }
+2481          #if   0//  sahdow_Need test
+              Bool msPM_CheckDPMCCSActive(void)
+              {
+                  Bool bExitPM = TRUE;
+                   if(msRegs[REG_1FE6]&_BIT7)   //MCCS Interrupt
+                      {
+                              //DDC2BI_DP() ;
+                          if(DDCBuffer[2]==PowerMode)
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 42  
+
+                          {
+                              if((DDCBuffer[4] == 0x01)
+                              &&(sPMInfo.ucPMMode == ePM_POWEROFF || sPMInfo.ucPMMode == ePM_STANDBY))
+                                  ;
+                              else  if((DDCBuffer[4] == 0x05) && (sPMInfo.ucPMMode == ePM_STANDBY))
+                              {
+                                  msPM_Reset();
+                                  PowerOffSystem();
+                                  bExitPM=FALSE;
+                              }
+                              else  if((DDCBuffer[4] == 0x05) && (sPMInfo.ucPMMode == ePM_POWEROFF))
+                              {
+              
+                              }
+                              else
+                                  bExitPM=FALSE;
+                          }
+              
+                      }
+              
+               return bExitPM;
+              
+              
+              }
+              #endif
+2514          Bool msPM_CheckMCCSActive(void)
+2515          {
+2516   1          Bool bExitPM = TRUE;
+2517   1            if((ucWakeupStatus == ePMSTS_MCCS01_ACT)
+2518   1              &&(sPMInfo.ucPMMode == ePM_POWEROFF || sPMInfo.ucPMMode == ePM_STANDBY))
+2519   1              ;
+2520   1               else  if((ucWakeupStatus == ePMSTS_MCCS05_ACT) && (sPMInfo.ucPMMode == ePM_STANDBY))
+2521   1              {
+2522   2                  msPM_Reset();
+2523   2                  PowerOffSystem();
+2524   2                  bExitPM=FALSE;
+2525   2                  }
+2526   1             else  if((ucWakeupStatus == ePMSTS_MCCS05_ACT) && (sPMInfo.ucPMMode == ePM_POWEROFF))
+2527   1                   {
+2528   2      
+2529   2                 }
+2530   1             else
+2531   1              bExitPM=FALSE;
+2532   1          return bExitPM;
+2533   1      }
+2534          Bool msPM_CheckPowerKeyActive(void)
+2535          {
+2536   1          Bool bExitPM = FALSE;
+2537   1      
+2538   1      #if  PM_POWERkEY_GETVALUE
+2539   1          {
+2540   2                  if(sPMInfo.ucPMMode == ePM_STANDBY)
+2541   2                  {
+2542   3                      msPM_Reset();
+2543   3                      PowerOffSystem();
+2544   3              PM_printMsg("ePM_STANDBY --> ePM_POWEROFF");
+2545   3                  }
+2546   2                  else if(sPMInfo.ucPMMode == ePM_POWEROFF)
+2547   2                  {
+2548   3                      bExitPM = TRUE;
+2549   3              PM_printMsg("ePM_POWEROFF --> ePM_POWERON");
+2550   3                  }
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 43  
+
+2551   2              }
+2552   1      #else
+              
+                  WORD ucStatus_GPIO;
+                  ucStatus_GPIO = msRead2Byte( REG_PMGPIO_STS );
+              
+                  if ( ucStatus_GPIO & (PM_POWERKEY_INT) )//power key
+                  {
+                      if(sPMInfo.ucPMMode == ePM_STANDBY)
+                      {
+                          //msPM_Reset();
+                          PowerOffSystem();
+                      }
+                      else if(sPMInfo.ucPMMode == ePM_POWEROFF)
+                          bExitPM = TRUE;
+                  }
+              #endif
+2568   1          return bExitPM;
+2569   1      }
+2570          
+2571          
+2572          BOOL msPM_Checkagain(void)
+2573          {
+2574   1          Bool bExitPM = TRUE;
+2575   1         //volatile WORD ucStatus_GPIO;
+2576   1          msWriteByte(SC0_F1, 0);
+2577   1         // msWriteByte(REG_1ED1, 0x4);    //MPLL function enable
+2578   1          msWriteByte(SC0_F0, 0);
+2579   1      
+2580   1          msWriteByteMask(REG_PM_A6, _BIT3|_BIT2|BIT1, _BIT3|_BIT2|BIT1);       //SW XTAL on
+2581   1          ForceDelay1ms(10);
+2582   1      #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID == CHIP_TSUMF)
+2583   1          msPM_XtalEnable(TRUE);      // eanble XTAL
+2584   1          drvmStar_MpllSrcCfg();
+2585   1      #endif
+2586   1          msPM_SetPMClockLive(CLK_LIVE_XTAL);          // mcu clk Live select XTAL
+2587   1          msWriteByteMask(REG_PM_A6, 0, _BIT7|_BIT0);  // PM SW power down mode  (MCU no die mode)
+2588   1          msWriteByte(SC0_06, 0x00);                  //power up idclk and odclk
+2589   1      
+2590   1          #if 0//Enable_Cache
+                  CACHE_ENABLE();//MCU_EnableCache(_ENABLE);
+                  #endif
+2593   1      
+2594   1      
+2595   1          if(ucWakeupStatus == ePMSTS_VGA_ACT)
+2596   1          {
+2597   2              msWriteByteMask(REG_1ED1, 0, BIT0);
+2598   2              if(msPM_CheckAnalogSyncActive())
+2599   2                  bExitPM = TRUE;//wakeup
+2600   2              else
+2601   2                  bExitPM = FALSE;
+2602   2              msWriteByteMask(REG_1ED1, BIT0, BIT0);
+2603   2          }
+2604   1      #if( PM_SUPPORT_WAKEUP_DVI )
+2605   1          else if(ucWakeupStatus == ePMSTS_DVI_0_ACT||ucWakeupStatus ==ePMSTS_DVI_1_ACT)
+2606   1          {
+2607   2              if(msPM_CheckDVISyncActive())
+2608   2                  bExitPM = TRUE;//wakeup
+2609   2             else
+2610   2                  bExitPM = FALSE;
+2611   2          }
+2612   1      #endif
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 44  
+
+2613   1          else if(ucWakeupStatus == ePMSTS_GPIO_ACT)
+2614   1          {
+2615   2      #if !(PM_POWERkEY_GETVALUE)
+                  if(msPM_CheckPowerKeyActive())
+                      {
+                      bExitPM = TRUE;//wakeup
+                      }
+                      else
+              #endif
+2622   2      #if     PM_CABLEDETECT_USE_GPIO&&ENABLE_DP_INPUT
+                      if (!(DP_CABLE_NODET))
+                      {
+                            SrcInputType=Input_Displayport;
+                             mStar_SetupInputPort();
+                          bExitPM = TRUE;
+                      }
+                  else
+              #endif
+2631   2      
+2632   2              bExitPM = FALSE;
+2633   2      
+2634   2      
+2635   2          }
+2636   1          else if(ucWakeupStatus == ePMSTS_SAR_ACT)
+2637   1          {
+2638   2      
+2639   2              bExitPM = TRUE;
+2640   2          }
+2641   1          else if(ucWakeupStatus == ePMSTS_ITE_POWER_KEY_ACT)
+2642   1          {
+2643   2      
+2644   2          bExitPM = TRUE;
+2645   2          } 
+2646   1          else if(ucWakeupStatus == ePMSTS_GPIO_POWER_KEY_ACT)
+2647   1          {
+2648   2      
+2649   2          bExitPM = TRUE;
+2650   2          } 
+2651   1          else if(ucWakeupStatus == ePMSTS_ITE_SOURCE_KEY_ACT)
+2652   1          {
+2653   2                  if(PowerOnFlag)
+2654   2                  {
+2655   3      #if ENABLE_MHL
+                              mapi_mhl_PowerCtrl(MHL_POWER_ON);
+              #endif
+2658   3          bExitPM = TRUE;
+2659   3                  }
+2660   2                  else
+2661   2                    bExitPM = FALSE;
+2662   2          } 
+2663   1          else if(ucWakeupStatus == ePMSTS_ITE_FACTORY_KEY_ACT) //120523 Modify
+2664   1          {
+2665   2              if(!PowerOnFlag)
+2666   2            bExitPM = TRUE;
+2667   2              else
+2668   2            bExitPM = FALSE;
+2669   2          } 
+2670   1      #if (Customer_Type_Sel==Customer_XINTAO)
+                    else if(ucWakeupStatus == ePMSTS_ITE_BURNIN_KEY_ACT)  //120523 Modify
+                  {
+                      if(!PowerOnFlag)
+                    bExitPM = TRUE;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 45  
+
+                      else
+                    bExitPM = FALSE;
+                  }
+              #endif
+2679   1          else if(ucWakeupStatus == ePMSTS_ITE_OSDLOCK_KEY_ACT) //120524 Modify
+2680   1          {
+2681   2              if(!PowerOnFlag)
+2682   2            bExitPM = TRUE;
+2683   2              else
+2684   2            bExitPM = FALSE;
+2685   2          } 
+2686   1          else if(ucWakeupStatus == ePMSTS_MCCS05_ACT||ucWakeupStatus==ePMSTS_MCCS04_ACT)//20100419
+2687   1          {
+2688   2              if(msPM_CheckMCCSActive())
+2689   2                  bExitPM = TRUE;//wakeup
+2690   2              else
+2691   2                  bExitPM = FALSE;
+2692   2          }
+2693   1      #if ENABLE_DP_INPUT&&PM_SUPPORT_WAKEUP_DP
+                  else if(ucWakeupStatus == ePMSTS_DP_ACT)
+                 {
+                   //mStar_SetupInputPort();   // For HDCP wake up issue. Aksv not ready in Rx
+                  #if  0 //  sahdow_Need test
+                  if(msPM_CheckDPMCCSActive())
+                      bExitPM = TRUE;
+                  else
+                      bExitPM = FALSE;
+                  #else
+                  bExitPM = TRUE;
+                  #endif
+                 }
+              #endif
+2707   1      #if (PM_POWERkEY_GETVALUE)
+2708   1          else if(ucWakeupStatus == ePMSTS_POWERGPIO_ACT)
+2709   1         {
+2710   2              if(msPM_CheckPowerKeyActive())
+2711   2              {
+2712   3                  bExitPM = TRUE;//wakeup
+2713   3                  KeypadButton=BTN_Repeat;      //110914 Rick modified
+2714   3              }
+2715   2              else
+2716   2                  bExitPM = FALSE;
+2717   2         }
+2718   1      
+2719   1      #endif
+2720   1      #if (PM_CABLE_DETECT_USE_SAR)
+                  else if(ucWakeupStatus ==ePMSTS_CABLESAR_ACT)
+                  {
+                      if(CABLE_DET_SAR<sPMInfo.bCABLE_SAR_VALUE)
+                          bExitPM = TRUE;
+                      else
+                          bExitPM = FALSE;
+                  }
+              #endif
+2729   1      #if ENABLE_MHL
+                  else if(ucWakeupStatus == ePMSTS_MHL_ACT)
+                  {
+                      bExitPM = TRUE;
+                      PM_printData("ePMSTS_MHL_ACT:%d", ePMSTS_MHL_ACT);
+                  }
+              #endif
+2736   1          else
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 46  
+
+2737   1              bExitPM = FALSE;
+2738   1      
+2739   1              //    bExitPM = TRUE;//wakeup
+2740   1      
+2741   1          return bExitPM;
+2742   1      }
+2743          
+2744          void msPM_ScanADCCh(void)
+2745          {
+2746   1          BYTE channel;
+2747   1      
+2748   1          if( !ModeDetectCounter )
+2749   1          {
+2750   2              channel = msReadByte(REG_01FF)&0x03;
+2751   2              channel = (++channel) >= 3 ? 0 : channel;
+2752   2              msWriteByteMask(REG_01FF,channel,0x03);
+2753   2              ModeDetectCounter = 20;
+2754   2          }
+2755   1      }
+2756          
+2757          Bool PM_CheckKeypadStatus(BYTE KeypadStatus)
+2758          {
+2759   1          bit bresult = FALSE;
+2760   1      
+2761   1        //PM_printData("KeypadStatus=%d",KeypadStatus);
+2762   1      
+2763   1          if( KeypadStatus)
+2764   1          {
+2765   2        #if ENABLE_SIX_KEY    //130228 Modify
+                #if SevenKey_Function
+                      if(KeypadStatus==KEY_DecVal)
+                      {
+                          ucWakeupStatus = ePMSTS_ITE_SOURCE_KEY_ACT;
+                    //PM_printMsg("1111111");
+                          bresult = TRUE;
+                      }
+                #endif
+                #else
+2775   2          if(KeypadStatus==KEY_EXIT)
+2776   2          {
+2777   3              ucWakeupStatus = ePMSTS_ITE_SOURCE_KEY_ACT;
+2778   3              //PM_printMsg("222222");
+2779   3              bresult = TRUE;
+2780   3          }
+2781   2        #endif
+2782   2              else if (KeypadStatus == KEY_POWER)
+2783   2              {
+2784   3                    ucWakeupStatus = ePMSTS_ITE_POWER_KEY_ACT;
+2785   3              //PM_printMsg("333333333");
+2786   3                    bresult = TRUE;     
+2787   3              }
+2788   2              else if ((KeypadStatus == KEY_FACTORY) && (!PowerOnFlag)) //120523 Modify
+2789   2              {
+2790   3                  ucWakeupStatus = ePMSTS_ITE_FACTORY_KEY_ACT;
+2791   3          Set_FactoryModeFlag();
+2792   3          if (SyncLossState())
+2793   3          {
+2794   4            Set_BurninModeFlag();
+2795   4            Set_DoBurninModeFlag();   //120703 Modify for TPV Request
+2796   4          }
+2797   3            //PM_printMsg("44444444");
+2798   3                  bresult = TRUE;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 47  
+
+2799   3              }
+2800   2      #if (Customer_Type_Sel==Customer_XINTAO)
+                   else if ((KeypadStatus == KEY_FACTORY) && (!PowerOnFlag))  //120523 Modify
+                      {
+                          ucWakeupStatus = ePMSTS_ITE_BURNIN_KEY_ACT;
+                  if (SyncLossState())
+                  {
+                    Set_BurninModeFlag();
+                    Set_DoBurninModeFlag();   //120703 Modify for TPV Request
+                  }
+                  
+                          bresult = TRUE;
+                      }
+              #endif
+2813   2              else if ((KeypadStatus == KEY_LOCK) && (!PowerOnFlag))  //120524 Modify
+2814   2              {
+2815   3                  ucWakeupStatus = ePMSTS_ITE_OSDLOCK_KEY_ACT;
+2816   3            //PM_printMsg("5555555555");
+2817   3                  bresult = TRUE;
+2818   3              }
+2819   2          }
+2820   1          else
+2821   1          {
+2822   2      
+2823   2          }
+2824   1        //PM_printMsg("777777777777");
+2825   1          return bresult;
+2826   1      }
+2827          
+2828          //**************************************************************************
+2829          //  [Function Name]:
+2830          //                  msPM_WaitingEvent()
+2831          //  [Description]
+2832          //                  msPM_WaitingEvent
+2833          //  [Arguments]:
+2834          //
+2835          //  [Return]:
+2836          //
+2837          //**************************************************************************
+2838          void msPM_WaitingEvent(void)
+2839          {
+2840   1          BYTE GetKeyTemp = 0;
+2841   1          //msPM_ClearStatus(TRUE); // 120209 coding reserved. PM sw mode, after disable xtal, it should not res
+             -et PM
+2842   1          PM_printMsg("msPM_WaitingEvent.....");
+2843   1      
+2844   1      
+2845   1      
+2846   1      #if ENABLE_DP_INPUT
+                  DPRXPMForceEnter();
+              #endif
+2849   1      
+2850   1          while(1)
+2851   1          {
+2852   2              Main_SlowTimerHandler();
+2853   2      #ifdef UseVGACableReadWriteAllPortsEDID
+                      //if ((!g_bServiceEDIDUnLock && !WriteDeviceFlag) && (!ProductModeFlag))         //110916 Rick add
+              #endif
+2856   2              {
+2857   3              /*
+2858   3                  if( SyncLossState() && IsCableNotConnected() )
+2859   3                  {
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 48  
+
+2860   3                      hw_ClrDDC_WP();
+2861   3                  }
+2862   3                  else
+2863   3                  {
+2864   3                      hw_SetDDC_WP();
+2865   3                  }
+2866   3                  */
+2867   3              }
+2868   2      
+2869   2      #if Enable_LED
+                  if(PowerOnFlag==FALSE)
+                    {
+                        hw_SetGreenLed();
+                        hw_SetAmberLed();   
+                     }
+              #endif
+2876   2      
+2877   2      #if ENABLE_DEBUG
+2878   2              DebugHandler();
+2879   2              if ( DebugOnlyFlag )
+2880   2                  continue;
+2881   2      #endif
+2882   2      
+2883   2        //120521 Modify
+2884   2        if( !TPDebunceCounter )
+2885   2        {
+2886   3                  TPDebunceCounter = SKPollingInterval;
+2887   3                  GetKeyTemp =  (Key_GetKeypadStatus() ^ KeypadMask) &KeypadMask;//Key_GetKeypadStatus();
+2888   3            //PM_printData("GetKeyTemp1=%d", GetKeyTemp);
+2889   3            //GetKeyTemp=~GetKeyTemp;
+2890   3            //PM_printData("GetKeyTemp1=%d", GetKeyTemp);
+2891   3            if(PM_CheckKeypadStatus(GetKeyTemp))
+2892   3                      break;
+2893   3        }
+2894   2      
+2895   2      #if IR_FUNC_EN
+              
+                if (bIrHoldFlag || bIrEndFlag)
+                    { // Ir key;
+                      BYTE i;
+                      BYTE  tempdata,temp11,temp22,temp33,temp44;
+                                          
+                      temp11=g_IRRawdata[0]>>8;
+                      temp22=(BYTE)(g_IRRawdata[0]&0xff);
+                      temp33=g_IRRawdata[1]>>8;
+                      temp44=(BYTE)(g_IRRawdata[1]&0xff);
+                      
+              
+                      tempdata =temp11;
+                      temp11 =0;
+                      for(i =0;i<7;i++)
+                      {
+                        temp11=(temp11 | (tempdata&0x01));
+                        tempdata=tempdata>>1;
+                        temp11 =temp11 <<1;
+                      }
+                      temp11=(temp11 | (tempdata&0x01));
+                      
+              
+                      tempdata =temp22;
+                      temp22 =0;
+                      for(i =0;i<7;i++)
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 49  
+
+                      {
+                        temp22=(temp22 | (tempdata&0x01));
+                        tempdata=tempdata>>1;
+                        temp22 =temp22 <<1;
+                      }
+                      temp22=(temp22 | (tempdata&0x01));
+                      
+              
+                      tempdata =temp33;
+                      temp33 =0;
+                      for(i =0;i<7;i++)
+                      {
+                        temp33=(temp33 | (tempdata&0x01));
+                        tempdata=tempdata>>1;
+                        temp33 =temp33 <<1;
+                      }
+                      temp33=(temp33 | (tempdata&0x01));
+                              
+              
+                      tempdata =temp44;
+                      temp44 =0;
+                      for(i =0;i<7;i++)
+                      {
+                        temp44=(temp44 | (tempdata&0x01));
+                        tempdata=tempdata>>1;
+                        temp44 =temp44 <<1;
+                      }
+                      temp44=(temp44 | (tempdata&0x01));        
+                      
+              
+                      g_IRdata[0]=(temp11<<8)|temp22;
+                      g_IRdata[1]=(temp33<<8)|temp44;
+                              
+                    
+                      bIrHoldFlag = 0;
+                      bIrEndFlag = 0;
+                    #if ENABLE_DEBUG
+                      printData("PM_ccflag1111=%x", temp11 );
+                      printData("PM_ccflag222=%x", temp22 );
+                      printData("PM_ccflag333=%x", temp33 );
+                      printData("PM_ccflag444=%x", temp44 );
+                      printData("PM_g_IRdata0=%x",g_IRdata[0]);
+                      printData("PM_g_IRdata1=%x", g_IRdata[1]);
+                      printData("PM_IRClearCounter=%x", IRClearCounter);
+                //      printData("PM_IRFLAG=%x", IRFLAG);
+                    #endif  
+                //        IRFLAG = 0;
+                           if ((g_IRdata[0]==IR_CUSTOMER_CODE)&&(g_IRdata[1]==IR_KEY_POWER))
+                      {
+                                 
+                                      ucWakeupStatus = ePMSTS_ITE_POWER_KEY_ACT;
+              
+                          g_IRdata[1] = 0; // 使该键无连续动作;
+                          break;
+                            
+                      }
+                  }         
+              #endif
+2980   2      
+2981   2              msPM_ScanADCCh();
+2982   2      
+2983   2              if(msPM_GetPMStatus())
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 50  
+
+2984   2                  break;
+2985   2      
+2986   2              #if 0//!DEBUG_EN
+                      if(DDCCI_CheckDMPSON())
+                          break;
+                      #endif
+2990   2      
+2991   2          }
+2992   1          PM_printData("\r\nPM Wakeup Event1 (%d) !", ucWakeupStatus);
+2993   1        
+2994   1      }
+2995          
+2996          
+2997          #if 0
+              void   msPM_SetupWakeUpFunc( void )
+              {
+              #define _PMMETA  sPMInfo.sPMConfig
+                  msPM_printConfiguration();
+                  msPM_EnableHVSyncDetect(_PMMETA.bHVSync_enable);
+                  msPM_EnableSOGDetect(_PMMETA.bSOG_enable);
+                  msPM_EnableGPIODetect(_PMMETA.bGPIO_enable);
+                  msPM_EnableSARDetect(_PMMETA.bSAR_enable);
+                  msPM_EnableMCCSDetect(_PMMETA.bMCCS_enable);
+                  msPM_Enable_EDID_READ(_PMMETA.bEDID_enable);
+              #if( PM_SUPPORT_AC2DC )
+                  msPM_EnableAC2DC(_PMMETA.bACtoDC_enable);
+              #endif  // end of #if( PM_SUPPORT_AC2DC )
+              #if( PM_SUPPORT_WAKEUP_DVI )
+                  msPM_EnableDVIDetect(_PMMETA.bDVI_enable);
+              #endif  // end of #if( PM_SUPPORT_WAKEUP_DVI )
+              #if (!PM_SUPPORT_SOG_TIME_SHARE) && (!PM_SUPPORT_DVI_TIME_SHARE)
+                  msPM_EnableDVIClockAmp(FALSE);
+              #elif PM_SUPPORT_DVI_TIME_SHARE
+                  if( !_PMMETA.bDVI_enable )
+                      msPM_EnableDVIClockAmp(FALSE);
+              #elif PM_SUPPORT_SOG_TIME_SHARE
+                  if( !_PMMETA.bSOG_enable )
+                      msPM_EnableDVIClockAmp(FALSE);
+              #else
+                  if( (!_PMMETA.bSOG_enable) && (!_PMMETA.bDVI_enable) )
+                      msPM_EnableDVIClockAmp(FALSE);
+              #endif
+              #undef _PMMETA
+              }
+              #endif
+3029          //**************************************************************************
+3030          //  [Function Name]:
+3031          //                  msPM_Handler()
+3032          //  [Description]
+3033          //                  msPM_Handler
+3034          //  [Arguments]:
+3035          //
+3036          //  [Return]:
+3037          //
+3038          //**************************************************************************
+3039          void  msPM_Handler(void)
+3040          {
+3041   1          switch(sPMInfo.ePMState)
+3042   1          {
+3043   2              case ePM_ENTER_PM:
+3044   2      
+3045   2      #if( ENABLE_WATCH_DOG )
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 51  
+
+3046   2                  Init_WDT( _DISABLE );
+3047   2      #endif
+3048   2      
+3049   2                  msPM_SetPMMode();
+3050   2              break;
+3051   2      
+3052   2              case ePM_WAIT_EVENT:
+3053   2                  msPM_WaitingEvent();
+3054   2                  if(msPM_Checkagain())
+3055   2                      sPMInfo.ePMState = ePM_EXIT_PM;
+3056   2                  else
+3057   2                      sPMInfo.ePMState = ePM_ENTER_PM;
+3058   2              break;
+3059   2      
+3060   2              case ePM_EXIT_PM:
+3061   2             #if ENABLE_SUPER_RESOLUTION
+                           SRmodeContent = SRMODE_Nums;
+                     #endif
+3064   2             GammaContent = GAMA_Nums;
+3065   2            #if ENABLE_EDP_OUTPUT
+                        gDPTXInfo.bReTraining = 1;
+                    #endif
+3068   2                  msPM_Reset();
+3069   2                  msPM_PowerUpMacro();
+3070   2                  if(PowerOnFlag) // wakeup form power saving
+3071   2                  {
+3072   3      #if !PM_POWERSAVING_WAKEUP_GPIO //121108 Modify
+                              if (ucWakeupStatus==ePMSTS_ITE_POWER_KEY_ACT)
+                              {
+                                  ExecuteKeyEvent( MIA_Power);
+                                  KeypadButton = BTN_Repeat;
+                              }
+                              else
+              #else
+3080   3                      if (ucWakeupStatus==ePMSTS_GPIO_POWER_KEY_ACT)
+3081   3                      {
+3082   4                          ExecuteKeyEvent( MIA_Power);
+3083   4                          KeypadButton = BTN_Repeat;
+3084   4                      }
+3085   3                      else
+3086   3      #endif
+3087   3                      if((ucWakeupStatus == ePMSTS_VGA_ACT) 
+3088   3                          ||(ucWakeupStatus == ePMSTS_DVI_0_ACT)
+3089   3                          ||(ucWakeupStatus ==ePMSTS_DVI_1_ACT)
+3090   3                          #if ENABLE_DP_INPUT //121130 Modify
+                    ||(ucWakeupStatus ==ePMSTS_DP_ACT)
+                    #endif
+3093   3                           #if ENABLE_MHL//130703 nick
+                                    ||(ucWakeupStatus == ePMSTS_MHL_ACT)
+                                    #endif
+3096   3            )
+3097   3                      {
+3098   4                          Power_PowerOnSystem();
+3099   4                          if(ucWakeupStatus != ePMSTS_VGA_ACT && UserPrefInputType == Input_Analog1)
+3100   4                          {
+3101   5                              SrcInputType = Input_Analog1;
+3102   5                              mStar_SetupInputPort(); 
+3103   5                              ucWakeupStatus = ePMSTS_VGA_ACT;
+3104   5                          }
+3105   4             if((ucWakeupStatus == ePMSTS_VGA_ACT)
+3106   4                          ||(ucWakeupStatus == ePMSTS_DVI_0_ACT)
+3107   4                          ||(ucWakeupStatus ==ePMSTS_DVI_1_ACT))
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 52  
+
+3108   4                          SrcFlags &= ~SyncLoss;    
+3109   4                      }
+3110   3                
+3111   3                  }
+3112   2                  else // wakeup from dc off
+3113   2                  {
+3114   3             if (ucWakeupStatus==ePMSTS_ITE_FACTORY_KEY_ACT)  //120523 Modify
+3115   3                      {
+3116   4                        Set_FactoryModeFlag();
+3117   4                Clr_OsdLockModeFlag();
+3118   4                Clr_ShowOsdLockFlag();
+3119   4                      }
+3120   3                      else if (ucWakeupStatus==ePMSTS_ITE_OSDLOCK_KEY_ACT)  //120524 Modify
+3121   3                      {
+3122   4                if (!OsdLockModeFlag) //120601 Modify
+3123   4                {
+3124   5                  Set_OsdLockModeFlag();
+3125   5                  Set_ShowOsdLockFlag();
+3126   5                }
+3127   4                else          //120601 Modify
+3128   4                {
+3129   5                  Clr_OsdLockModeFlag();
+3130   5                  Clr_ShowOsdLockFlag();
+3131   5                }
+3132   4                      }
+3133   3              
+3134   3          PowerOnSystem();
+3135   3                  }
+3136   2                  sPMInfo.ePMState = ePM_IDLE;
+3137   2      
+3138   2      #if( ENABLE_WATCH_DOG )
+3139   2                  Init_WDT( _ENABLE );
+3140   2                  WDT_CLEAR();
+3141   2      #endif
+3142   2            PM_printMsg("--ePM_EXIT_PM");
+3143   2              break;
+3144   2      
+3145   2              case ePM_IDLE:
+3146   2              default:
+3147   2              break;
+3148   2          }
+3149   1      
+3150   1      }
+3151          #else
+              #define PM_DEBUG    0
+              #endif
+3154          
+3155          #if (MS_PM) || \
+3156              (CHIP_ID==CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID==CHIP_TSUMD)|| (CHIP_ID==CHIP_TSUMJ)
+3157          void msPM_SetPMClockLive(BYTE clk_sel)
+3158          {
+3159   1          if (clk_sel == CLK_LIVE_RCOSC_4M)
+3160   1          {
+3161   2              msWriteByteMask(REG_PM_BC, _BIT6, _BIT6);            // mcu clk Live select ROSC
+3162   2      #if( ENABLE_WATCH_DOG )
+3163   2              SetWDTClk(CLK_LIVE_RCOSC_4M);
+3164   2      #endif
+3165   2          }
+3166   1          else
+3167   1          {
+3168   2      #if( ENABLE_WATCH_DOG )
+3169   2              SetWDTClk(CLK_LIVE_XTAL);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 53  
+
+3170   2      #endif
+3171   2              msWriteByteMask(REG_PM_BC, 0, _BIT6);                // mcu clk Live select XTAL
+3172   2          }
+3173   1          Init_ExtTimerCount();
+3174   1      }
+3175          
+3176          //**************************************************************************
+3177          //  [Function Name]:
+3178          //                  msPM_StartRCOSCCal()
+3179          //  [Description]
+3180          //                  msPM_StartRCOSCCal
+3181          //  [Arguments]:
+3182          //
+3183          //  [Return]:
+3184          //  RCOSC = XTAL * Counter / 512 => Counter = RCOSC *512/XTAL = 143 =>8Fh
+3185          //  CHIP_TSUMC uses FRO_12M /3 =4M to calibration ==> Counter=143
+3186          //**************************************************************************
+3187          Bool msPM_StartRCOSCCal(void)
+3188          {
+3189   1      #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || \
+3190   1          (CHIP_ID==CHIP_TSUMJ)
+              #define RCOSC_CAL_RANGE         64
+              #define WRITE_CAL_VALUE(A, B)    (msWriteByteMask(REG_PM_82, B,0x07));\
+                                               (msWriteByteMask(REG_PM_8A, A,0x3F));
+              #else
+3195   1      #define RCOSC_CAL_RANGE         16
+3196   1      #define WRITE_CAL_VALUE(A, B)    (msWriteByte(REG_PM_82, (A<<4)|(B)))
+3197   1      #endif
+3198   1      
+3199   1      #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || \
+3200   1          (CHIP_ID==CHIP_TSUMJ)
+                  WORD ucCounter;
+                  BYTE ucTemp,i;
+              
+                  msWriteByte(REG_PM_A6, 0x0E);
+                  //msWriteByteMask(REG_01BC, 0, _BIT6);
+                  msPM_SetPMClockLive(CLK_LIVE_XTAL);
+                  ucTemp = msReadByte(REG_PM_82)&0x07;
+                  WRITE_CAL_VALUE(0x00,ucTemp);
+                  msWriteByte(REG_3A80, 0x80);//osc soft reset
+                  msWriteByte(REG_3A80, 0x03);//RCOSC calculate & counter one time mode enable
+              
+                  while( !( msReadByte(REG_3A83) & _BIT4 ) ); // one time counter flag
+                  ucCounter = msRead2Byte(REG_3A82)&0x03FF; // one time counter report
+              
+                  if( ucCounter < RCOSC_TARGET )
+                  {
+                      i = 0;
+                      do
+                      {
+                          WRITE_CAL_VALUE(++i,ucTemp);
+                          msWriteByte(REG_3A80, 0x80);//osc soft reset
+                          msWriteByte(REG_3A80, 0x03);//RCOSC calculate & counter one time mode enable
+                          while( !( msReadByte(REG_3A83) & _BIT4 ) );
+                          ucCounter = msRead2Byte(REG_3A82)&0x03FF;
+                      } while( (ucCounter < RCOSC_TARGET) && (i < 0x1F) );
+              
+                      return (ucCounter >= RCOSC_TARGET);
+                  }
+                  else if( ucCounter > RCOSC_TARGET )
+                  {
+                      i = 0x40;
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 54  
+
+                      do
+                      {
+                          WRITE_CAL_VALUE(--i,ucTemp);
+                          msWriteByte(REG_3A80, 0x80);//osc soft reset
+                          msWriteByte(REG_3A80, 0x03);//RCOSC calculate & counter one time mode enable
+                          while( !( msReadByte(REG_3A83) & _BIT4 ) );
+                          ucCounter = msRead2Byte(REG_3A82)&0x03FF;
+                      } while ( (ucCounter > RCOSC_TARGET) && (i > 0x20) );
+              
+                      return (ucCounter <= RCOSC_TARGET);
+                  }
+              
+                  return TRUE;
+              
+              #else
+3247   1      
+3248   1      #ifndef _RCOSC_MAX
+3249   1          BYTE i;
+3250   1          WORD ucCounter;
+3251   1          int iDeltaOld = 100;
+3252   1          int iDeltaNew = 0;
+3253   1          BYTE ucSetOld;
+3254   1      #endif
+3255   1          BYTE ucTemp;
+3256   1          BYTE ucSetNow;
+3257   1      
+3258   1          ucSetOld = RCOSC_CAL_RANGE/2;
+3259   1          ucSetNow = RCOSC_CAL_RANGE/2;
+3260   1          ucTemp = msReadByte(REG_PM_82)&0x07;  // deglitch time setting
+3261   1      #ifdef _RCOSC_MAX
+                  ucSetNow = 0xF;
+                  msWriteByte(REG_PM_82, (ucSetNow<<4)|ucTemp);
+              #else
+3265   1          for( i=0; i< RCOSC_CAL_RANGE; i++)
+3266   1          {
+3267   2              WRITE_CAL_VALUE(ucSetNow, ucTemp);
+3268   2              msWriteByte(REG_3A80, 0x80);//osc soft reset
+3269   2              msWriteByte(REG_3A80, 0x03);//RCOSC calculate & counter one time mode enable
+3270   2              while( !( msReadByte(REG_3A83) & _BIT4 ) ) // one time counter flag
+3271   2              {
+3272   3              }
+3273   2              ucCounter = msRead2Byte(REG_3A82)&0x03FF; // one time counter report
+3274   2      //        PM_printData("\r\n***ucCounter(%x)", ucCounter);
+3275   2              iDeltaNew = RCOSC_TARGET - (int)ucCounter;
+3276   2      //        PM_printData("\r\n***iDeltaNew(%d)", iDeltaNew);
+3277   2              if(abs(iDeltaNew) < abs(iDeltaOld))
+3278   2              {
+3279   3                  ucSetOld = ucSetNow;
+3280   3                  if(ucCounter > RCOSC_TARGET)
+3281   3                  {
+3282   4                      ucSetNow--;
+3283   4                  }
+3284   3                  else
+3285   3                  {
+3286   4                      ucSetNow++;
+3287   4                  }
+3288   3                  iDeltaOld = iDeltaNew;
+3289   3      //          PM_printData("\r\n***RCOSC Set_new(%x)", ucSetNow);
+3290   3              }
+3291   2              else
+3292   2              {
+3293   3                  WRITE_CAL_VALUE(ucSetNow, ucTemp);
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 55  
+
+3294   3      
+3295   3                  //PM_printData("\r\n***RCOSC Set_old(%x)", ucSetOld);
+3296   3                  msWriteByte(REG_3A80, 0x00);
+3297   3                  return TRUE;
+3298   3              }
+3299   2          }
+3300   1      #endif
+3301   1          return FALSE;
+3302   1      #endif
+3303   1      #undef RCOSC_CAL_RANGE
+3304   1      #undef WRITE_CAL_VALUE
+3305   1      }
+3306          #endif
+3307          
+3308          #if (MS_PM) || (CHIP_ID == CHIP_TSUM9 ||CHIP_ID == CHIP_TSUMF)
+3309          //**************************************************************************
+3310          //  [Function Name]:
+3311          //                  msPM_PassWord(BOOL bEnable)
+3312          //  [Description]
+3313          //                  input  the password for entering pm or turn off XTAL
+3314          //  [Arguments]:
+3315          //
+3316          //  [Return]:
+3317          //
+3318          //**************************************************************************
+3319          void msPM_PassWord(BOOL bEnable)
+3320          {
+3321   1          if(bEnable)
+3322   1          {
+3323   2              msWriteByte(REG_PM_87,0x55);
+3324   2              msWriteByte(REG_PM_88,0xAA);
+3325   2          }
+3326   1          else
+3327   1          {
+3328   2              msWriteByte(REG_PM_87,0x00);
+3329   2              msWriteByte(REG_PM_88,0x00);
+3330   2          }
+3331   1      }
+3332          
+3333          void msPM_Exit(void)
+3334          {
+3335   1          msWriteByte(REG_PM_A6, 0x0E); //turn on core power
+3336   1          msPM_PassWord(FALSE);
+3337   1      }
+3338          #endif
+3339          
+3340          #if (!ENABLE_DEBUG) || (!MS_PM)
+              BYTE code msPMNullData[] = {0};
+              void msPMDummy(void)
+              {
+                  BYTE xdata i = msPMNullData[0];
+              }
+              #endif
+3347          
+*** WARNING C294 IN LINE 1829 OF ..\kernel\Scaler\Ms_PM.c: unreachable code
+*** WARNING C294 IN LINE 2221 OF ..\kernel\Scaler\Ms_PM.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4341    ----
+   CONSTANT SIZE    =    522    ----
+   XDATA SIZE       =      9    ----
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 56  
+
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      32
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  2 WARNING(S),  0 ERROR(S)

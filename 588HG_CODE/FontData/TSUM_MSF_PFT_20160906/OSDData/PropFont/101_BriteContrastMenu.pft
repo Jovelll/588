@@ -1,0 +1,17 @@
+80 2 0 20 3a f 1 1
+101 01 Brightness 'Brightness' x80x
+101 02 Brightness '\x101\x102' x80x
+101 01 Contrast 'Contrast' x80x
+101 02 Contrast '\x103\x104\x102' x80x
+101 01 DCR 'DCR' x80x
+101 02 DCR 'DCR' x80x
+101 01 DLC 'DLC' x80x
+101 02 DLC 'DLC' x80x
+101 01 DPS 'DPS' x80x
+101 02 DPS 'DPS' x80x
+101 01 DSC 'DSC' x80x
+101 02 DSC 'DSC' x80x
+101 01 On 'On' x80x
+101 02 On '\x124' x80x
+101 01 Off 'Off' x80x
+101 02 Off '\x125' x80x

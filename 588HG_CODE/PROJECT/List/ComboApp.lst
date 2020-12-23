@@ -1,0 +1,272 @@
+C51 COMPILER V9.60.0.0   COMBOAPP                                                          12/22/2020 19:50:51 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE COMBOAPP
+OBJECT MODULE PLACED IN .\Obj\ComboApp.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\KERNEL\SCALER\ComboApp.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SY
+                    -STEM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVE
+                    -R\INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\ComboApp.lst) TABS(2) OBJECT(.\Obj\Com
+                    -boApp.obj)
+
+line level    source
+
+   1          #define _ComboAPP_C_
+   2          #if 1
+   3          #include <math.h>
+   4          #include "types.h"
+   5          #include "board.h"
+   6          #include "ms_reg.h"
+   7          #include "global.h"
+   8          #include "Mcu.h"
+   9          //#include "panel.h"
+  10          #include "adjust.h"
+  11          //#include "msADC.h"
+  12          #include "ms_rwreg.h"
+  13          #include "debug.h"
+  14          #include "Common.h"
+  15          #include "misc.h"
+  16          #include "ddc.h"
+  17          #include "power.h"
+  18          #include "detect.h"
+  19          #include "msOsd.h"
+  20          #include "gamma.h"
+  21          //#include "extlib.h"
+  22          #include "menu.h"
+  23          #include "menudef.h"
+  24          #include "menufunc.h"
+  25          #include "msflash.h"
+  26          //#include "msid_v1.h"
+  27          #include "drvgpio.h"
+  28          #include "drv_adctbl.h"
+  29          #include "drvadc.h"
+  30          #include "msEread.h"
+  31          #if ENABLE_RTE
+              #include "msovd.h"
+              #endif
+  34          #if ENABLE_FREESYNC
+              #include "drvDPRxApp.h"
+              #endif
+  37          #if (MS_PM)
+  38          #include "Ms_PM.h"
+  39          #endif
+  40          #include "MsHDCP.h"
+  41          #include "MsDLC.h"
+  42          #include "MsACE.h"
+  43          #include "Userpref.h"
+  44          #include "panel.h"
+  45          #if ENABLE_HDMI
+  46          #include "msHDMI.h"
+  47          #include "msHDMIACE.h"
+  48          
+  49          #if ENABLE_CEC
+              #include "apiCEC.h"
+              #endif
+  52          
+C51 COMPILER V9.60.0.0   COMBOAPP                                                          12/22/2020 19:50:51 PAGE 2   
+
+  53          #endif
+  54          
+  55          #if MS_DAC
+              #include "drvdac.h"
+              #endif
+  58          #if ENABLE_3DLUT
+              #include "ms3DLUT.h"
+              #endif
+  61          
+  62          #if ENABLE_DP_INPUT
+              #include "drvDPRxApp.h"
+              #endif
+  65          
+  66          #include "drvmStar.h"
+  67          
+  68          #define  Combo_DEBUG  1
+  69          
+  70          #if (Combo_DEBUG&&ENABLE_DEBUG)
+  71          #define Combo_printData(str, value)   printData(str, value)
+  72          #define Combo_printMsg(str)               printMsg(str)
+  73          #else
+              #define Combo_printData(str, value)
+              #define Combo_printMsg(str)
+              #endif
+  77          
+  78          
+  79          #if (ENABLE_FREESYNC)
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msAPI_combo_IPGetDDRFlag_ISR()
+              //  [Description]
+              //                  msAPI_combo_IPGetDDRFlag_ISR
+              //  [Arguments]:
+              //
+              //  [Return]:
+              //
+              //**************************************************************************
+              Bool msAPI_combo_IPGetDDRFlag_ISR()
+              {
+                  Bool ucflag= FALSE;
+              
+                  if(CURRENT_INPUT_IS_DISPLAYPORT())
+                  {
+                      #if (ENABLE_DP_INPUT)
+                        ucflag = DPRxGetDRRFlag_ISR();       
+                      #endif
+                  }
+                  else if(CURRENT_INPUT_IS_HDMI())
+                  {
+                       #if (ENABLE_HDMI)
+                      ucflag = mstar_HDMIGetFreeSyncFlag();
+                      #endif
+                  }
+              
+                  return ucflag;
+              }
+              
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msAPI_combo_IPGetDDRFlag()
+              //  [Description]
+              //                  msAPI_combo_IPGetDDRFlag
+C51 COMPILER V9.60.0.0   COMBOAPP                                                          12/22/2020 19:50:51 PAGE 3   
+
+              //  [Arguments]:
+              //
+              //  [Return]:
+              //
+              //**************************************************************************
+              Bool msAPI_combo_IPGetDDRFlag()
+              {
+                  Bool ucflag= FALSE;
+              
+                  if(CURRENT_INPUT_IS_DISPLAYPORT())
+                  {
+                      #if (ENABLE_DP_INPUT)
+                      ucflag = DPRxGetDRRFlag();
+                      #endif
+                  }
+                  else if(CURRENT_INPUT_IS_HDMI())
+                  {
+                      #if (ENABLE_HDMI)
+                      ucflag = mstar_HDMIGetFreeSyncFlag();
+                      #endif
+                  }
+              
+                  return ucflag;
+              }
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msAPI_combo_IPGetDDRFlag()
+              //  [Description]
+              //                  msAPI_combo_IPGetDDRFlag
+              //  [Arguments]:
+              //
+              //  [Return]:
+              //
+              //**************************************************************************
+              
+              void msAPI_combo_IPEnableDDRFlag(Bool Enable)
+              {
+                  BYTE ucFlag=0;
+              
+                  ucFlag = Enable;
+              
+                  if(CURRENT_INPUT_IS_DISPLAYPORT())
+                  {
+                      #if (ENABLE_DP_INPUT)
+                      DPRxEnableDRRFunction(Enable);
+                      DPRxHPDDisable();                                                                           // HPD
+             - ouput enable and set Low
+                      ForceDelay1ms( 100 );
+                      DPRxHPDEnable();
+                      #endif
+                  }
+                  else if(CURRENT_INPUT_IS_HDMI())
+                  {
+                      Combo_printMsg("============2");
+                    Set_InputTimingChangeFlag(); // setup mode failed
+                    mStar_SetupFreeRunMode(); // setup freerun mode
+                    #if ENABLE_CABLE_5V_EDID && ENABLE_HDMI && ENABLE_FREESYNC &&(!ENABLE_HDMI_DRR_MCCS)  
+                  drvmStar_EnableHDMIFreeSyncEDID(Enable);
+                  #endif
+                  msDisableHDCP();
+                  ForceDelay1ms(100);
+                  msEnableHDCP();
+C51 COMPILER V9.60.0.0   COMBOAPP                                                          12/22/2020 19:50:51 PAGE 4   
+
+                  }
+              }
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msAPI_combo_IPGetPixelClk()
+              //  [Description]
+              //                  msAPI_combo_IPGetPixelClk
+              //  [Arguments]:
+              //
+              //  [Return]:
+              //
+              //**************************************************************************
+              WORD msAPI_combo_IPGetPixelClk()
+              {
+                  WORD Pixel_Clock=0;
+              
+                  if(CURRENT_INPUT_IS_DISPLAYPORT())
+                  {
+                      #if (ENABLE_DP_INPUT)
+                      Pixel_Clock = DPRxGetPixelClk();
+                      #endif
+                  }
+                  else if(CURRENT_INPUT_IS_HDMI())
+                  {
+                      Combo_printMsg("============2");
+                  }
+              
+                  return Pixel_Clock;
+              }
+              //**************************************************************************
+              //  [Function Name]:
+              //                  msAPI_combo_IPGetPixelClk()
+              //  [Description]
+              //                  msAPI_combo_IPGetPixelClk
+              //  [Arguments]:
+              //
+              //  [Return]:
+              //
+              //**************************************************************************
+              WORD msAPI_combo_IPGetGetHTotal()
+              {
+                  WORD Htt=0;
+              
+                  if(CURRENT_INPUT_IS_DISPLAYPORT())
+                  {
+                      #if (ENABLE_DP_INPUT)
+                      Htt = DPRxGetHTotal();
+                      #endif
+                  }
+                  else if(CURRENT_INPUT_IS_HDMI())
+                  {
+                      Combo_printMsg("============2");
+                  }
+              
+                  return Htt;
+              }
+              #endif
+ 233          
+ 234          #endif
+ 235          
+ 236          
+ 237          
+C51 COMPILER V9.60.0.0   COMBOAPP                                                          12/22/2020 19:50:51 PAGE 5   
+
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

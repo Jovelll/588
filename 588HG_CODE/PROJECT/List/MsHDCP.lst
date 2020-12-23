@@ -1,0 +1,658 @@
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSHDCP
+OBJECT MODULE PLACED IN .\Obj\MsHDCP.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\MsHDCP.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYST
+                    -EM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\
+                    -INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\MsHDCP.lst) TABS(2) OBJECT(.\Obj\MsHDCP.
+                    -obj)
+
+line level    source
+
+   1          #define _MSHDCP_C_
+   2          #include "board.h"
+   3          #if ENABLE_HDCP
+   4          #include "types.h"
+   5          #include "ms_reg.h"
+   6          #include "ms_rwreg.h"
+   7          #include "Common.h"
+   8          #include "misc.h"
+   9          #include "global.h"
+  10          #include "userpref.h"
+  11          
+  12          #include "debug.h"
+  13          #include "msflash.h"
+  14          #include "NvRam.h"
+  15          
+  16          #include "msEread.h"
+  17          
+  18          // Internal
+  19          #include "msHDCP.h"
+  20          //#include "halRwreg.h"
+  21          
+  22          
+  23          #if HDCPKEY_USE_CODE
+  24          #message "Please remember to disable the default HDCP key!"
+*** MESSAGE C320 IN LINE 24 OF ..\kernel\Scaler\MsHDCP.c: "Please remember to disable the default HDCP key!"
+  25          #endif
+  26          
+  27          #define HDCP_DEBUG 1
+  28          #if ENABLE_DEBUG && HDCP_DEBUG
+  29          #define HDCP_printData(str, value)   printData(str, value)
+  30          #define HDCP_printMsg(str)           printMsg(str)
+  31          #else
+              #define HDCP_printData(str, value)
+              #define HDCP_printMsg(str)
+              #endif
+  35          
+  36          #if (HDCPKEY_USE_CODE)
+  37          BYTE code BKSV[5] =
+  38          {
+  39              0x89, 0x38, 0xae, 0x0d, 0xed
+  40          };
+  41          //////////////////////////////////////////////////////////////
+  42          // HDCP production key
+  43          //////////////////////////////////////////////////////////////
+  44          BYTE code HDCPkey[] =
+  45          {
+  46              0x00, 0xE6, 0xD2, 0xD0, 0xA4, 0x0A, 0xF9, 0xAB, 0x2F, 0x9A, 0x2D, 0x3A,
+  47              0xB5, 0xFF, 0x9D, 0x37, 0xB3, 0x63, 0x23, 0x6E, 0xA3, 0x4E, 0x58, 0xEF,
+  48              0xD2, 0x78, 0x6D, 0x3B, 0xDE, 0xFD, 0x7E, 0x4D, 0xAA, 0xB6, 0x0C, 0x59,
+  49              0x4F, 0x74, 0x3C, 0xF8, 0xDA, 0x65, 0x6E, 0x2F, 0xB4, 0xAB, 0xAD, 0x7F,
+  50              0x89, 0xA1, 0x92, 0x25, 0x1A, 0xCD, 0x50, 0x93, 0x50, 0x00, 0x63, 0x88,
+  51              0x7B, 0xD0, 0xD8, 0x4D, 0x46, 0x95, 0xA8, 0xFC, 0x9B, 0x0D, 0xD1, 0x08,
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 2   
+
+  52              0x06, 0xB2, 0x67, 0xBE, 0xA2, 0x90, 0xA7, 0x84, 0x2A, 0x4B, 0x28, 0xC8,
+  53              0xDD, 0x8F, 0xC9, 0x48, 0xA3, 0x0A, 0x7D, 0xCA, 0xDA, 0xBC, 0xCE, 0xFA,
+  54              0x9B, 0x9F, 0x61, 0x90, 0x9E, 0x46, 0x24, 0x2B, 0xA6, 0x7B, 0xB1, 0x6F,
+  55              0xC4, 0x4C, 0x63, 0xAF, 0x44, 0xE1, 0x3A, 0xDD, 0x0D, 0xED, 0xF4, 0x45,
+  56              0x36, 0x47, 0x0B, 0x48, 0x0A, 0xB1, 0xE6, 0xE9, 0xB6, 0xED, 0x78, 0x37,
+  57              0xDC, 0xB0, 0x07, 0x72, 0x83, 0xDC, 0x73, 0x26, 0x31, 0x49, 0x03, 0x52,
+  58              0x7C, 0xE6, 0xC6, 0xE8, 0x3C, 0xD1, 0x62, 0xFE, 0xF0, 0x01, 0x73, 0x23,
+  59              0x90, 0x70, 0xA9, 0x52, 0x8C, 0x75, 0x1C, 0xE5, 0x63, 0x7C, 0xA9, 0x98,
+  60              0x5F, 0xD9, 0x7C, 0x62, 0x25, 0x6C, 0x61, 0x6C, 0xB5, 0xF9, 0xDB, 0xD8,
+  61              0x91, 0x2F, 0x25, 0xF6, 0x3E, 0x37, 0xBE, 0xE2, 0x92, 0x08, 0x07, 0x3C,
+  62              0xE6, 0xC9, 0xE3, 0xB0, 0x4D, 0xF6, 0xAD, 0x54, 0x3C, 0xED, 0x92, 0x5A,
+  63              0x97, 0x93, 0xC0, 0x48, 0xEA, 0x23, 0x6C, 0xDD, 0x9A, 0x00, 0xBA, 0xF1,
+  64              0xB4, 0xE7, 0x7E, 0x84, 0x9A, 0xB5, 0xD5, 0xF4, 0xB0, 0x42, 0x49, 0x5E,
+  65              0x15, 0x5A, 0x43, 0x2D, 0xA9, 0xB0, 0x0A, 0x1C, 0x75, 0xDE, 0x2E, 0x08,
+  66              0xF7, 0xDF, 0x38, 0x03, 0xEB, 0x6A, 0x75, 0xEB, 0xDA, 0x1C, 0xA0, 0xC9,
+  67              0x2F, 0x2A, 0x69, 0x3F, 0x13, 0xFB, 0xA4, 0x23, 0x0A, 0xE5, 0x0A, 0xA5,
+  68              0xEF, 0xCC, 0x8D, 0xB6, 0x5E, 0x6C, 0xB6, 0xE8, 0x84, 0xEF, 0x03, 0xDC,
+  69              0xC5, 0x8A, 0xA3, 0x4B, 0xEF, 0x44, 0x12, 0x7F
+  70          };
+  71          #else
+              BYTE code BKSV[1] =
+              {
+              0xff
+              };
+              #endif
+  77          
+  78          //*********************************************************
+  79          // HDCP BKSV key
+  80          //*********************************************************
+  81          void msInitHDCPProductionKey( void )
+  82          {
+  83   1          BYTE ucValue;
+  84   1          WORD wCount;
+  85   1        
+  86   1      
+  87   1      #if (CHIP_ID==CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) ||(CHIP_ID==CHIP_TSUMD) ||(CHIP_ID==CHIP_TSUMJ)
+              #ifndef FPGA
+                  Bool bHDCPKeyInEfuse = FALSE;
+                  WORD wChecksum = 0, wEfuseChecksum = 0;
+              
+                  msEread_SetComboInitialValue();
+                  bHDCPKeyInEfuse = msEread_IsHDCPKeyInEfuse();
+                  if(bHDCPKeyInEfuse)
+                      HDCP_printMsg("HDCP key in Efuse\n");
+              #endif  
+              #endif
+  98   1      
+  99   1      #if (CHIP_ID==CHIP_TSUM9||CHIP_ID==CHIP_TSUMF) // cannot load key from efuse
+ 100   1          Bool bHDCPKeyInEfuse = FALSE; 
+ 101   1          WORD wChecksum = 0, wEfuseChecksum = 0;
+ 102   1      #endif
+ 103   1      
+ 104   1          // prevent complier warning
+ 105   1          #if !HDCPKEY_USE_CODE
+                  ucValue = BKSV[0];
+                  #endif
+ 108   1      
+ 109   1      #if (CHIP_ID==CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) ||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_TSUM9||CHIP_ID=
+             -=CHIP_TSUMF)
+ 110   1          DVI_RELATED_CLOCK_CTRL_0(0xFFFF, 0xFFFF);
+ 111   1          DVI_RELATED_CLOCK_CTRL_1(0x3FFF, 0x3FFF);
+ 112   1      #else
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 3   
+
+                  DVI_RELATED_CLOCK_CTRL(0, 0x601); //msWrite2ByteMask( REG_290C, 0, 0x601 ); // HDCP related power powe
+             -r down
+              #endif
+ 115   1      
+ 116   1      
+ 117   1      #if (CHIP_ID==CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) ||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_TSUM9||CHIP_ID=
+             -=CHIP_TSUMF)//&& ENABLE_XIU_WRITE_KEY
+ 118   1      
+ 119   1          //Bksv need to write in 74REG for HDMI/DVI
+ 120   1          HDCP_CPU_WRITE_BKSV_START();
+ 121   1      
+ 122   1          for( wCount = 0; wCount < 5; wCount++ )
+ 123   1          {
+ 124   2      #if HDCPKEY_USE_CODE
+ 125   2      #ifndef FPGA
+ 126   2      
+ 127   2              ucValue = BKSV[wCount];
+ 128   2              if(bHDCPKeyInEfuse)
+ 129   2              {
+ 130   3                  ucValue = msEread_GetHDCPKeyFromEfuse(wCount);
+ 131   3                  wChecksum += ucValue;
+ 132   3                  //printData("Efuse = 0x%x\n", ucValue);
+ 133   3              }
+ 134   2      #endif    
+ 135   2      #else
+              #if HDCPKEY_IN_Flash
+                      Flash_Read_Factory_KeySet( FLASH_KEY_HDCP, TRUE, wCount, 1, &ucValue, 1 );
+                      //ucValue = FlashReadByte( HDCPKEYSET_START + BKSVDataAddr + wCount );
+              #else
+                      Set_HdcpNVRamFlag();
+                      NVRam_ReadByte( RM_HDCP_KEY_BASEADDR1 + wCount, &ucValue );
+                      Clr_HdcpNVRamFlag();
+              #endif
+              #endif
+ 145   2      
+ 146   2              HDCP_CPU_WRITE_BKSV(wCount, ucValue); // write data and trigger latch data
+ 147   2              while(HDCP_CPU_WR_BUSY()); // wait ready
+ 148   2          }
+ 149   1      
+ 150   1          // First 5 bytes is BKSV only use for DP port.
+ 151   1          HDCP_CPU_WRITE_ENABLE(0xC0, 0xC0); //[7]Enable CPU write, [6]Access SRAM
+ 152   1      #if ((CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_TSUM9)||(CHIP_ID=
+             -=CHIP_TSUMF)) //&& ENABLE_XIU_WRITE_KEY    
+ 153   1          HDCP_XIU_WRITE_KEY_ENABLE(); //Access Key SRAM through XIU.
+ 154   1      #endif    
+ 155   1          for( wCount = 0; wCount < 5; wCount++ )
+ 156   1          {
+ 157   2          #if HDCPKEY_USE_CODE
+ 158   2      #ifndef FPGA
+ 159   2        
+ 160   2              ucValue = BKSV[wCount];
+ 161   2              if(bHDCPKeyInEfuse)
+ 162   2              {
+ 163   3                  ucValue = msEread_GetHDCPKeyFromEfuse(wCount);
+ 164   3              }
+ 165   2      #endif    
+ 166   2          #else
+                      #if HDCPKEY_IN_Flash
+                      Flash_Read_Factory_KeySet( FLASH_KEY_HDCP, TRUE, wCount, 1, &ucValue, 1 );
+                      //ucValue = FlashReadByte( HDCPKEYSET_START + BKSVDataAddr + wCount );
+                      #else
+                      Set_HdcpNVRamFlag();
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 4   
+
+                      NVRam_ReadByte( RM_HDCP_KEY_BASEADDR1 + wCount, &ucValue );
+                      Clr_HdcpNVRamFlag();
+                      #endif
+                  #endif
+ 176   2      #if ((CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_TSUM9)||(CHIP_ID=
+             -=CHIP_TSUMF)) //&& ENABLE_XIU_WRITE_KEY     
+ 177   2              HDCP_XIU_WRITE_KEY(ucValue);
+ 178   2      #endif
+ 179   2              msWriteByte( REG_06A0 + wCount, ucValue );           //Off-Line Key
+ 180   2              msWriteByte( REG_07A0 + wCount, ucValue );           //Off-LineKey 
+ 181   2          }
+ 182   1      
+ 183   1          for( wCount = 0; wCount < 284; wCount++ )
+ 184   1          {
+ 185   2          #if HDCPKEY_USE_CODE
+ 186   2      #ifndef FPGA
+ 187   2        
+ 188   2              ucValue = HDCPkey[wCount] ;
+ 189   2              if(bHDCPKeyInEfuse)
+ 190   2              {
+ 191   3                  ucValue = msEread_GetHDCPKeyFromEfuse(wCount+5);
+ 192   3                  wChecksum += ucValue;
+ 193   3                  //printData("Efuse = 0x%x\n", ucValue);
+ 194   3              }
+ 195   2      #endif    
+ 196   2          #else
+                      #if HDCPKEY_IN_Flash
+                      //ucValue = FlashReadByte( HDCPKEYSET_START + HDCPKetAddr + wCount );
+                      Flash_Read_Factory_KeySet( FLASH_KEY_HDCP, TRUE, wCount + HDCPKetAddr, 1, &ucValue, 1 );
+                      #else
+                      Set_HdcpNVRamFlag();
+                      NVRam_ReadByte( RM_HDCP_KEY_BASEADDR2 + wCount, &ucValue );
+                      Clr_HdcpNVRamFlag();
+                      #endif
+                  #endif
+ 206   2      #if ((CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_TSUM9)||(CHIP_ID=
+             -=CHIP_TSUMF)) //&& ENABLE_XIU_WRITE_KEY     
+ 207   2              HDCP_XIU_WRITE_KEY(ucValue); // write data and trigger latch data
+ 208   2      #endif        
+ 209   2          }
+ 210   1      #if ((CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_TSUM9)||(CHIP_ID=
+             -=CHIP_TSUMF)) //&& ENABLE_XIU_WRITE_KEY       
+ 211   1          HDCP_XIU_WRITE_KEY_DISABLE();
+ 212   1      #endif
+ 213   1      #ifndef FPGA
+ 214   1          if(bHDCPKeyInEfuse)
+ 215   1          {
+ 216   2              if(msEread_CompareHDCPChecksumInEfuse(wChecksum))
+ 217   2                  HDCP_printMsg("Efuse Checksum match ^^ \n");
+ 218   2              else
+ 219   2              {
+ 220   3                  HDCP_printMsg("Efuse Checksum wrong @@ \n");
+ 221   3                  HDCP_printData("Calculate checksum = 0x%x\n", wChecksum);
+ 222   3                  HDCP_printData("Efuse checksum = 0x%x\n", wEfuseChecksum);
+ 223   3              }
+ 224   2          }
+ 225   1      #endif
+ 226   1      
+ 227   1      #else // tsumu
+                  HDCP_CPU_WRITE_BKSV_START();
+              
+                  for( wCount = 0; wCount < 5; wCount++ )
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 5   
+
+                  {
+                  #if HDCPKEY_USE_CODE
+              
+                ucValue = BKSV[wCount];
+              #if (CHIP_ID==CHIP_TSUMJ)
+              #ifndef FPGA
+                if(bHDCPKeyInEfuse)
+                {
+                  ucValue = msEread_GetHDCPKeyFromEfuse(wCount);
+                  wChecksum += ucValue;
+                  //printData("Efuse = 0x%x\n", ucValue);
+                }
+              #endif
+              #endif
+                  #else
+                      #if HDCPKEY_IN_Flash
+                      Flash_Read_Factory_KeySet( FLASH_KEY_HDCP, TRUE, wCount, 1, &ucValue, 1 );
+                      //ucValue = FlashReadByte( HDCPKEYSET_START + BKSVDataAddr + wCount );
+                      #else
+                      Set_HdcpNVRamFlag();
+                      NVRam_ReadByte( RM_HDCP_KEY_BASEADDR1 + wCount, &ucValue );
+                      Clr_HdcpNVRamFlag();
+                      #endif
+                  #endif
+              
+                      HDCP_CPU_WRITE_BKSV(wCount, ucValue); // write data and trigger latch data
+                      while(HDCP_CPU_WR_BUSY()); // wait ready
+                  }
+              
+                  HDCP_CPU_WRITE_ENABLE(0xC0, 0xC0); //[15]: CPU write enable, [14]: 0: 74 RAM, 1 :HDCP RAM
+                  HDCP_CPU_RW_ADDRESS(0); //address
+                  HDCP_LOAD_ADDR_GEN_PULSE(); // trigger latch address
+              
+                  for( wCount = 0; wCount < 284; wCount++ )
+                  {
+                  #if HDCPKEY_USE_CODE
+                ucValue = HDCPkey[wCount] ;
+              #if (CHIP_ID==CHIP_TSUMJ)
+              #ifndef FPGA
+                if(bHDCPKeyInEfuse)
+                {
+                  ucValue = msEread_GetHDCPKeyFromEfuse(wCount+5);
+                  wChecksum += ucValue;
+                  //printData("Efuse = 0x%x\n", ucValue);
+                }
+              #endif
+              #endif
+                  #else
+                      #if HDCPKEY_IN_Flash
+                      //ucValue = FlashReadByte( HDCPKEYSET_START + HDCPKetAddr + wCount );
+                      Flash_Read_Factory_KeySet( FLASH_KEY_HDCP, TRUE, wCount + HDCPKetAddr, 1, &ucValue, 1 );
+                      #else
+                      Set_HdcpNVRamFlag();
+                      NVRam_ReadByte( RM_HDCP_KEY_BASEADDR2 + wCount, &ucValue );
+                      Clr_HdcpNVRamFlag();
+                      #endif
+                  #endif
+              
+                      HDCP_CPU_WRITE_DATA(ucValue); // write data and trigger latch data
+                      while(HDCP_CPU_WR_BUSY()); // wait ready
+                  }
+              
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 6   
+
+              #endif //CHIP_ID==CHIP_TSUMC && ENABLE_XIU_WRITE_KEY
+ 294   1      
+ 295   1          //Bcaps=0x00 or 0x80
+ 296   1      #if ENABLE_HDMI
+ 297   1          HDCP_CPU_WRITE_BCAPS(0x80); // HDCP data
+ 298   1      #else
+                  HDCP_CPU_WRITE_BCAPS(0); // HDCP data
+              #endif
+ 301   1      
+ 302   1          HDCP_CPU_WRITE_ENABLE(0, 0xC0); //msWriteByteMask( REG_28F3, 0x00, 0xC0 ); //[15]: CPU write disable, 
+             -[14]: 0: 74 RAM, 1 :HDCP RAM
+ 303   1          HDCP_MISC_SETTING(0x721); //msWrite2Byte( REG_28C0, 0x0721 ); // [10:8]: 3'b111 determine Encrp_En dur
+             -ing Vblank in DVI mode; [5]:HDCP enable; [0]: EESS mode deglitch Vsync mode
+ 304   1          HDCP_ENABLE_DDC(); // [10]: HDCP enable DDC
+ 305   1      
+ 306   1      #if CHIP_ID==CHIP_TSUMU && ENABLE_DVI_DUAL_LINK
+                  //Bksv
+                  for(wCount=0; wCount<5; wCount++)
+                  {
+                      #if HDCPKEY_USE_CODE
+                      ucValue = BKSV[wCount];
+                      #else
+                      #if HDCPKEY_IN_Flash
+                      //ucValue = FlashReadByte( HDCPKEYSET_START + BKSVDataAddr + wCount );
+                      Flash_Read_Factory_KeySet( FLASH_KEY_HDCP, TRUE, wCount, 1, &ucValue, 1 );
+                      #else
+                      Set_HdcpNVRamFlag();
+                      NVRam_ReadByte( RM_HDCP_KEY_BASEADDR1 + wCount, &ucValue );
+                      Clr_HdcpNVRamFlag();
+                      #endif
+                      #endif
+              
+                      //msWriteByte(REG_3BFA+wCount, ucValue);
+                      //while( msReadByte( REG_3BF2 ) & 0x80 );     // wait ready
+                      HDCP1_CPU_WRITE_BKSV(wCount, ucValue);
+                      while(HDCP1_CPU_WR_BUSY()); // wait ready
+                  }
+              
+                  //Bcaps=0x00 or 0x80
+                #if ENABLE_HDMI
+                  HDCP1_CPU_WRITE_BCAPS(0x80); //msWriteByte( REG_3BFF, 0x80 );  //HDCP data
+                #else
+                  HDCP1_CPU_WRITE_BCAPS(0); //msWriteByte( REG_3BFF, 0x00 );  //HDCP data
+                #endif // #if ENABLE_HDMI
+              
+                  HDCP1_MISC_SETTING(0x721); //msWrite2Byte( REG_3BC0, 0x0721 ); // [10:8]: 3'b111 determine Encrp_En du
+             -ring Vblank in DVI mode; [5]:HDCP enable; [0]: EESS mode deglitch Vsync mode
+                  HDCP1_ENABLE_DDC(); //msWriteByteMask( REG_3BEF, 0x04, 0x04 ); // [10]: HDCP enable DDC
+              
+              #endif //CHIP_ID==CHIP_TSUMU && ENABLE_DVI_DUAL_LINK
+ 340   1      
+ 341   1          HDCP_FORCE_ACK();
+ 342   1      }
+ 343          ///////////////////////////////////////////////////////////////////////////////
+ 344          // <Function>: msPullLowHPD1
+ 345          //
+ 346          // <Description>: Pull low DVI Hot-Plug-Detection pin
+ 347          //
+ 348          // <Parameter>: None
+ 349          //
+ 350          //
+ 351          ///////////////////////////////////////////////////////////////////////////////
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 7   
+
+ 352          void msPullLowHPD1( void )
+ 353          {
+ 354   1          if(CURRENT_INPUT_IS_HDMI())
+ 355   1          {
+ 356   2              if(CURRENT_INPUT_IS_HDMI0())
+ 357   2              {
+ 358   3                  if(!IS_MHL_PORT0_CABLE_CONNECT())
+ 359   3                      hw_Clr_HdcpHpd();
+ 360   3              }
+ 361   2      
+ 362   2              if(CURRENT_INPUT_IS_HDMI1())
+ 363   2              {
+ 364   3                  if(!IS_MHL_PORT1_CABLE_CONNECT())
+ 365   3                      hw_Clr_HdcpHpd2();
+ 366   3              }
+ 367   2      
+ 368   2              if(CURRENT_INPUT_IS_HDMI2())
+ 369   2              {
+ 370   3                  if(!IS_MHL_PORT2_CABLE_CONNECT())
+ 371   3                      hw_Clr_HdcpHpd3();
+ 372   3              }
+ 373   2          }
+ 374   1      }
+ 375          
+ 376          ///////////////////////////////////////////////////////////////////////////////
+ 377          // <Function>: msPullLowHPD1
+ 378          //
+ 379          // <Description>: Pull high DVI Hot-Plug-Detection pin
+ 380          //
+ 381          // <Parameter>: None
+ 382          //
+ 383          //
+ 384          ///////////////////////////////////////////////////////////////////////////////
+ 385          void msPullHighHPD1( void )
+ 386          {
+ 387   1          if(CURRENT_INPUT_IS_HDMI())
+ 388   1          {
+ 389   2              if(CURRENT_INPUT_IS_HDMI0())
+ 390   2              {
+ 391   3                  if(!IS_MHL_PORT0_CABLE_CONNECT())
+ 392   3                      hw_Set_HdcpHpd();
+ 393   3              }
+ 394   2      
+ 395   2              if(CURRENT_INPUT_IS_HDMI1())
+ 396   2              {
+ 397   3                  if(!IS_MHL_PORT1_CABLE_CONNECT())
+ 398   3                      hw_Set_HdcpHpd2();
+ 399   3              }
+ 400   2      
+ 401   2              if(CURRENT_INPUT_IS_HDMI2())
+ 402   2              {
+ 403   3                  if(!IS_MHL_PORT2_CABLE_CONNECT())
+ 404   3                      hw_Set_HdcpHpd3();
+ 405   3              }
+ 406   2          }
+ 407   1      }
+ 408          
+ 409          void msTMDSClkOn( Bool u8On)
+ 410          {
+ 411   1          if(CURRENT_INPUT_IS_HDMI0() || CURRENT_INPUT_IS_DVI0())
+ 412   1        {
+ 413   2          #if ENABLE_DVI_DUAL_LINK
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 8   
+
+                  DVI_C_RCK_CTRL(u8On);
+                  #else
+ 416   2              DVI_A_RCK_CTRL(u8On);
+ 417   2          #endif
+ 418   2        }
+ 419   1          else if(CURRENT_INPUT_IS_HDMI1() || CURRENT_INPUT_IS_DVI1())
+ 420   1        {
+ 421   2              DVI_B_RCK_CTRL(u8On);
+ 422   2        }
+ 423   1          else if(CURRENT_INPUT_IS_HDMI2() || CURRENT_INPUT_IS_DVI2())
+ 424   1        {
+ 425   2              DVI_C_RCK_CTRL(u8On);
+ 426   2        }
+ 427   1      }
+ 428          
+ 429          ///////////////////////////////////////////////////////////////////////////////
+ 430          // <Function>: msPullLowHPD2
+ 431          //
+ 432          // <Description>: Cut off DVI receiver clock current
+ 433          //
+ 434          // <Parameter>: None
+ 435          //
+ 436          ///////////////////////////////////////////////////////////////////////////////
+ 437          void msPullLowHPD2( void )
+ 438          {
+ 439   1          HDCP_CLEAR_STATUS(); //Clear HDCP status
+ 440   1      
+ 441   1          msTMDSClkOn(FALSE);
+ 442   1      }
+ 443          ///////////////////////////////////////////////////////////////////////////////
+ 444          // <Function>: msPullHighHPD2
+ 445          //
+ 446          // <Description>: Connect DVI receiver clock current
+ 447          //
+ 448          // <Parameter>: None
+ 449          //
+ 450          ///////////////////////////////////////////////////////////////////////////////
+ 451          void msPullHighHPD2( void )
+ 452          {
+ 453   1          msTMDSClkOn(TRUE);
+ 454   1      }
+ 455          
+ 456          void mstar_HDCPReset(void)
+ 457          {
+ 458   1          DVI_RESET(TRUE);
+ 459   1          HDCP_RESET(TRUE);
+ 460   1          ForceDelay1ms(2);
+ 461   1          HDCP_RESET(FALSE);
+ 462   1          DVI_RESET(FALSE);
+ 463   1      }
+ 464          
+ 465          void msDisableHDCP( void )
+ 466          {
+ 467   1          msPullLowHPD1();
+ 468   1          msPullLowHPD2();
+ 469   1          mstar_HDCPReset();
+ 470   1      }
+ 471          void msEnableHDCP( void )
+ 472          {
+ 473   1          if( !PowerSavingFlag )
+ 474   1          {
+ 475   2              msDisableHDCP();
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 9   
+
+ 476   2              ForceDelay1ms( 300 );
+ 477   2          }
+ 478   1          msPullHighHPD2();
+ 479   1          msPullHighHPD1();
+ 480   1      
+ 481   1      }
+ 482          #if ENABLE_DVI_DUAL_LINK
+              Bool IsSrcUseDualLinkDviPort(void)
+              {
+                  if(SrcInputType == Input_Digital) // DVI Dual-link - PortC+A
+                      return 1;
+                  return 0;
+              }
+              
+              // DVI dual-link configuration
+              void msDVIDualLinkMode(Bool bEnable)
+              {
+                  msWriteBit(REG_1E3E, bEnable, _BIT7);
+              
+                  if(bEnable) // dual-link, portC+A
+                  {
+                      msWriteByteMask( REG_2800, 0, BIT7|BIT6 ); // [7]: ABSWAP, [6]: ignore_dual_en
+                      msWriteByteMask( REG_2801, 0, BIT6|BIT5 ); // [6]: DVI_linkb_en, [5]: DVI_dual_manual_en
+                      msWriteByteMask( REG_2860, BIT5|BIT4, BIT6|BIT5|BIT4 ); // [6]: DVI_dual_b_ov_en, [5]: DVI_dual_c_
+             -ov_en, [4]: DVI_dual_ov_en
+                      //msWriteByteMask(REG_2E02, 0x10, 0xF0); // Set scaler IPMUX to dual-link
+                      //msWriteBit(SC23_06, TRUE, _BIT2); // dual-in enable
+                      //msWriteBit(SC23_07, TRUE, _BIT2); // odd/even pixel swap
+              
+                      msWriteByteMask(SC0_A6, _BIT1, _BIT1);
+                  }
+                  else // single-link, port C
+                  {
+                      msWriteByteMask( REG_2800, BIT6, BIT7|BIT6 ); // [7]: ABSWAP, [6]: ignore_dual_en
+                      msWriteByteMask( REG_2801, BIT6|BIT5, BIT6|BIT5 ); // [6]: DVI_linkb_en, [5]: DVI_dual_manual_en
+                      //msWriteByteMask( REG_2860, BIT5|BIT4, BIT6|BIT5|BIT4 ); // [6]: DVI_dual_b_ov_en, [5]: DVI_dual_
+             -c_ov_en, [4]: DVI_dual_ov_en
+                      //msWriteByteMask(REG_2E02, 0xA0, 0xF0); // Set scaler IPMUX to single-link
+                      //msWriteBit(SC23_06, FALSE, _BIT2); // dual-in disable
+                      //msWriteBit(SC23_07, FALSE, _BIT2);
+              
+                      msWriteByteMask(SC0_A6, 0, _BIT1);
+                  }
+              }
+              
+              Bool msGetDVIDualLinkStatus(void)
+              {
+              #if DL_PXL_RAT_DET
+                  WORD rate;
+              
+                  rate = Mode_GetStandardModePxlRate();
+              
+                  HDCP_printData("DVI Pixel Rate : %d", rate);
+              
+                  if( rate > 165 )
+                      return TRUE;
+                  else
+                      return FALSE;
+              #else
+                  BYTE ucDualLinkStatus = 0, ucStableCnt,ucIntCount = 0;
+                  WORD wHDE, wVDE;
+              
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 10  
+
+                  for(ucStableCnt = 0; ucStableCnt < 5; ucStableCnt++)
+                  {
+                      msWriteByte(REG_29E3, 0x44); // clear DE changed IRQ status
+                      msWriteByte(REG_29E3, 0);
+              
+                      ForceDelay1ms(10);
+                      ucDualLinkStatus |= msReadByte(REG_29E0); // Check DE changed IRQ status
+              
+                      if((ucDualLinkStatus&_BIT6)) // Check primary-link DE changed status
+                          ucIntCount++;
+                  }
+              
+                  if(ucIntCount != 0) // If primary-link DE changed, that means signal is coupled from another port.
+                  {
+                      HDCP_printMsg("\r\n DVI_SINGLE_LINK()");
+                      return FALSE;
+                  }
+                  else // primary-link DE is unchanged, check whether DE is stable or unstable
+                  {
+                      for(ucStableCnt = 0; ucStableCnt < 20; ucStableCnt++)
+                      {
+                          ForceDelay1ms(20);
+                          ucDualLinkStatus = msReadByte(REG_3B62); // DVI1 DE is stable
+                          if((ucDualLinkStatus&_BIT6) != 0)
+                              break;
+                      }
+                      if((ucDualLinkStatus&_BIT6) != 0)
+                      {
+                          wHDE = msReadWord(SC0_85) - msReadWord(SC0_81);
+                          wVDE = msReadWord(SC0_83) - msReadWord(SC0_7F);
+                          // software patch for MSPG4233 dual-link port
+                          HDCP_printData("\r\n HDE-VDE = %d", (signed)wHDE - wVDE);
+                          if(wHDE <= wVDE)
+                          {
+                              HDCP_printMsg("\r\n DVI_DUAL_LINK");
+                              return TRUE;
+                          }
+                          else
+                          {
+                              HDCP_printMsg("\r\n II -DVI_SINGLE_LINK()");
+                           return FALSE; // single-link
+                          }
+                      }
+                      else
+                      {
+                          HDCP_printMsg("\r\n II -DVI_SINGLE_LINK()");
+                          return FALSE;
+                      }
+                  }
+              #endif
+              }
+              #endif // #if DUAL_DVI_LINK
+ 588          
+ 589          #else
+              #define HDCP_DEBUG  0
+              #endif
+ 592          
+ 593          #if (!(ENABLE_DEBUG &&HDCP_DEBUG)) || (!ENABLE_HDCP)|| defined(FPGA)
+               BYTE code msHDCPNullData[] = {0};
+              void msHDCPDummy(void)
+              {
+                  BYTE xdata i = msHDCPNullData[0];
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 11  
+
+              }
+              #endif
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    776    ----
+   CONSTANT SIZE    =    391    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

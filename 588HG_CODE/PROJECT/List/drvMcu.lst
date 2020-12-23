@@ -1,0 +1,52 @@
+C51 COMPILER V9.60.0.0   DRVMCU                                                            12/22/2020 19:50:25 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DRVMCU
+OBJECT MODULE PLACED IN .\Obj\drvMcu.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\DRIVER\drvMcu.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\INC;
+                    -..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;..\
+                    -Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\drvMcu.lst) TABS(2) OBJECT(.\Obj\drvMcu.obj)
+
+line level    source
+
+   1          
+   2          #include "global.h"
+   3          
+   4          #if CHIP_ID == CHIP_TSUMU
+              #include "drvMcu_U.c"
+              #elif CHIP_ID == CHIP_TSUMV
+              #include "drvMcu_V.c"
+              #elif CHIP_ID == CHIP_TSUMY
+              #include "drvMcu_Y.c"
+              #elif CHIP_ID == CHIP_TSUMB
+              #include "drvMcu_B.c"
+              #elif CHIP_ID == CHIP_TSUM2
+              #include "drvMcu_2.c"
+              #elif CHIP_ID == CHIP_TSUMC || CHIP_ID == CHIP_TSUMK
+              #include "drvMcu_C.c"
+              #elif CHIP_ID == CHIP_TSUMD
+              #include "drvMcu_D.c"
+              #elif CHIP_ID == CHIP_TSUMJ
+              #include "drvMcu_J.c"
+              #elif CHIP_ID == CHIP_TSUM9
+  21          #include "drvMcu_9.c"
+  22          #elif CHIP_ID == CHIP_TSUMF
+              #include "drvMcu_F.c"
+              #else
+              #message "please implement drvMcu for new chip"
+              #endif
+  27          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    945    ----
+   CONSTANT SIZE    =    113    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      19
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,46 @@
+C51 COMPILER V9.60.0.0   DRV_MSHDMI                                                        12/22/2020 19:50:47 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DRV_MSHDMI
+OBJECT MODULE PLACED IN .\Obj\drv_msHDMI.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\DRIVER\drv_msHDMI.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\
+                    -INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC
+                    -;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\drv_msHDMI.lst) TABS(2) OBJECT(.\Obj\drv_ms
+                    -HDMI.obj)
+
+line level    source
+
+   1          
+   2          #include "global.h"
+   3          
+   4          #if CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMK
+              #include "drv_msHDMI_C.c"
+              #elif CHIP_ID==CHIP_TSUMD
+              #include "drv_msHDMI_D.c"
+              #elif CHIP_ID==CHIP_TSUM9
+   9          #include "drv_msHDMI_9.c"
+  10          #elif CHIP_ID==CHIP_TSUMF
+              #include "drv_msHDMI_F.c"
+              
+              #else
+              #include "drv_msHDMI_.c"
+              #endif
+  16          BYTE code drvHDMINullData[] = {0};
+  17          void msdrvHDMIDummy(void)
+  18          {
+  19   1          BYTE xdata i = drvHDMINullData[0];
+  20   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1540    ----
+   CONSTANT SIZE    =     82    ----
+   XDATA SIZE       =   ----       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =      1      18
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

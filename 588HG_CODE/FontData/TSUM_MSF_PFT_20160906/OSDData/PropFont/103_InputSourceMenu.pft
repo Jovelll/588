@@ -1,0 +1,13 @@
+80 2 0 20 3a f 1 1
+103 01 AutoSelect 'Auto\x00FSelect' x80x
+103 02 AutoSelect '\x105\x106\x122\x123' x80x
+103 01 VGA 'VGA' x80x
+103 02 VGA 'VGA' x80x
+103 01 DVI 'DVI' x80x
+103 02 DVI 'DVI' x80x
+103 01 HDMI 'HDMI' x80x
+103 02 HDMI 'HDMI' x80x
+103 01 DisplayPort 'DisplayPort' x80x
+103 02 DisplayPort 'DisplayPort' x80x
+103 01 MHL 'MHL' x80x
+103 02 MHL 'MHL' x80x

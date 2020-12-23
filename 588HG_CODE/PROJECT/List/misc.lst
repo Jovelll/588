@@ -1,0 +1,120 @@
+C51 COMPILER V9.60.0.0   MISC                                                              12/22/2020 19:50:29 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MISC
+OBJECT MODULE PLACED IN .\Obj\misc.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\misc.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM
+                    -\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\IN
+                    -C;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\misc.lst) TABS(2) OBJECT(.\Obj\misc.obj)
+
+line level    source
+
+   1          #include <intrins.h>
+   2          #include "types.h"
+   3          #include "board.h"
+   4          #include "global.h"
+   5          #if (MS_PM)
+   6          #include "ms_pm.h"
+   7          #endif
+   8          //#define DelayPeriod ((WORD)CPU_CLOCK_MHZ*78/12)
+   9          void Delay4us( void )
+  10          {
+  11   1          _nop_();
+  12   1          _nop_();
+  13   1          _nop_();
+  14   1          _nop_();
+  15   1          _nop_();
+  16   1          _nop_();
+  17   1          _nop_();
+  18   1          _nop_();
+  19   1          _nop_();
+  20   1      #if (MS_PM)
+  21   1          if( g_bMcuPMClock )
+  22   1          {
+  23   2              BYTE i;
+  24   2              for( i = 0; i < PM_DELAY4US_LOOP; i++ )
+  25   2              {
+  26   3                  _nop_();
+  27   3                  _nop_();
+  28   3                  _nop_();
+  29   3                  _nop_();
+  30   3                  _nop_();
+  31   3                  _nop_();
+  32   3                  _nop_();
+  33   3              }
+  34   2      
+  35   2          }
+  36   1      #endif
+  37   1      }
+  38          void ForceDelay1ms( WORD msNums )
+  39          {
+  40   1          if( !msNums )
+  41   1              return;
+  42   1      
+  43   1          u16DelayCounter = msNums;
+  44   1          bDelayFlag = 1;
+  45   1          while( bDelayFlag );
+  46   1      }
+  47          
+  48          void Delay1ms( WORD msNums )
+  49          {
+  50   1          if( !msNums )
+  51   1              return;
+  52   1      
+  53   1          u16DelayCounter = msNums;
+C51 COMPILER V9.60.0.0   MISC                                                              12/22/2020 19:50:29 PAGE 2   
+
+  54   1          bDelayFlag = 1;
+  55   1          while( bDelayFlag )
+  56   1          {
+  57   2              if( InputTimingChangeFlag )
+  58   2              {
+  59   3                  u16DelayCounter = 0;
+  60   3                  bDelayFlag = 0;
+  61   3                  break;
+  62   3              }
+  63   2          };
+  64   1      }
+  65          
+  66          
+  67          BYTE GetVSyncTime( void )
+  68          {
+  69   1          WORD freq;
+  70   1      
+  71   1      #if ENABLE_FREESYNC
+                  if(IS_DP_FREESYNC())
+                  {
+                      WORD u16PixClk, u16Htt;
+              
+                      u16PixClk = msAPI_combo_IPGetPixelClk();
+                      u16Htt = msAPI_combo_IPGetGetHTotal();
+                      if((u16Htt!=0)&&(SrcVTotal!=0))
+                      {
+                          freq = ((DWORD)u16PixClk * 100 + u16Htt/2)/u16Htt;
+                      }
+                  }
+                  else
+              #endif
+  85   1          {
+  86   2              freq = HFreq( SrcHPeriod );//(( DWORD )MST_CLOCK_MHZ * 10 + SrcHPeriod / 2 ) / SrcHPeriod; //get h
+             -freq round 5
+  87   2          }
+  88   1          freq = (( WORD )SrcVTotal * 10 + ( freq / 2 ) ) / freq;
+  89   1          return ( BYTE )freq;
+  90   1      }
+  91          
+  92          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    180    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

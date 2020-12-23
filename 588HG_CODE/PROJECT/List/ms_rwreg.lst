@@ -1,0 +1,973 @@
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MS_RWREG
+OBJECT MODULE PLACED IN .\Obj\ms_rwreg.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\ms_rwreg.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SY
+                    -STEM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVE
+                    -R\INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\ms_rwreg.lst) TABS(2) OBJECT(.\Obj\ms_
+                    -rwreg.obj)
+
+line level    source
+
+   1          ///////////////////////////////////////////////////////////////////////////////
+   2          /// @file ms_rwreg.h
+   3          /// @brief MStar Scaler register access.
+   4          /// @author MStarSemi Inc.
+   5          ///
+   6          /// Functions for MStar scaler register access.
+   7          ///
+   8          /// Features
+   9          ///  -Write byte/word/bulk data
+  10          ///  -Read byte/word data.
+  11          ///  -
+  12          ///  -
+  13          ///////////////////////////////////////////////////////////////////////////////
+  14          #define _MS_RWREG_C
+  15          
+  16          #include <intrins.h>
+  17          #include "types.h"
+  18          #include "board.h"
+  19          #include "ms_reg.h"
+  20          #include "misc.h"
+  21          #include "ms_rwreg.h"
+  22          
+  23          #if ENABLE_SW_DOUBLE_BUFFER
+  24          
+  25          #define DB_DEBUG    1 // default 1 to show SWDB error msg, i.e. timeout/full.
+  26          #if ENABLE_DEBUG&&DB_DEBUG
+  27          #define DB_DEBUG_printData(str, value)   printData(str, value)
+  28          #define DB_DEBUG_printMsg(str)           printMsg(str)
+  29          #else
+              #define DB_DEBUG_printData(str, value)
+              #define DB_DEBUG_printMsg(str)
+              #endif
+  33          
+  34          enum
+  35          {
+  36              SW_DB_SW_TRIG,
+  37              SW_DB_OVSYNC_TRIG,
+  38              SW_DB_IVSYNC_TRIG,
+  39              SW_DB_OVDE_TRIG,
+  40          };
+  41          
+  42          #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || (CHIP_ID == CHIP_TSUMJ)
+             - || (CHIP_ID == CHIP_TSUM9) || (CHIP_ID == CHIP_TSUMF)
+  43          XDATA StuSWDBCtrl SWDBCtrl _at_ XDATA_SWDB_ADDR_START;
+  44          #else
+              XDATA StuSWDBCtrl SWDBCtrl _at_ (0x45FF-sizeof(StuSWDBCtrl));
+              #endif
+  47          
+  48          #if (CHIP_ID == CHIP_TSUMF)
+              #define SW_DB_TRIG_MODE     SW_DB_OVSYNC_TRIG
+              #else
+  51          #define SW_DB_TRIG_MODE     SW_DB_OVDE_TRIG
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 2   
+
+  52          #endif
+  53          
+  54          void msSWDBInit(void)
+  55          {
+  56   1          SWDBCtrl.ucSWDB_Mode = eDB_NORMAL_MODE;
+  57   1          SWDBCtrl.ucSWDB_Mode_Log = eDB_NORMAL_MODE;
+  58   1          SWDBCtrl.ucSWDB_Num = 1;
+  59   1          SWDBCtrl.ucSWDB_Counter = 0;
+  60   1          SWDBCtrl.ucSWDB_OnFire = 0;
+  61   1          SWDBCtrl.ucSWDB_LastSCBank = 0xFF;
+  62   1          msWriteByteMask(REG_3C25,SW_DB_TRIG_MODE<<4,BIT5|BIT4);
+  63   1          msWrite2ByteMask(REG_3C24,((WORD)&SWDBCtrl.ucSWDB_Buffer[0])&0x7FF,0x07FF);
+  64   1          msWriteBit(REG_2B00,0,BIT5);
+  65   1      }
+  66          
+  67          void msSWDBWaitForRdy(void)
+  68          {
+  69   1          XDATA BYTE dlycnt=60;
+  70   1          while(SWDBCtrl.ucSWDB_OnFire)
+  71   1          {
+  72   2              dlycnt--;
+  73   2              if(!dlycnt)
+  74   2              {
+  75   3                  DB_DEBUG_printMsg("ML Time out, switch to SW Trig Mode !!");
+  76   3                  msWriteByteMask(REG_3C25,SW_DB_SW_TRIG<<4,BIT5|BIT4);
+  77   3                  msWriteByteMask(REG_3C25,BIT6,BIT6);
+  78   3                  while(SWDBCtrl.ucSWDB_OnFire);
+  79   3                  msWriteByteMask(REG_3C25,0x00,0xC0);
+  80   3                  msWriteByteMask(REG_3C25,SW_DB_TRIG_MODE<<4,BIT5|BIT4);
+  81   3                  SWDBCtrl.ucSWDB_Counter = 0;
+  82   3                  SWDBCtrl.ucSWDB_OnFire = 0;
+  83   3                  break;
+  84   3              }
+  85   2              ForceDelay1ms(1);
+  86   2          }
+  87   1      }
+  88          
+  89          void msSWDBWriteToRegister(void)
+  90          {
+  91   1          XDATA BYTE index;
+  92   1      
+  93   1          msSWDBWaitForRdy();
+  94   1      
+  95   1          if(SWDBCtrl.ucSWDB_Counter)
+  96   1          {
+  97   2              index = SWDBCtrl.ucSWDB_Counter;
+  98   2              msWrite2ByteMask(REG_3C26,((WORD)&SWDBCtrl.ucSWDB_Buffer[index-1])&0x7FF,0x07FF);
+  99   2              SWDBCtrl.ucSWDB_OnFire = 1;
+ 100   2              msWriteByte(REG_3C25,msReadByte(REG_3C25)|0xC0);
+ 101   2          }
+ 102   1      }
+ 103          
+ 104          #if CHIP_ID==CHIP_TSUMF // TSUMF no VDE end trig source, instead by OSD_VDE_End sw polling & trigger
+              void msSWDBWriteToRegisterByOsdEnd(void)
+              {
+                  XDATA BYTE index;
+                  WORD retry = 0xffff;
+              
+                  msSWDBWaitForRdy();
+              
+                  if(SWDBCtrl.ucSWDB_Counter)
+                  {
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 3   
+
+                      index = SWDBCtrl.ucSWDB_Counter;
+                      msWrite2ByteMask(REG_3C26,((WORD)&SWDBCtrl.ucSWDB_Buffer[index-1])&0x7FF,0x07FF);
+                      msWriteByteMask(REG_3C25,SW_DB_SW_TRIG<<4,BIT5|BIT4);
+              
+                      // wait OSD VDE end
+                      while( retry-- && ( MEM_MSREAD_BYTE(REG_2B24)&BIT0 ) && !InputTimingChangeFlag );
+                      retry = 0xffff;
+                      while( retry-- && !( MEM_MSREAD_BYTE(REG_2B24)&BIT0 ) && !InputTimingChangeFlag );
+              
+                      // SWDB sw trigger
+                      MEM_MSWRITE_BYTE(REG_3C25,MEM_MSREAD_BYTE(REG_3C25) | 0xC0);
+              
+                      while(SWDBCtrl.ucSWDB_OnFire);
+                      msWriteByteMask(REG_3C25,0x00,0xC0);
+                      msWriteByteMask(REG_3C25,SW_DB_TRIG_MODE<<4,BIT5|BIT4);
+                      SWDBCtrl.ucSWDB_Counter = 0;
+                      SWDBCtrl.ucSWDB_OnFire = 0;
+                  }
+              }
+              #endif
+ 134          
+ 135          void msSWDBMode(DB_TYPE type)
+ 136          {
+ 137   1          SWDBCtrl.ucSWDB_Mode = type;
+ 138   1      }
+ 139          
+ 140          static BOOL msSWDBNewModeBufChk(WORD wReg)
+ 141          {
+ 142   1          BOOL NewMode = FALSE;
+ 143   1          XDATA BYTE size = 4;
+ 144   1      
+ 145   1          if((SWDBCtrl.ucSWDB_Mode_Log != SWDBCtrl.ucSWDB_Mode)
+ 146   1             || (SWDBCtrl.ucSWDB_Counter == 0))
+ 147   1          {
+ 148   2              NewMode = TRUE;
+ 149   2          }
+ 150   1          else
+ 151   1          {
+ 152   2              switch(SWDBCtrl.ucSWDB_Mode)
+ 153   2              {
+ 154   3                  case eDB_SUCCESSIVE_MODE:
+ 155   3                      if((wReg>>8) != (SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num - 1]&0x3F))
+ 156   3                          NewMode = TRUE;
+ 157   3                      break;
+ 158   3      
+ 159   3                  case eDB_BURST_MODE:
+ 160   3                      if(((wReg>>8) != (SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num - 1]&0x3F))
+ 161   3                         || ((wReg&0xFF) != (SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num + 1])))
+ 162   3                         NewMode = TRUE;
+ 163   3                      break;
+ 164   3      
+ 165   3                  default:
+ 166   3                      break;
+ 167   3              }
+ 168   2          }
+ 169   1      
+ 170   1          // if buffer size is not large enough then write to register first
+ 171   1          if(SWDBCtrl.ucSWDB_Mode == eDB_NORMAL_MODE)
+ 172   1              size = 3;
+ 173   1          else if(SWDBCtrl.ucSWDB_Mode == eDB_SUCCESSIVE_MODE)
+ 174   1              size = NewMode?4:2;
+ 175   1          else if(SWDBCtrl.ucSWDB_Mode == eDB_BURST_MODE)
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 4   
+
+ 176   1              size = NewMode?4:1;
+ 177   1      
+ 178   1          if( (SWDBCtrl.ucSWDB_Counter+size) >= SWDB_MAX_SIZE )
+ 179   1          {
+ 180   2              DB_DEBUG_printMsg("SWDB buffer is Full !!");
+ 181   2              msSWDBWriteToRegister();
+ 182   2              msSWDBWaitForRdy();
+ 183   2              NewMode = TRUE;
+ 184   2          }
+ 185   1      
+ 186   1          if(NewMode)
+ 187   1              SWDBCtrl.ucSWDB_Num = SWDBCtrl.ucSWDB_Counter + 1;
+ 188   1      
+ 189   1          return NewMode;
+ 190   1      }
+ 191          void msSWDBWriteByte(WORD wReg,BYTE ucValue)
+ 192          {
+ 193   1          XDATA BYTE index, SWDBModeChg;
+ 194   1          XDATA BYTE SCBank,SCAddr,SCVal;
+ 195   1      
+ 196   1          msSWDBWaitForRdy();
+ 197   1          if( wReg&_BIT15 ) // Scaler bank
+ 198   1          {
+ 199   2              SCBank = (wReg>>8)&0x7F;
+ 200   2              SCAddr = (wReg&0xFF);
+ 201   2              SCVal = ucValue;
+ 202   2              if(SWDBCtrl.ucSWDB_LastSCBank!= SCBank)
+ 203   2              {
+ 204   3                  SWDBCtrl.ucSWDB_LastSCBank = SCBank;
+ 205   3                  msSWDBWriteByte(0x2F00,SCBank);
+ 206   3                  msSWDBWriteByte(0x2F00|SCAddr,SCVal);
+ 207   3              }
+ 208   2              else
+ 209   2                  msSWDBWriteByte(0x2F00|SCAddr,SCVal);
+ 210   2          }
+ 211   1          else
+ 212   1          {
+ 213   2              SWDBModeChg = msSWDBNewModeBufChk(wReg);
+ 214   2              index  = SWDBCtrl.ucSWDB_Counter;
+ 215   2      
+ 216   2              switch(SWDBCtrl.ucSWDB_Mode)
+ 217   2              {
+ 218   3                  case eDB_NORMAL_MODE:
+ 219   3                      SWDBCtrl.ucSWDB_Mode_Log = SWDBCtrl.ucSWDB_Mode;
+ 220   3                      SWDBCtrl.ucSWDB_Buffer[index] = (wReg>>8)|eDB_NORMAL_MODE;
+ 221   3                      SWDBCtrl.ucSWDB_Buffer[index+1] = (wReg&0xFF);
+ 222   3                      SWDBCtrl.ucSWDB_Buffer[index+2] = ucValue;
+ 223   3                      SWDBCtrl.ucSWDB_Counter += 3;
+ 224   3                      break;
+ 225   3      
+ 226   3                  case eDB_SUCCESSIVE_MODE:
+ 227   3                      if(SWDBModeChg)
+ 228   3                      {
+ 229   4                          SWDBCtrl.ucSWDB_Mode_Log = SWDBCtrl.ucSWDB_Mode;
+ 230   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num - 1] = (wReg>>8)|eDB_SUCCESSIVE_MODE;
+ 231   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num] = 0;
+ 232   4                          SWDBCtrl.ucSWDB_Buffer[index + 2] = (wReg&0xFF);
+ 233   4                          SWDBCtrl.ucSWDB_Buffer[index + 3] = ucValue;
+ 234   4                          SWDBCtrl.ucSWDB_Counter += 4;
+ 235   4                      }
+ 236   3                      else
+ 237   3                      {
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 5   
+
+ 238   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num - 1] = (wReg>>8)|eDB_SUCCESSIVE_MODE;
+ 239   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num]++;
+ 240   4                          SWDBCtrl.ucSWDB_Buffer[index ] = (wReg&0xFF);
+ 241   4                          SWDBCtrl.ucSWDB_Buffer[index + 1] = ucValue;
+ 242   4                          SWDBCtrl.ucSWDB_Counter += 2;
+ 243   4                      }
+ 244   3                      break;
+ 245   3      
+ 246   3                  case eDB_BURST_MODE:
+ 247   3                      if(SWDBModeChg)
+ 248   3                      {
+ 249   4                          SWDBCtrl.ucSWDB_Mode_Log = SWDBCtrl.ucSWDB_Mode;
+ 250   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num - 1] = (wReg>>8)|eDB_BURST_MODE;
+ 251   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num] = 0;
+ 252   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num + 1] = (wReg&0xFF);
+ 253   4                          SWDBCtrl.ucSWDB_Buffer[index + 3] = ucValue;
+ 254   4                          SWDBCtrl.ucSWDB_Counter += 4;
+ 255   4                      }
+ 256   3                      else
+ 257   3                      {
+ 258   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num - 1] = (wReg>>8)|eDB_BURST_MODE;
+ 259   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num]++;
+ 260   4                          SWDBCtrl.ucSWDB_Buffer[SWDBCtrl.ucSWDB_Num + 1 ] = (wReg&0xFF);
+ 261   4                          SWDBCtrl.ucSWDB_Buffer[index] = ucValue;
+ 262   4                          SWDBCtrl.ucSWDB_Counter += 1;
+ 263   4                      }
+ 264   3                      break;
+ 265   3              }
+ 266   2          }
+ 267   1      }
+ 268          
+ 269          
+ 270          void msSWDBWrite2Byte(WORD wReg,WORD wValue)
+ 271          {
+ 272   1          msSWDBWriteByte(wReg, wValue );
+ 273   1          msSWDBWriteByte(wReg + 1, wValue>>8);
+ 274   1      }
+ 275          
+ 276          void msSWDBWrite3Byte(WORD wReg, DWORD dwValue)
+ 277          {
+ 278   1          msSWDBWrite2Byte( wReg, dwValue&0xFFFF );
+ 279   1          msSWDBWriteByte( wReg + 2, ( BYTE )( dwValue >> 16 ) );
+ 280   1      }
+ 281          
+ 282          void msSWDBWriteByteMask(WORD wReg,BYTE ucVal,BYTE ucMask)
+ 283          {
+ 284   1          msSWDBWriteByte(wReg , (msReadByte( wReg ) & ( ~ucMask ) ) | (ucVal & ucMask) );
+ 285   1      }
+ 286          
+ 287          #if 1
+ 288          void msSWDBWrite2ByteMask(WORD wReg,WORD wVal,WORD wMask)
+ 289          {
+ 290   1          msSWDBWriteByteMask(wReg, (BYTE)wVal, (BYTE)wMask);
+ 291   1          msSWDBWriteByteMask(wReg+1, (BYTE)(wVal>>8), (BYTE)(wMask>>8));
+ 292   1      }
+ 293          
+ 294          void msSWDBWriteBit(WORD wReg,BOOL bBit,BYTE ucBitPos)
+ 295          {
+ 296   1          XDATA BYTE u8Value;
+ 297   1      
+ 298   1          u8Value = msReadByte( wReg );
+ 299   1          if( bBit )
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 6   
+
+ 300   1          {
+ 301   2              u8Value = u8Value | ucBitPos;
+ 302   2          }
+ 303   1          else
+ 304   1          {
+ 305   2              u8Value = u8Value & ( ~ucBitPos );
+ 306   2          }
+ 307   1          msSWDBWriteByte( wReg, u8Value );
+ 308   1      }
+ 309          #endif
+ 310          #endif
+ 311          
+ 312          
+ 313          #define DELAY1US()  _nop_()
+ 314          #if 1//DIRECT_BUS
+ 315          /////////////////////////////////////////////////////////////////////////
+ 316          #ifndef _REG_DIRECT_ACCESS_
+ 317          BYTE msReadByte( WORD u16Reg )
+ 318          {
+ 319   1          if( u16Reg & 0x8000 )
+ 320   1          {
+ 321   2              scRegs[0] = ( u16Reg >> 8 ) & 0x7F;
+ 322   2              return scRegs[u16Reg&0xFF];
+ 323   2          }
+ 324   1          else
+ 325   1              return msRegs[u16Reg];
+ 326   1      }
+ 327          void msWriteByte( WORD u16Reg, BYTE u8Val )
+ 328          {
+ 329   1          if( u16Reg & 0x8000 )
+ 330   1          {
+ 331   2              scRegs[0] = ( u16Reg >> 8 ) & 0x7F;
+ 332   2              scRegs[u16Reg&0xFF] = u8Val;
+ 333   2          }
+ 334   1          else
+ 335   1              msRegs[u16Reg] = u8Val;
+ 336   1      }
+ 337          
+ 338          void msWriteBit( WORD u16Reg, Bool bBit, BYTE u8BitPos )
+ 339          {
+ 340   1          BYTE u8Value;
+ 341   1      
+ 342   1          u8Value = msReadByte( u16Reg );
+ 343   1          if( bBit )
+ 344   1          {
+ 345   2              u8Value = u8Value | u8BitPos;
+ 346   2          }
+ 347   1          else
+ 348   1          {
+ 349   2              u8Value = u8Value & ( ~u8BitPos );
+ 350   2          }
+ 351   1          msWriteByte( u16Reg, u8Value );
+ 352   1      }
+ 353          
+ 354          //Jison:110428 change msRead2Byte() u16Reg to low addr.
+ 355          WORD msRead2Byte( WORD u8RegLoAddr )
+ 356          {
+ 357   1          return ((( WORD )msReadByte( u8RegLoAddr+1 ) ) << 8 ) | msReadByte( u8RegLoAddr );
+ 358   1      }
+ 359          
+ 360          
+ 361          
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 7   
+
+ 362          BYTE scReadByte( BYTE u8Reg )
+ 363          {
+ 364   1          return scRegs[u8Reg];
+ 365   1      }
+ 366          
+ 367          void scWriteByte( BYTE u8Reg, BYTE u8Value )
+ 368          {
+ 369   1          scRegs[u8Reg] = u8Value;
+ 370   1      }
+ 371          /*
+ 372          //Jison:110428 u16Reg is low addr.
+ 373          WORD scRead2Byte( BYTE u8RegLoAddr )
+ 374          {
+ 375              return ((( WORD )scReadByte( u8RegLoAddr+1 ) ) << 8 ) | scReadByte( u8RegLoAddr );
+ 376          }
+ 377          //Jison:110428 u16Reg is low addr.
+ 378          void scWrite2Byte( BYTE u8RegLoAddr, WORD u16Value )
+ 379          {
+ 380              scWriteByte( u8RegLoAddr, ( BYTE )u16Value );
+ 381              scWriteByte( u8RegLoAddr + 1, ( BYTE )( u16Value >> 8 ) );
+ 382          }
+ 383          void scWriteByteMask( BYTE u8Reg, BYTE u8Value, BYTE u8Mask )
+ 384          {
+ 385              scWriteByte( u8Reg, ( (scReadByte( u8Reg ) & ( ~u8Mask )) | ( u8Value & u8Mask ) ) );
+ 386          }
+ 387          */
+ 388          #endif
+ 389          //Jison:110428 u16Reg is low addr.
+ 390          void msWrite2Byte( WORD u16RegLoAddr, WORD u16Value )
+ 391          {
+ 392   1          msWriteByte( u16RegLoAddr, ( BYTE )u16Value );
+ 393   1          msWriteByte( u16RegLoAddr + 1, ( BYTE )( u16Value >> 8 ) );
+ 394   1      }
+ 395          void msWriteByteMask( WORD u16Reg, BYTE u8Value, BYTE u8Mask )
+ 396          {
+ 397   1          msWriteByte( u16Reg, ( (msReadByte( u16Reg ) & ( ~u8Mask )) | ( u8Value & u8Mask ) ) );
+ 398   1      }
+ 399          
+ 400          //Jison:110428 u16Reg is low addr.
+ 401          void msWrite2ByteMask( WORD u16RegLoAddr, WORD u16Value , WORD u16Mask )
+ 402          {
+ 403   1          msWriteByteMask( u16RegLoAddr, ( BYTE )u16Value, ( BYTE ) u16Mask );
+ 404   1          msWriteByteMask( u16RegLoAddr + 1, ( BYTE )( u16Value >> 8 ), ( BYTE )( u16Mask >> 8 ) );
+ 405   1      }
+ 406          
+ 407          #if (CHIP_ID == CHIP_TSUMU || CHIP_ID >= CHIP_TSUM2)
+ 408          void msWrite3Byte( WORD u16RegLoAddr, DWORD u32Value )
+ 409          {
+ 410   1          msWriteByte( u16RegLoAddr, ( BYTE )u32Value );
+ 411   1          msWriteByte( u16RegLoAddr + 1, ( BYTE )( u32Value >> 8 ) );
+ 412   1          msWriteByte( u16RegLoAddr + 2, ( BYTE )( u32Value >> 16 ) );
+ 413   1      }
+ 414          #endif
+ 415          
+ 416          /*
+ 417          //Jison:110428 u8Reg is low addr.
+ 418          void scWrite2ByteMask( BYTE u8RegLoAddr, WORD u16Value, WORD u16Mask )
+ 419          {
+ 420              scWriteByteMask( u8RegLoAddr, ( BYTE )u16Value, ( BYTE ) u16Mask );
+ 421              scWriteByteMask( u8RegLoAddr + 1, ( BYTE )( u16Value >> 8 ), ( BYTE )( u16Mask >> 8 ) );
+ 422          }
+ 423          //Jison:110428 u8Reg is low addr.
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 8   
+
+ 424          void scWrite3Byte( BYTE u8RegLoAddr, DWORD u32Value )
+ 425          {
+ 426              scWriteByte( u8RegLoAddr, ( BYTE )u32Value );
+ 427              scWriteByte( u8RegLoAddr + 1, ( BYTE )( u32Value >> 8 ) );
+ 428              scWriteByte( u8RegLoAddr + 2, ( BYTE )( u32Value >> 16 ) );
+ 429          }
+ 430          */
+ 431          
+ 432          #if 0
+              BYTE mStar_ReadByte( BYTE addr )
+              {
+                  //static xdata WORD ucCntOldRB = 0;
+                  addr = addr;
+              
+                  //ucCntOldRB++;
+              
+                  return 0;
+              }
+              
+              void mStar_WriteByte( BYTE addr, BYTE value )
+              {
+                  //static xdata WORD ucCntWB = 0;
+                  value = addr;
+              
+                  //ucCntWB++;
+              }
+              
+              WORD mStar_ReadWord( BYTE addr )
+              {
+                  //static xdata WORD ucCntOldRW = 0;
+                  addr = addr;
+              
+                  //ucCntOldRW++;
+              
+                  return 0;
+              }
+              #endif
+ 461          #if 0
+              void mStar_WriteWord( BYTE addr, WORD value )
+              {
+                  //static xdata WORD ucCntOldWW = 0;
+                  value = addr;
+              
+                  //ucCntOldWW++;
+              }
+              #endif
+ 470          //===============================================================
+ 471          #elif DDR_BUS
+              void mStar_Start(BYTE u8Addr)
+              {
+              #define DDR_PORT    u8Addr
+                  SET_DDR_PORT;
+                  DELAY1US();
+                  SET_MS_ALE();
+              
+                  DDR_PORT >>= 4;
+                  SET_DDR_PORT;
+                  DELAY1US();
+                  CLR_MS_ALE();
+              #undef DDR_PORT
+              }
+              
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 9   
+
+              void mStar_SendByte(BYTE u8Value)
+              {
+              #define DDR_PORT    u8Value
+                  SET_DDR_PORT;
+                  DELAY1US();
+                  CLR_MS_WRZ();
+              
+                  DDR_PORT >>= 4;
+                  SET_DDR_PORT;
+                  DELAY1US();
+                  SET_MS_WRZ();
+              #undef DDR_PORT
+              }
+              
+              #if 0
+              BYTE mStar_ReceiveByte(void)
+              {
+                  BYTE    u8Value;
+                  BYTE    ddrPort = 0xF;
+              
+                  CLR_MS_RDZ();
+                  SET_DDR_PORT;
+                  u8Value = (HWMS_DDR_PORT >> HWMS_DDR_SHIFT_BITS) & 0xF;
+                  SET_MS_RDZ();
+              
+                  DELAY1US();
+                  CLR_MS_RDZ();
+                  SET_DDR_PORT;
+                  u8Value = u8Value | (((HWMS_DDR_PORT >> HWMS_DDR_SHIFT_BITS) & 0xF) << 4);
+                  SET_MS_RDZ();
+              
+                  return u8Value;
+              }
+              
+              #else
+              BYTE mStar_ReceiveByte(void)
+              {
+                  BYTE    u8Value;
+                  BYTE    ddrPort = 0xF;
+              
+                  SET_DDR_PORT;
+                  DELAY1US();
+                  CLR_MS_RDZ();
+                  u8Value = (HWMS_DDR_PORT >> HWMS_DDR_SHIFT_BITS) & 0xF;
+                  SET_MS_RDZ();
+              
+                  DELAY1US();
+                  SET_DDR_PORT;
+                  DELAY1US();
+                  CLR_MS_RDZ();
+                  u8Value = u8Value | (((HWMS_DDR_PORT >> HWMS_DDR_SHIFT_BITS) & 0xF) << 4);
+                  SET_MS_RDZ();
+              
+                  return u8Value;
+              }
+              #endif
+              BYTE mStar_ReadByte(BYTE u8Addr)
+              {
+                  mStar_Start(u8Addr);
+                  return mStar_ReceiveByte();
+              }
+              
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 10  
+
+              void mStar_WriteByte(BYTE u8Addr, BYTE u8Value)
+              {
+                  mStar_Start(u8Addr);
+                  mStar_SendByte(u8Value);
+              }
+              
+              WORD mStar_ReadWord(BYTE u8Addr)
+              {
+                  WORD    u16Value;
+              
+                  u16Value = mStar_ReadByte(u8Addr);
+                  u16Value = (u16Value << 8) | mStar_ReadByte(u8Addr - 1);
+              
+                  return u16Value;
+              }
+              
+              void mStar_WriteWord(BYTE u8Addr, WORD u16Value)
+              {
+                  mStar_WriteByte(u8Addr - 1, u16Value & 0xFF);
+                  mStar_WriteByte(u8Addr, u16Value >> 8);
+              }
+              
+              void mStar_WriteTBL(BYTE u8Addr, BYTE *pu8Tbl, BYTE u8Count, BYTE u8Inc)
+              {
+                  u8Inc = u8Inc;
+                  while (u8Count--)
+                      mStar_WriteByte(u8Addr, *(pu8Tbl++));
+              }
+              
+              #else // !DIRECT_BUS
+              void mStar_Start(msBus_Direction direct)
+              {
+                  SET_MS_CSZ();       // CS=1
+                  CLR_MS_SCL();       // SCL=0
+                  if (direct)         // Read
+                      SET_MS_SDA();   //SDA=1
+                  else
+                      CLR_MS_SDA();   //SDA=0
+                  SET_MS_SCL();       //SCL=1
+                  CLR_MS_SCL();       //SCL=0
+              }
+              
+              void mStar_SendByte(BYTE u8Value, Bool lastOne)
+              {
+                  BYTE    i;
+              
+                  for (i = 0; i < 7; i++)
+                  {
+                      (u8Value & BIT7) ? (SET_MS_SDA()) : (CLR_MS_SDA());
+                      u8Value <<= 1;
+                      SET_MS_SCL();
+                      DELAY4US();
+                      CLR_MS_SCL();
+                  }
+              
+                  if (lastOne)
+                      CLR_MS_CSZ();
+                  (u8Value & BIT7) ? (SET_MS_SDA()) : (CLR_MS_SDA());
+                  DELAY4US();
+                  SET_MS_SCL();
+                  DELAY4US();
+                  CLR_MS_SCL();
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 11  
+
+              
+                  if (lastOne)
+                  {
+                      SET_MS_SDA();
+                      SET_MS_SCL();
+                  }
+              }
+              
+              BYTE mStar_ReceiveByte(Bool lastOne)
+              {
+                  BYTE    i;
+                  BYTE    u8Value;
+              
+                  for (i = 0; i < 7; i++)
+                  {
+                      u8Value <<= 1;
+                      SET_MS_SCL();
+                      DELAY4US();
+                      if (IS_MS_SDA_HI())
+                          u8Value |= BIT0;
+                      CLR_MS_SCL();
+                  }
+              
+                  if (lastOne)
+                      CLR_MS_CSZ();
+                  {
+                      u8Value <<= 1;
+                      SET_MS_SCL();
+                      DELAY4US();
+                      if (IS_MS_SDA_HI())
+                          u8Value |= BIT0;
+                      CLR_MS_SCL();
+                  }
+              
+                  if (lastOne)
+                  {
+                      SET_MS_SDA();
+                      SET_MS_SCL();
+                  }
+              
+                  return u8Value;
+              }
+              
+              /////////////////////////////////////////////////////////////////////////
+              /////////////////////////////////////////////////////////////////////////
+              /////////////////////////////////////////////////////////////////////////
+              BYTE mStar_ReadByte(BYTE u8Addr)
+              {
+                  mStar_Start(MS_READ);
+                  mStar_SendByte(u8Addr, 0);
+                  SET_MS_SDA();
+              
+                  return mStar_ReceiveByte(1);
+              }
+              
+              WORD mStar_ReadWord(BYTE u8Addr)
+              {
+                  WORD    u16Value;
+              
+                  u16Value = mStar_ReadByte(u8Addr);
+                  u16Value = (u16Value << 8) | mStar_ReadByte(u8Addr - 1);
+              
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 12  
+
+                  return u16Value;
+              }
+              
+              void mStar_WriteByte(BYTE u8Addr, BYTE u8Value)
+              {
+                  mStar_Start(MS_WRITE);
+                  mStar_SendByte(u8Addr, 0);
+                  mStar_SendByte(u8Value, 1);
+              }
+              
+              void mStar_WriteWord(BYTE u8Addr, WORD u16Value)
+              {
+                  mStar_WriteByte(u8Addr - 1, u16Value & 0xFF);
+                  mStar_WriteByte(u8Addr, u16Value >> 8);
+              }
+              
+              void mStar_SendDDRByte(BYTE u8Value, Bool lastOne)
+              {
+                  BYTE    i;
+              
+                  for (i = 0; i < 7; i++)
+                  {
+                      HWMS_SDA_PIN = (u8Value & BIT7);
+                      u8Value <<= 1;
+                      HWMS_SCL_PIN = !HWMS_SCL_PIN;
+                  }
+              
+                  if (lastOne)
+                      CLR_MS_CSZ();
+                  (u8Value & BIT7) ? (SET_MS_SDA()) : (CLR_MS_SDA());
+                  HWMS_SCL_PIN = !HWMS_SCL_PIN;
+              
+                  if (lastOne)
+                  {
+                      SET_MS_SDA();
+                      SET_MS_SCL();
+                  }
+              }
+              
+              void mStar_WriteDDRByte(BYTE u8Addr, BYTE u8Value)
+              {
+                  CLR_MS_SCL();
+                  SET_MS_CSZ();   // CS=1
+                  CLR_MS_SDA();   //SDA=0
+                  SET_MS_SCL();
+                  mStar_SendDDRByte(u8Addr, 0);
+                  mStar_SendDDRByte(u8Value, 1);
+              }
+              
+              void mStar_WriteTBL(BYTE u8Addr, BYTE *pu8Tbl, BYTE u8Count, BYTE u8Inc)
+              {
+                  if (u8Inc)
+                      mStar_WriteByte(REGBK, mStar_ReadByte(REGBK) &~AINC);
+                  else
+                      mStar_WriteByte(REGBK, mStar_ReadByte(REGBK) | AINC);
+              
+                  mStar_Start(MS_WRITE);
+                  mStar_SendByte(u8Addr, 0);
+                  while (u8Count--)
+                      mStar_SendByte(*(pu8Tbl++), 0);
+                  mStar_SendByte(*pu8Tbl, 1);
+              }
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 13  
+
+              
+              
+              #if 0
+              void mStar_SwitchRegBank(BYTE bank_index)
+              {
+                  BYTE    regValue = mStar_ReadByte(REGBK);
+                  mStar_WriteByte(REGBK, (regValue & REGBANK_MASK) | bank_index);
+              }
+              #endif
+              #endif
+ 744          
+ 745          #if ENABLE_MENULOAD //111006 Rick add menuload function - C_FOS_015
+              //#include "DebugMsg.h"
+              //MST_MODULE(ms_rwreg)
+              
+              static WORD xdata u16ML_Count = 0;
+              static BYTE xdata u8ML_Nums = 0;
+              static BYTE xdata u8ML_NumsIdx=0;
+              static BYTE xdata u8PrevML_Mode=0;
+              static WORD xdata u16PrevML_Reg=0;
+              // Note the xdata used by code should be < 500h=1280 bytes, 500h~5FFh for menu load function
+              // Compiler set xdata start at 0x4000 so the start addr =0x4500
+              // CHIP_TSUMV do not have the status bit to show the ML finished or not.
+              // Note SC registers do not write scaler bank(function like scWriteByte)
+              #define ML_START_ADDR       0x4500
+              #define ML_BUFFER           ((unsigned char volatile xdata *) ML_START_ADDR)
+              #define VAR_INC(u16Value)   {MST_ASSERT(u16Value<256);u16Value++;}
+              #if ML_USE_INT
+              volatile BYTE xdata u8ML_Status=ML_STS_DONE;
+              #endif
+              // To ensure the previous ML already finished while next ML process start.
+              void msML_WaitReady(void) //must call this function before 1st msML_WriteByte() of next ML write process.
+              {
+                  SetTimOutConter(50);
+                  //u16TimeOutCounter=50;
+                  //bTimeOutCounterFlag=1;
+                #if ML_USE_INT
+                  MST_ASSERT((u8ML_Status&ML_STS_CMD_ERR)==0);
+                  //while(!(msReadByte(REG_3C27)&BIT3) && TimeOutCounter!=0)
+                  while(!(u8ML_Status&ML_STS_DONE) && u16TimeOutCounter!=0);
+              
+                  //MST_ASSERT(u8ML_Status==ML_STS_DONE);
+              
+                  #if 0
+                  printData("u8ML_Status=%xh", u8ML_Status);
+                  printData("REG_3C27=%xh\r\n", msReadByte(REG_3C27));
+                  #endif
+              
+                  msWriteByteMask(REG_3C27, BIT3 ,BIT3);                  //clr menu load done
+                  u8ML_Status=0;
+                #else
+                  while((msReadByte(REG_3C25)&BIT7) && u16TimeOutCounter!=0);
+                #endif
+                  msWriteByteMask(REG_3C25, 0x00 ,0xC0);                  //Menu load disable
+              }
+              void msML_WriteByte(ML_ModeType enML_Mode,WORD u16Reg, BYTE u8Value)
+              {
+                #if ML_USE_INT
+                  MST_ASSERT(u8ML_Status==0); //should call msML_WaitReady() first
+                #endif
+                  if ((enML_Mode!=u8PrevML_Mode) //change mode
+                      || (enML_Mode==ML_MODE_SUCCESSIVE && (u16Reg&0xFF00)!=(u16PrevML_Reg&0xFF00)) //successice mode ch
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 14  
+
+             -ange bank
+                      || (enML_Mode==ML_MODE_BURST && (u16Reg)!=(u16PrevML_Reg))) //burst mode change bank/addr
+                  {
+                      u8ML_Nums=0; //reset for another successive/burst mode
+                  }
+              
+                  u8PrevML_Mode=enML_Mode;
+                  u16PrevML_Reg=u16Reg;
+              
+                  switch(enML_Mode)
+                  {   // Normal mode
+                      case ML_MODE_NORMAL:
+                          //bank
+                          if( u16Reg & 0x8000 )
+                              ML_BUFFER[u16ML_Count] = 0x2F|ML_MODE_NORMAL;
+                          else
+                              ML_BUFFER[u16ML_Count] = (BYTE)((u16Reg>>8)&0x3F);
+                          VAR_INC(u16ML_Count);
+                          //addr
+                          ML_BUFFER[u16ML_Count] = (BYTE)(u16Reg);
+                          VAR_INC(u16ML_Count);
+                          //value
+                          ML_BUFFER[u16ML_Count] = u8Value;
+                          VAR_INC(u16ML_Count);
+                          break;
+              #if 0
+                      case ML_MODE_SUCCESSIVE :
+                          // Successive mode
+                          if(u8ML_Nums == 0x00) //bank
+                          {
+                              if( u16Reg & 0x8000 )
+                                  ML_BUFFER[u16ML_Count] = (BYTE)(0x2F&0x3F)|ML_MODE_SUCCESSIVE;
+                              else
+                                  ML_BUFFER[u16ML_Count] = (BYTE)((u16Reg>>8)&0x3F)|ML_MODE_SUCCESSIVE;
+                              VAR_INC(u16ML_Count);
+                              //nums
+                              u8ML_NumsIdx=u16ML_Count; //save nums index in bufer
+                              VAR_INC(u16ML_Count);
+                          }
+              
+                          //addr
+                          ML_BUFFER[u16ML_Count] = (BYTE)(u16Reg);
+                          VAR_INC(u16ML_Count);
+                          //value
+                          ML_BUFFER[u16ML_Count] = u8Value;
+                          VAR_INC(u16ML_Count);
+                          u8ML_Nums++;
+                          ML_BUFFER[u8ML_NumsIdx] = u8ML_Nums-1;
+                          break;
+              
+                      case ML_MODE_BURST:
+                          // Burst mode
+                          if(u8ML_Nums == 0x00) //bank
+                          {
+                              if( u16Reg & 0x8000 )
+                                  ML_BUFFER[u16ML_Count] = (BYTE)(0x2F&0x3F)|ML_MODE_BURST;
+                              else
+                                  ML_BUFFER[u16ML_Count] = (BYTE)((u16Reg>>8)&0x3F)|ML_MODE_BURST;
+                              VAR_INC(u16ML_Count);
+                              //nums
+                              u8ML_NumsIdx=u16ML_Count; //save nums index in bufer
+                              VAR_INC(u16ML_Count);
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 15  
+
+                              //addr
+                              ML_BUFFER[u16ML_Count] = (BYTE)(u16Reg);
+                              VAR_INC(u16ML_Count);
+                          }
+              
+                          ML_BUFFER[u16ML_Count] = u8Value;
+                          VAR_INC(u16ML_Count);
+                          u8ML_Nums++;
+                          ML_BUFFER[u8ML_NumsIdx] = u8ML_Nums-1;
+                          break;
+              #endif
+                  }
+              }
+              #if 0
+              void msML_Write2Byte(WORD u16Reg, WORD u16Value)
+              {
+                  ML_WriteByte(ML_MODE_SUCCESSIVE,u16Reg , (BYTE)u16Value);
+                  ML_WriteByte(ML_MODE_SUCCESSIVE,u16Reg +1, (BYTE)(u16Value >> 8));
+              }
+              
+              void msML_WriteByteMask(WORD u16Reg, BYTE u8Value, BYTE u8Mask)
+              {
+                  XDATA BYTE uc;
+              
+                  uc = msReadByte(u16Reg) & (~u8Mask);
+                  ML_WriteByte( u16Reg, ( uc | (u8Value & u8Mask)) );
+              }
+              #endif
+              void msML_Trigger(ML_TrigType enTrigType)
+              {
+                  msWriteByteMask(REG_3C25, enTrigType ,0x30);                                    //trig by Vsync-op
+                  msWrite2ByteMask(REG_3C24, (ML_START_ADDR&0x7FF),0x7FF);                //Menu Load start addr
+                  #if !ML_USE_INT
+                  msML_WriteByte(ML_MODE_NORMAL, REG_3C25, msReadByte(REG_3C25)&(~(BIT7|BIT6)));  //Last menu load write
+             - byte(Disable menu load while finished)
+                  #endif
+                  // run after msML_WriteByte() that disable ML to get correct u16ML_Count.
+                  msWrite2ByteMask(REG_3C26, (ML_START_ADDR&0x7FF)+u16ML_Count-1,0x7FF);    //Menu Load end addr
+                  #if 0
+                  {
+                      WORD i;
+                      for(i=0;i<u16ML_Count;i++)
+                          printData("%x",ML_BUFFER[i]);
+                  }
+                  #endif
+              
+                  if(enTrigType == ML_TRIG_SW)
+                      msWriteByteMask(REG_3C25, 0xC0 ,0xC0);              //Menu load Enable
+                  else
+                      msWriteByteMask(REG_3C25, 0x80 ,0xC0);              //Menu load Enable
+                  //PRINT_DATA("u16ML_Count=%d",u16ML_Count);
+                  u16ML_Count     = 0;
+                  u8ML_Nums       = 0;
+                  u8PrevML_Mode   = 0;
+                  u16PrevML_Reg   = 0;
+              }
+              
+              #endif
+ 914          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+C51 COMPILER V9.60.0.0   MS_RWREG                                                          12/22/2020 19:50:17 PAGE 16  
+
+   CODE SIZE        =   1292    ----
+   CONSTANT SIZE    =     62    ----
+   XDATA SIZE       =   ----       9
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      51
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

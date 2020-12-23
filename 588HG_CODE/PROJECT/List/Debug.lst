@@ -1,0 +1,1781 @@
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DEBUG
+OBJECT MODULE PLACED IN .\Obj\Debug.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\Debug.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTE
+                    -M\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\I
+                    -NC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\Debug.lst) TABS(2) OBJECT(.\Obj\Debug.obj
+                    -)
+
+line level    source
+
+   1          #define _DEBUG_C_
+   2          #include "types.h"
+   3          #include "Common.h"
+   4          #include "debugDef.h"
+   5          #include "global.h"
+   6          #include "board.h"
+   7          #include "ms_reg.h"
+   8          #include "ms_rwreg.h"
+   9          #include "msosd.h"
+  10          #include "NVRam.h"
+  11          #include "i2c.h"
+  12          #include "misc.h"
+  13          #include "adjust.h"
+  14          //#include "msADC.h"
+  15          #include "drvadc.h"
+  16          #include "userPref.h"
+  17          #include "autofunc.h"
+  18          #include "menudef.h"
+  19          #include "menufunc.h"
+  20          #include "msace.h"
+  21          #include "msdlc.h"
+  22          #include "msflash.h"
+  23          #include "keypaddef.h"
+  24          #include "power.h"
+  25          #include "debug.h"
+  26          #include "Common.h"
+  27          #include "MsFlash.h"
+  28          #include "gpio_def.h"
+  29          #include "AutoGamma.h"
+  30          #include "msACE.h"
+  31          #if Enable_Gamma
+  32          #include "gamma.h"
+  33          #endif
+  34          #include "COLOR_VERIFY.h"
+  35          #if ENABLE_DPS
+  36          #include "msDPS_Setting.h"
+  37          #endif
+  38          #if ENABLE_DSC
+  39          #include "msDSC_Setting.h"
+  40          #endif
+  41          #include "keypad.h"
+  42          #if MS_DAC
+              #include "drvDAC.h"
+              #endif
+  45          
+  46           #if ENABLE_DP_INPUT
+              #include "drvDPRxApp.h"
+              #endif
+  49          
+  50          #if !USEFLASH || (defined(UseVGACableReadWriteAllPortsEDID)&&!defined(UseInternalDDCRam))
+              extern void i2c_WriteTBL( BYTE deviceID, WORD addr, BYTE *buffer, BYTE count );
+              extern void i2c_ReadTBL( BYTE deviceID, WORD addr, BYTE *buffer, BYTE count );
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 2   
+
+              #endif
+  54          
+  55          #if ENABLE_DEBUG
+  56          #message "Please remember to disable the debug function!"//Zhifeng.Wu Please don't canel it,just only a me
+             -ssage,thanks.
+*** MESSAGE C320 IN LINE 56 OF ..\kernel\System\Debug.c: "Please remember to disable the debug function!" 
+  57          #endif
+  58          
+  59          #ifndef DEBUG_SELFTEST // 120620 coding addition for test EEPROM address/LVDS SSC
+  60          #define DEBUG_SELFTEST  (0&&ENABLE_DEBUG)
+  61          #endif
+  62          
+  63          #ifndef OSD_TO_IP_DEBUG
+  64          #define OSD_TO_IP_DEBUG (0&&ENABLE_DEBUG)
+  65          #endif
+  66          
+  67          //BYTE xdata SIORxIndex = 0;
+  68          //BYTE xdata ReSyncCounter;
+  69          extern Bool xdata bFlashWriteFactory;
+  70          #define DEBUG_Massage    1
+  71          #if ENABLE_DEBUG&&DEBUG_Massage
+  72              #define DB_printData(str, value)   printData(str, value)
+  73              #define DB_printMsg(str)           printMsg(str)
+  74          #else
+                  #define DB_printData(str, value)
+                  #define DB_printMsg(str)
+              #endif
+  78          
+  79          #if ENABLE_DEBUG
+  80          #if ENABLE_TOUCH_PANEL || ENABLE_TOUCH_PANEL_CTRL_OSD
+              extern Bool TPL_ReadSurface(void);
+              #endif
+  83          #if ENABLE_TOUCH_PANEL_DATA_FROM_USB
+              extern Bool USB_SPI_WriteRegister(BYTE addr, BYTE val);
+              extern Bool USB_SPI_ReadRegister(BYTE addr, BYTE *val, BYTE count);
+              #endif
+  87          #endif
+  88          
+  89          #if ENABLE_DEBUG_TIMING_CHANGE_POINT
+              bit bTimingChangeFirstPointFlag;
+              BYTE xdata TimingChangeFirstPoint; // record timing change first point
+              #endif
+  93          
+  94          void putSIOChar( unsigned char sendData )
+  95          {
+  96   1         if(!UART_READ_ES())
+  97   1              return;
+  98   1      
+  99   1          UART_BUFFER() = sendData;
+ 100   1          while( 1 )
+ 101   1          {
+ 102   2              if( EA && UART_READ_ES() )
+ 103   2              {
+ 104   3                  if( TI0_FLAG )
+ 105   3                  {
+ 106   4                      TI0_FLAG = 0;
+ 107   4                      break;
+ 108   4                  }
+ 109   3              }
+ 110   2              else
+ 111   2              {
+ 112   3                  if(UART_TI_FLAG())
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 3   
+
+ 113   3                  {
+ 114   4                      UART_CLR_TI_FLAG();
+ 115   4                      break;
+ 116   4                  }
+ 117   3              }
+ 118   2          }
+ 119   1      }
+ 120          
+ 121          #if DEBUG_SELFTEST
+              #define FailAddr(Addr)     printData(#Addr" Fail[0x%x]", Addr)
+              #define READ_LVDS_SSC_STEP() (msRead2Byte(REG_382E))
+              #define READ_LVDS_SSC_SPAN() (msRead2Byte(REG_3830))
+              #define READ_LPLL_SET() (((DWORD)msReadByte(REG_3820)<<16)|msRead2Byte(REG_381E))
+              #define SSC_MODULATION()    ((float)429ul*1024ul*131072ul/READ_LVDS_SSC_SPAN()/READ_LPLL_SET())
+              #define SSC_PERCENTAGE()    ((float)READ_LVDS_SSC_STEP()*READ_LVDS_SSC_SPAN()*1000ul/READ_LPLL_SET())
+              
+              void SelfTest(void)
+              {
+                  WORD wval;
+              
+                  if(FactorySettingAddr <= ProductModeAddr)
+                      FailAddr(FactorySettingAddr);
+              
+                  if(MonitorSettingAddr <= FactorySettingAddr)
+                      FailAddr(MonitorSettingAddr);
+              
+                  if(ModeSettingAddr <= MonitorSettingAddr)
+                      FailAddr(ModeSettingAddr);
+              
+                  if(ModeInfoAddr <= ModeSettingAddr)
+                      FailAddr(ModeInfoAddr);
+              
+                  if(EndAddr <= ModeSettingAddr)
+                      FailAddr(EndAddr);
+              
+                  if(BlacklitTimeAddr <= EndAddr)
+                      FailAddr(BlacklitTimeAddr);
+              
+                  if(CheckBoardAddr <= BlacklitTimeAddr)
+                      FailAddr(CheckBoardAddr);
+                  DB_printData("===EEPROM FINISH===");
+              
+                  wval = SSC_MODULATION();
+                  //if(wval > PANEL_SSC_MODULATION_DEF)
+                      printData("PANEL_SSC_MODULATION:%d", wval);
+              
+                  wval = SSC_PERCENTAGE();
+                  //if(wval > PANEL_SSC_PERCENTAGE_DEF)
+                      printData("PANEL_SSC_PERCENTAGE:%d", wval);
+                  DB_printData("===LVDS SSC FINISH===");
+              
+              }
+              #endif
+ 166          
+ 167          #if ENABLE_DEBUG
+ 168          #if (CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMV)||(CHIP_ID==CHIP_TSUMD)|| (CHIP_ID=
+             -=CHIP_TSUMJ) || (CHIP_ID == CHIP_TSUM9)|| (CHIP_ID == CHIP_TSUMF)//ring style line buffer
+ 169          /*
+ 170          Please enter the position of data you want to check
+ 171          Ex:
+ 172          Resolution:800x600
+ 173          
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 4   
+
+ 174           (0,0)           (799,0)
+ 175              _____________
+ 176              |           |
+ 177              |           |
+ 178              |           |
+ 179              -------------
+ 180           (0,599)         (799,599)
+ 181          H[11:0] = {ucPara1[7:0], ucPara2[7:4]}
+ 182          V[11:0] = {ucPara2[3:0], ucPara3[7:0]}
+ 183          */
+ 184          void msLineBufLatchData(BYTE ucPara1, BYTE ucPara2, BYTE ucPara3)
+ 185          {
+ 186   1          WORD HPosition = ((ucPara1<<4)|(ucPara2>>4))&0x0FFF, VPosition = ((ucPara2<<8)|(ucPara3))&0x0FFF;
+ 187   1          WORD VStart = msRead2Byte(SC0_05);
+ 188   1      
+ 189   1          msWrite2ByteMask(SC0_05,(VStart+VPosition),0x7FF);
+ 190   1          msWrite2ByteMask(SC5_31,( HPosition / 3 ), 0x0FFF); // H pack address
+ 191   1          msWriteByteMask(SC5_33, ( HPosition % 3 ), 0x03); // H position
+ 192   1          msWriteByteMask(SC5_34, BIT7,BIT7);//1:read from start of frmae, 0:read from end of frame
+ 193   1          msWriteByteMask(SC5_32, BIT6, BIT6); // LB latch data function enable
+ 194   1          Delay1ms(100);
+ 195   1          DB_printData("LB R0:%d",msReadByte(SC5_35)); // LB Latch R0
+ 196   1          DB_printData("LB G0:%d",msReadByte(SC5_36)); // LB Latch G0
+ 197   1          DB_printData("LB B0:%d",msReadByte(SC5_37)); // LB Latch B0
+ 198   1          msWriteByteMask(SC5_32, 0, BIT6); // IP latch data function disable
+ 199   1          msWrite2ByteMask(SC0_05,VStart,0x7FF); //restore V start value
+ 200   1      }
+ 201          #else //TSUM2, TSUMU, TSUMB, TSUMY
+                  /* H={ucPara1,ucPara2}, V(LB)=ucPara3 */
+              void msLineBufLatchData(BYTE ucPara1, BYTE ucPara2, BYTE ucPara3)
+              {
+                  /* H={ucPara1,ucPara2}, V(LB)=ucPara3 */
+                  BYTE ucTest = 2;
+                  msWrite2ByteMask(SC5_31, (((WORD) ucPara1<<8 ) | ucPara2)/2, 0x0FFF); // H position in LB
+              #if (CHIP_ID==CHIP_TSUMU)
+                  msWriteByteMask(SC5_33, (ucPara3), 0x03); //  V position in LB
+              #else
+                  msWriteByteMask(SC5_33, (ucPara3<<3), 0x18); // [4:3] V position in LB
+              #endif
+                  msWriteByteMask(SC5_32, BIT6, BIT6); // MCU read LB function enable
+              
+              #if (CHIP_ID==CHIP_TSUMU)
+                  DB_printData("Line Buffer Latch Data - R0:%d",msReadByte(SC5_35)); // LB Latch R0
+                  DB_printData("Line Buffer Latch Data - G0:%d",msReadByte(SC5_36)); // LB Latch G0
+                  DB_printData("Line Buffer Latch Data - B0:%d",msReadByte(SC5_37)); // LB Latch B0
+                  DB_printData("Line Buffer Latch Data - R1:%d",msReadByte(SC5_38)); // LB Latch R1
+                  DB_printData("Line Buffer Latch Data - G1:%d",msReadByte(SC5_39)); // LB Latch G1
+                  DB_printData("Line Buffer Latch Data - B1:%d\r\n",msReadByte(SC5_3A)); // LB Latch B1
+              #else
+                  DB_printMsg("LB Data:R-G-B");
+                  do
+                  {
+                      msWriteByteMask(SC5_33, ucTest, 0x07); // [2:0] byte select <B G R>
+                      while(!(msReadByte(SC5_32)&BIT7)); // LB read avaliable status
+                      DB_printData("%d",msReadByte(SC5_35));
+                  }while(ucTest--);
+              
+              #endif
+                  msWriteByteMask(SC5_32, 0, BIT6); // MCU read LB function disable
+                  scWriteByte(SC0_00, 0x00);
+              }
+              #endif
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 5   
+
+ 236          
+ 237          /*
+ 238          Please enter the position of data you want to check
+ 239          Ex:
+ 240          Resolution:800x600
+ 241          
+ 242           (0,0)           (799,0)
+ 243              _____________
+ 244              |           |
+ 245              |           |
+ 246              |           |
+ 247              -------------
+ 248           (0,599)         (799,599)
+ 249          
+ 250             H[11:0] = {ucPara1[7:0], ucPara2[7:4]}
+ 251             V[11:0] = {ucPara2[3:0], ucPara3[7:0]} */
+ 252          void msIPLatchData(BYTE ucPara1, BYTE ucPara2, BYTE ucPara3)
+ 253          {
+ 254   1          WORD HPosition = ((ucPara1<<4)|(ucPara2>>4))&0x0FFF, VPosition = ((ucPara2<<8)|(ucPara3))&0x0FFF;
+ 255   1          msWrite2ByteMask(SC5_31, (HPosition+(msRead2Byte(SC0_07)&0x7FF)-1), 0x0FFF); // Image H position
+ 256   1          msWrite2ByteMask(SC5_33, (VPosition+(msRead2Byte(SC0_05)&0x7FF)), 0x07FF); // Image V position
+ 257   1          msWriteByteMask(SC5_34, BIT5, BIT5); // IP latch data function enable
+ 258   1          Delay1ms(100);
+ 259   1          DB_printData("IP R:%d",msReadByte(SC5_35)); // IP Latch R
+ 260   1          DB_printData("IP G:%d",msReadByte(SC5_36)); // IP Latch G
+ 261   1          DB_printData("IP B:%d\r\n",msReadByte(SC5_37)); // IP Latch B
+ 262   1          msWriteByteMask(SC5_34, 0, BIT5); // IP latch data function disable
+ 263   1      }
+ 264          #if (CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMD)|| (CHIP_ID==CHIP_TSUMJ)|| (CHIP_ID
+             -==CHIP_TSUM9)|| (CHIP_ID==CHIP_TSUMF)
+ 265          /*non-inear scaling curve
+ 266                W0   W1   W2   W2    W1    W0
+ 267                   |    |____|____|_    |
+ 268                   |   /|    |    | \   |
+ 269                   |  / |    |    |  \  |
+ 270                   | /  |    |    |   \ |
+ 271              _____|/   |    |    |    \|________
+ 272             Initial Offset = ucPara1[6:0]
+ 273             Delta1 = ucPara2[7:0]
+ 274          */
+ 275          void msNonLinearScaling(BYTE ucPara1, BYTE ucPara2)
+ 276          {
+ 277   1          WORD W0, W1, W2;
+ 278   1      
+ 279   1          if(!(msReadByte(SC0_52)&BIT7))
+ 280   1              msWrite3Byte(SC0_50, 0x900000);
+ 281   1          W1 = ((DWORD)ucPara1<<12)*2/(ucPara2<<3);
+ 282   1          if(W1>(PANEL_WIDTH/2))
+ 283   1          {
+ 284   2              DB_printMsg("Since the initial offset is too large or delta1 is too small");
+ 285   2              DB_printMsg("The non-linear scaling results may be wrong!");
+ 286   2              DB_printMsg("Please correct the settings and try again");
+ 287   2          }
+ 288   1          W0 = ((PANEL_WIDTH/2)-W1)/2;
+ 289   1          W2 = W0;
+ 290   1          msWrite2ByteMask(SCD_20, W0,0x3FF);//width of zone 0 in non-linear
+ 291   1          msWrite2ByteMask(SCD_22, W1,0x3FF);//width of zone 1 in non-linear
+ 292   1          msWrite2ByteMask(SCD_24, W2,0x3FF);//width of zone 2 in non-linear
+ 293   1          msWriteByteMask(SCD_26, ucPara1,0x7F);//value of initial offset
+ 294   1          msWrite2ByteMask(SCD_26, BIT7,BIT7);//0: positive initial offset, 1: negative initial offset"
+ 295   1          msWrite2ByteMask(SCD_27, BIT7, BIT7);//non-linear scaling enable
+ 296   1          msWriteByte(SCD_28, 0);//delta value in zone 0
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 6   
+
+ 297   1          msWriteByte(SCD_29, ucPara2);//delta value in zone 1
+ 298   1      }
+ 299          
+ 300          /* test Internal EDID
+ 301          CHIP_TSUMC: 256*2+128 K Sram
+ 302          
+ 303              _____________   0 K - Start
+ 304              |  Arranged | 128 K
+ 305              |     IN    | 256 K
+ 306              |  REG_3EEC | 384 K
+ 307              |  REG_3EED | 512 K
+ 308              ------------- 640 K - End
+ 309          
+ 310          256*2: for DP (if DP not used, can be arranged for other ports)
+ 311          128: for VGA or DVI or shared
+ 312          */
+ 313          void TestInternalEDID_Write(BYTE SramIndex, BYTE StartIndex)
+ 314          {
+ 315   1          BYTE i;
+ 316   1      
+ 317   1          msWriteByteMask( REG_3E4B , 0,BIT7);// Set DDC To Write
+ 318   1          msWriteByteMask( REG_3E49 , 0,BIT5);// Clr Write Protect
+ 319   1          msWriteByteMask( REG_3EEB , SramIndex<<4, 0xF0);// Sram Index
+ 320   1      
+ 321   1          for( i = 0; i < 128; i++ )
+ 322   1          {
+ 323   2              msWriteByte( REG_3E4B ,i );
+ 324   2              msWriteByte( REG_3E4C ,i+StartIndex );
+ 325   2      
+ 326   2              msWriteByteMask( REG_3E43 , BIT5,BIT5);
+ 327   2              msWriteByteMask( REG_3E43 , 0,BIT5);
+ 328   2          }
+ 329   1          msWriteByteMask( REG_3E4B , BIT7,BIT7);// Set DDC To Read
+ 330   1          msWriteByteMask( REG_3E49,  BIT5 | BIT7, BIT5 | BIT7 ); // [7]ADC DDC enable / [5]Set Write Protect
+ 331   1      #if(CHIP_ID == CHIP_TSUMJ ||CHIP_ID == CHIP_TSUM9 ||CHIP_ID == CHIP_TSUMF)
+ 332   1          msWriteByteMask(REG_3E60, BIT7, BIT7);//reply ACK while source accesses A0_EDID with address is over 1
+             -28
+ 333   1      #endif
+ 334   1      }
+ 335          
+ 336          void TestInternalEDID_Read(BYTE SramIndex)
+ 337          {
+ 338   1          BYTE i;
+ 339   1      
+ 340   1          msWriteByteMask( REG_3EEB , SramIndex<<4, 0xF0);// Sram Index
+ 341   1      
+ 342   1          for( i = 0; i < 128; i++ )
+ 343   1          {
+ 344   2              msWriteByte( REG_3E4B ,i );
+ 345   2              msWriteByteMask( REG_3E43 , BIT4,BIT4);
+ 346   2              msWriteByteMask( REG_3E43 , 0,BIT4);
+ 347   2              DB_printData("%d",msReadByte(REG_3E0E));
+ 348   2          }
+ 349   1      }
+ 350          
+ 351          #if CHIP_ID==CHIP_TSUMJ
+              //CHIP_TSUME: 256+128 K Sram
+              /*
+                  _____________   0 K - Start
+                  |  Arranged   | 128 K
+                  |     IN          | 256 K
+                  |---------- | 384 K - End
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 7   
+
+              */
+              void TestInternalEDID_256ByteWrite(BYTE SramIndex, BYTE StartIndex)
+              {
+                  WORD i;
+                  msWriteByteMask( REG_3EEB , SramIndex<<4, 0xF0);// Sram Index
+              
+                  for( i = 0; i < 256; i++ )
+                  {
+                      msWriteByte( REG_3E47 ,i );
+                      msWriteByte( REG_3E48 ,i+StartIndex );
+              
+                      msWriteByteMask( REG_3E43 , BIT7,BIT7);
+                      msWriteByteMask( REG_3E43 , 0,BIT7);
+                  }
+              }
+              
+              void TestInternalEDID_256ByteRead(BYTE SramIndex)
+              {
+                  WORD i;
+                  msWriteByteMask( REG_3EEB , SramIndex<<4, 0xF0);// Sram Index
+                  for( i = 0; i < 256; i++ )
+                  {
+                      msWriteByte( REG_3E47 ,i );
+                      msWriteByteMask( REG_3E43 , BIT6,BIT6);
+                      msWriteByteMask( REG_3E43 , 0,BIT6);
+                      DB_printData("%d",msReadByte(REG_3E0F));
+                  }
+              }
+              #endif
+ 387          
+ 388          #if ENABLE_RTE//for OD verification
+              void msReadWriteODTable(void)
+              {
+              
+                  WORD wCount;
+              
+                  DB_printMsg("Load_OD_Table");
+              
+                  msWriteBit(REG_3120,0, _BIT0); // Disable OD before load code
+                  msWriteByte(REG_3102, 0x0E); // load code start
+                  msWriteByte(REG_311C, 0x0E); //od 2nd table sram enable, r,g,b channel
+                  msWriteByte(REG_311D, 0x00);
+              
+                  for(wCount=0; wCount<289; wCount++)
+                  {
+                      if(wCount<272)
+                      {
+                          if(wCount>255)
+                          {
+                               msWriteByte(REG_3106, wCount-255);
+                               DB_printData("%x",wCount-255);
+                          }
+                          else
+                          {
+                              msWriteByte(REG_3106, wCount);//Od table sram1 write data
+                              DB_printData("%x",wCount);
+                          }
+                      }
+                      else
+                      {
+                          msWriteByte(REG_3106, 0x00);
+                          DB_printData("%x",0);
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 8   
+
+                      }
+                      msWrite2Byte(REG_3104, wCount|0x8000);//Od table sram1 address
+                      while(_bit7_(msReadByte(REG_3105)));//Od table sram1 write enable (toggle type). , 0x3105[0]+ 0x31
+             -04[7:0] ==address [8:0]
+                  }
+                  for(wCount=0; wCount<272; wCount++)
+                  {
+                      if(wCount>255)
+                      {
+                          msWriteByte(REG_310C, wCount-255);
+                          DB_printData("%x",wCount-255);
+                      }
+                      else
+                      {
+                          msWriteByte(REG_310C, wCount);
+                          DB_printData("%x",wCount);
+                      }
+                      msWrite2Byte(REG_310A, wCount|0x8000);
+                      while(_bit7_(msReadByte(REG_310B)));
+              
+                  }
+                  for(wCount=0; wCount<272; wCount++)
+                  {
+                      if(wCount<256)
+                      {
+                          msWriteByte(REG_3112, wCount);
+                          DB_printData("%x",wCount);
+                      }
+                      else
+                      {
+                          msWriteByte(REG_3112, 0x00);
+                          DB_printData("%x",0);
+                      }
+                      msWrite2Byte(REG_3110, wCount|0x8000);
+                      while(_bit7_(msReadByte(REG_3111)));
+                  }
+                  for(wCount=0; wCount<256; wCount++)
+                  {
+                      msWriteByte(REG_3118, wCount);
+                      DB_printData("%x",wCount);
+                      msWrite2Byte(REG_3116, wCount|0x8000);
+                      while(_bit7_(msReadByte(REG_3117)));
+                  }
+                  DB_printMsg("Read_OD_Table");
+                  for(wCount=0; wCount<289; wCount++)
+                  {
+                      msWrite2Byte(REG_3104, wCount|0x4000);//Od table sram1 address
+                      while(_bit6_(msReadByte(REG_3105)));//Od table sram1 read enable (toggle type). , 0x3105[0]+ 0x310
+             -4[7:0] ==address [8:0]
+                      DB_printData("%x",msReadByte(REG_3108));
+                  }
+                  for(wCount=0; wCount<272; wCount++)
+                  {
+                      msWrite2Byte(REG_310A, wCount|0x4000);
+                      while(_bit6_(msReadByte(REG_310B)));
+                      DB_printData("%x",msReadByte(REG_310E));
+                  }
+                  for(wCount=0; wCount<272; wCount++)
+                  {
+                      msWrite2Byte(REG_3110, wCount|0x4000);
+                      while(_bit6_(msReadByte(REG_3111)));
+                      DB_printData("%x",msReadByte(REG_3114));
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 9   
+
+                  }
+                  for(wCount=0; wCount<256; wCount++)
+                  {
+                      msWrite2Byte(REG_3116, wCount|0x4000);
+                      while(_bit6_(msReadByte(REG_3117)));
+                      DB_printData("%x",msReadByte(REG_311A));
+                  }
+                  msWriteByte(REG_3102, 0x00);
+              }
+              #endif //ENABLE_RTE
+ 490          #endif //(CHIP_ID==CHIP_TSUMC)
+ 491          #if CHIP_ID == CHIP_TSUMU ||CHIP_ID == CHIP_TSUMC||CHIP_ID == CHIP_TSUMK||CHIP_ID == CHIP_TSUMD|| CHIP_ID=
+             -=CHIP_TSUMJ || CHIP_ID==CHIP_TSUM9|| CHIP_ID==CHIP_TSUMF
+ 492          /* ucPara1: 0:R, 1:G, 2:B */
+ 493          void msCTMaxMin(BYTE ucPara1)
+ 494          {
+ 495   1          msWriteByteMask(SC9_41, ucPara1<<5, _BIT6|_BIT5);
+ 496   1          DB_printData("Max CT: %d", msRead2Byte(SC9_4A)>>2);
+ 497   1          DB_printData("Min CT: %d", msRead2Byte(SC9_4C)>>2);
+ 498   1      }
+ 499          
+ 500          /*
+ 501          Please enter the position of data you want to check
+ 502          Ex:
+ 503          Resolution:800x600
+ 504           (0,0)           (799,0)
+ 505              _____________
+ 506              |           |
+ 507              |           |
+ 508              |           |
+ 509              -------------
+ 510           (0,599)         (799,599)
+ 511             H[11:0] = {ucPara1[7:0], ucPara2[7:4]}
+ 512             V[11:0] = {ucPara2[3:0], ucPara3[7:0]} */
+ 513          void msCT_CoordinatesSetting(BYTE ucPara1  ,BYTE ucPara2 ,BYTE ucPara3)
+ 514          {
+ 515   1          BYTE uLength=10;
+ 516   1          WORD wi,wj , HPosition = ((ucPara1<<4)|(ucPara2>>4))&0x0FFF, VPosition = ((ucPara2<<8)|(ucPara3))&0x0F
+             -FF;
+ 517   1          //BYTE uHOffset=msRead2Byte(SC0_12)+PanelHSyncWidth;
+ 518   1          BYTE uHOffset=0x6D;//msRead2Byte(SC0_12)+PanelHSyncWidth;
+ 519   1      
+ 520   1          DB_printData(" CT square size: %d x %d", uLength);
+ 521   1      
+ 522   1          for( wi = VPosition; wi < (VPosition+uLength); wi = wi + 1 )
+ 523   1          {
+ 524   2          DB_printData(" \n\r CT V_ST_Position: %d", wi);
+ 525   2          msWrite2ByteMask(SC9_46, wi, 0x3FF);            //reg_ct_vst
+ 526   2          msWrite2ByteMask(SC9_48, wi+uLength, 0x3FF);    //reg_ct_vend
+ 527   2      
+ 528   2          for( wj = HPosition; wj < (HPosition+uLength); wj = wj + 1 )
+ 529   2          {
+ 530   3              msWrite2ByteMask(SC9_42, wj +uHOffset, 0x1FFF);             //reg_ct_hst
+ 531   3              msWrite2ByteMask(SC9_44, wj+uLength+uHOffset, 0x1FFF);      //reg_ct_hend
+ 532   3              DB_printData(" \n\r CT H_ST_Position: %d", wj);
+ 533   3      
+ 534   3              DB_printData(" \n\r Max CT: %d", msRead2Byte(SC9_4A)>>2);
+ 535   3              DB_printData(" \n\r Min CT: %d", msRead2Byte(SC9_4C)>>2);
+ 536   3          }
+ 537   2          }
+ 538   1      }
+ 539          
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 10  
+
+ 540          #endif //  CHIP_ID == CHIP_TSUMU ||CHIP_ID == CHIP_TSUMC
+ 541          
+ 542          #if OSD_TO_IP_DEBUG
+              static void TestCommand_OsdToIp(BYTE u8Path)
+              {
+              #if CHIP_ID>=CHIP_TSUMC
+                switch (u8Path)
+                {
+                  case 0x00:  // OP
+                    msWriteByteMask(OSD1_02, 0, BIT2);
+                    msWriteByteMask(OSD1_02, BIT5, BIT5|BIT4|BIT3);
+                    msWriteByteMask(OSD1_03, 0, BIT4);
+                    break;
+                  case 0x01:  // before IP
+                    msWriteByteMask(OSD1_02, BIT2, BIT2);       // osd to ip enable
+                    msWriteByteMask(OSD1_02, BIT4|BIT3, BIT5|BIT4|BIT3);// use idclk
+                    msWriteByteMask(OSD1_03, 0, BIT4);          // befor ip
+                    break;
+                  case 0x02:  // before HVSP
+                    msWriteByteMask(OSD1_02, BIT2, BIT2);       // osd to ip enable
+                    msWriteByteMask(OSD1_02, BIT4|BIT3, BIT5|BIT4|BIT3);// use idclk
+                    msWriteByteMask(OSD1_03, BIT4, BIT4);         // befor hvsp
+                    break;
+                  default:  // OP
+                    msWriteByteMask(OSD1_02, 0, BIT2);
+                    msWriteByteMask(OSD1_02, BIT5, BIT5|BIT4|BIT3);
+                    msWriteByteMask(OSD1_03, 0, BIT4);
+                }
+              #else
+              #endif
+              }
+              #endif  // OSD_TO_IP_DEBUG
+ 572          
+ 573          #endif  // ENABLE_DEBUG
+ 574          
+ 575          extern xdata BYTE MenuPageIndex;
+ 576          extern xdata BYTE MenuItemIndex;
+ 577          extern Bool ExecuteKeyEvent( MenuItemActionType menuAction );
+ 578          
+ 579          
+ 580          extern void msDlcOnOff( BYTE bSwitch );
+ 581          extern XDATA BYTE g_bDLCOnOff;
+ 582          extern xdata BOOL  REG_DSC_RUN_Flag;
+ 583          extern xdata BOOL  REG_DPS_RUN_Flag;
+ 584          
+ 585          void ExecTestCommand( void )
+ 586          {
+ 587   1          BYTE ucPara1 = SIORxBuffer[2];
+ 588   1          BYTE ucPara2 = SIORxBuffer[3];
+ 589   1          BYTE ucPara3 = SIORxBuffer[4];
+ 590   1      
+ 591   1          switch( SIORxBuffer[1] )
+ 592   1          {
+ 593   2      #if DEBUG_MCU_GPIO
+                      BYTE i;
+                      //Open-drain:REG_1021/22/23/27/2A/2D[1:0] set to 2'b00 and REG_1029/2C/2E[1:0] set to 2'b11
+                      //Push-pull: REG_1021/22/23[1:0] need set to 2'b00 and REG_1027/2A/2D[1:0] need set to 2'b11
+                      //P10 and P11: GPIO34/35
+                      //P20 and P21: GPIO32/33
+                      //P30 and P31: GPIO40/41
+                      case 0x01:
+                          DB_printMsg("MCU Write P1_0=0");
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 11  
+
+                          P1_0=0;
+                      break;
+                      case 0x02:
+                          DB_printMsg("MCU Write P1_0=1");
+                          P1_0=1;
+                      break;
+                      case 0x03:
+                          DB_printMsg("MCU Write P1_1=0");
+                          P1_1=0;
+                      break;
+                      case 0x04:
+                          DB_printMsg("MCU Write P1_1=1");
+                          P1_1=1;
+                      break;
+                      case 0x05:
+                          DB_printMsg("MCU Read P1_0 !!!!!");
+                          i=P1_0;
+                          DB_printData("-----P1_0=>%d",i);
+                      break;
+                      case 0x06:
+                          DB_printMsg("MCU Read P1_1 !!!!!");
+                          i=P1_1;
+                          DB_printData("-----P1_1=>%d",i);
+                      break;
+                      case 0x11:
+                          DB_printMsg("MCU Write P2_0=0");
+                          P2_0=0;
+                      break;
+                      case 0x12:
+                          DB_printMsg("MCU Write P2_0=1");
+                          P2_0=1;
+                      break;
+                      case 0x13:
+                          DB_printMsg("MCU Write P2_1=0");
+                          P2_1=0;
+                      break;
+                      case 0x14:
+                          DB_printMsg("MCU Write P2_1=1");
+                          P2_1=1;
+                      break;
+                      case 0x15:
+                          DB_printMsg("MCU Read P2_0 !!!!!");
+                          i=P2_0;
+                          DB_printData("-----P2_0=>%d",i);
+                      break;
+                      case 0x16:
+                          DB_printMsg("MCU Read P2_1 !!!!!");
+                          i=P2_1;
+                          DB_printData("-----P2_1=>%d",i);
+                      break;
+                      case 0x21:
+                          DB_printMsg("MCU Write P3_0=0");
+                          P3_0=0;
+                      break;
+                      case 0x22:
+                          DB_printMsg("MCU Write P3_0=1");
+                          P3_0=1;
+                      break;
+                      case 0x23:
+                          DB_printMsg("MCU Write P3_1=0");
+                          P3_1=0;
+                      break;
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 12  
+
+                      case 0x24:
+                          DB_printMsg("MCU Write P3_1=1");
+                          P3_1=1;
+                      break;
+                      case 0x25:
+                          DB_printMsg("MCU Read P3_0 !!!!!");
+                          i=P3_0;
+                          DB_printData("-----P3_0=>%d",i);
+                      break;
+                      case 0x26:
+                          DB_printMsg("MCU Read P3_1 !!!!!");
+                          i=P3_1;
+                          DB_printData("-----P3_1=>%d",i);
+                      break;
+              #endif
+ 679   2      
+ 680   2      #if ENABLE_R2_2DTO3D
+                  case 0x27:
+                      DB_printMsg("Turn on 2D to 3D");
+                      UserPref2Dto3D = 1;
+                      g_SetupPathInfo.b2DTo3DEnable = TRUE;
+                      mStar_SetupMode();
+                      Sc2DTo3DInit();
+                  break;
+                  case 0x28:
+                      DB_printMsg("Turn off 2D to 3D");
+                      UserPref2Dto3D = 0;
+                      g_SetupPathInfo.b2DTo3DEnable = FALSE;
+                      mStar_SetupMode();
+                      Sc2DTo3DOff();
+                  break;
+                  case 0x29:
+                      switch( ucPara1 )
+                      {
+                          case 0:
+                              DB_printMsg("Set Offset: Low2");
+                              Sc2DTo3DSetPIXOffset(0x80);
+                              Sc2DTo3DSetBLKOffset(0x20);
+                          break;
+                          case 1:
+                              DB_printMsg("Set Offset: Low");     //near
+                              Sc2DTo3DSetPIXOffset(0x80);
+                              Sc2DTo3DSetBLKOffset(0x40);
+                          break;
+                          case 2:
+                              DB_printMsg("Set Offset: Middle");  //middle
+                              Sc2DTo3DSetPIXOffset(0x80);
+                              Sc2DTo3DSetBLKOffset(0x80);
+                          break;
+                          case 3:
+                              DB_printMsg("Set Offset: High");    //far
+                              Sc2DTo3DSetPIXOffset(0x80);
+                              Sc2DTo3DSetBLKOffset(0xC0);
+                          break;
+                          case 4:
+                              DB_printMsg("Set Offset: High2");
+                              Sc2DTo3DSetPIXOffset(0x80);
+                              Sc2DTo3DSetBLKOffset(0xE0);
+                          break;
+                          default:
+                              DB_printMsg("More detaied pixelbased and blockbased gain seetings will provide.");
+                      }
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 13  
+
+                  break;
+                  case 0x30:
+                       switch( ucPara1 )
+                      {
+                          case 0:
+                              DB_printMsg("Set Gain: Low2");
+                              Sc2DTo3DSetPIXGain(0x18);
+                              Sc2DTo3DSetBLKGain(0x04);
+                          break;
+                          case 1:
+                              DB_printMsg("Set Gain: Low");   //depth narrow
+                              Sc2DTo3DSetPIXGain(0x30);
+                              Sc2DTo3DSetBLKGain(0x08);
+                          break;
+                          case 2:
+                              DB_printMsg("Set Gain: Mid");   //depth middle
+                              Sc2DTo3DSetPIXGain(0x60);
+                              Sc2DTo3DSetBLKGain(0x10);
+                          break;
+                          case 3:
+                              DB_printMsg("Set Gain: High");  //depth deep
+                              Sc2DTo3DSetPIXGain(0x90);
+                              Sc2DTo3DSetBLKGain(0x18);
+                          break;
+                          case 4:
+                              DB_printMsg("Set Gain: High2");
+                              Sc2DTo3DSetPIXGain(0xC0);
+                              Sc2DTo3DSetBLKGain(0x20);
+                          break;
+                          default:
+                              DB_printMsg("More detaied pixelbased and blockbased ofset seetings will provide.");
+                      }
+                  break;
+                  case 0x31:
+                      if(g_SetupPathInfo.b2DTo3DEnable == TRUE)
+                      {
+                          if(msRead2Byte(REG_2102) != 0x1111)
+                          {
+                              msWrite2Byte(REG_2102, 0x1111);
+                              DB_printMsg("Enter 2D to 3D Game Mode");
+                          }
+                          else
+                          {
+                              msWrite2Byte(REG_2102, 0x0000);
+                              DB_printMsg("Exit 2D to 3D Game Mode");
+                          }
+                      }
+                      else
+                      {
+                          DB_printMsg("Please turn on 2D to 3D first");
+                      }
+                      return;
+                  case 0x32:
+                      DB_printMsg("Set Pixel-based Gain and Offset");
+                      Sc2DTo3DSetPIXGain(ucPara1);
+                      Sc2DTo3DSetPIXOffset(ucPara2);
+                  break;
+                  case 0x33:
+                      DB_printMsg("Set Block-based Gain and Offset");
+                      Sc2DTo3DSetBLKGain(ucPara1);
+                      Sc2DTo3DSetBLKOffset(ucPara2);
+                  break;
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 14  
+
+              #endif
+ 789   2      
+ 790   2        case 0x34:
+ 791   2          DB_printData("msAdjustVideoSaturation=%d",ucPara2);
+ 792   2          msAdjustVideoSaturation(ucPara1,ucPara2);
+ 793   2          break;
+ 794   2        case 0x35:
+ 795   2          DB_printData("msACESetHDTVMode=%d",ucPara1);
+ 796   2          msACESetHDTVMode(ucPara1);
+ 797   2          break;
+ 798   2      
+ 799   2      #if ENABLE_DEBUG
+ 800   2      #if CHIP_ID == CHIP_TSUMD
+              /* 3D format convert
+                  Input Format:ucPara1
+                  Output Format:ucPara2
+                  Data Path:ucPara3&0x0F
+                  3Dto2D:ucPara3&BIT7   */
+                      case 0x3F:
+                          g_SetupPathInfo.bOverrideSCFmtIn = TRUE;
+                          g_SetupPathInfo.bOverrideSCPathMode = TRUE;
+                          g_SetupPathInfo.ucSCFmtIn = ucPara1;
+                          g_SetupPathInfo.ucSCFmtOut = ucPara2;
+                          g_SetupPathInfo.ucSCPathMode = ucPara3 & 0x0F;
+                          g_SetupPathInfo.b3DTo2DEnable = ucPara3 & BIT7?1:0;
+                          if(!g_SetupPathInfo.ucSCPathMode)
+                              g_SetupPathInfo.bOverrideSCPathMode = FALSE;
+                          Set_InputTimingChangeFlag();
+                      break;
+              #endif
+ 818   2              case 0x40:
+ 819   2                  msLineBufLatchData(ucPara1, ucPara2, ucPara3);
+ 820   2              break;
+ 821   2              case 0x41:
+ 822   2                  msIPLatchData(ucPara1, ucPara2, ucPara3);
+ 823   2              break;
+ 824   2      #if CHIP_ID == CHIP_TSUMU ||CHIP_ID == CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID == CHIP_TSUMD|| CHIP_ID==C
+             -HIP_TSUMJ|| CHIP_ID==CHIP_TSUM9|| CHIP_ID==CHIP_TSUMF
+ 825   2              case 0x42:
+ 826   2                  msCTMaxMin(ucPara1);
+ 827   2              break;
+ 828   2              case 0x43:
+ 829   2                  msCT_CoordinatesSetting(ucPara1 ,ucPara2 ,ucPara3);
+ 830   2              break;
+ 831   2      #endif
+ 832   2      #if CHIP_ID==CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID==CHIP_TSUMD|| CHIP_ID==CHIP_TSUMJ|| CHIP_ID==CHIP_TS
+             -UM9|| CHIP_ID==CHIP_TSUMF
+ 833   2              case 0x44:
+ 834   2                  msNonLinearScaling(ucPara1, ucPara2);
+ 835   2              break;
+ 836   2      #if ENABLE_RTE
+                      case 0x45:
+                          msReadWriteODTable();
+                      break;
+              #endif
+ 841   2              case 0x46:
+ 842   2                  TestInternalEDID_Write(ucPara1,ucPara2);
+ 843   2                  DB_printMsg( "Write Internal EDID" );
+ 844   2              break;
+ 845   2              case 0x47:
+ 846   2                  TestInternalEDID_Read(ucPara1);
+ 847   2                  DB_printMsg( "Read Internal EDID" );
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 15  
+
+ 848   2              break;
+ 849   2      #if CHIP_ID==CHIP_TSUMJ
+                    case 0x48:
+                        TestInternalEDID_256ByteWrite(ucPara1,ucPara2);
+                        DB_printMsg( "Write Internal EDID" );
+                    break;
+                    case 0x49:
+                        TestInternalEDID_256ByteRead(ucPara1);
+                        DB_printMsg( "Read Internal EDID" );
+                    break;
+              #endif
+ 859   2      #endif // CHIP_ID==CHIP_TSUMC
+ 860   2      
+ 861   2      #if ENABLE_DEBUG && COLORVERIFY_DEBUG
+                      case 0x4A:
+                          msColor_Test_Funct(ucPara1,ucPara2);
+                      break;
+                      case 0x4B:
+                          {
+                              extern void ms2DHPeakingTest(BYTE bScalerWin ,BYTE ucSharpness, BYTE ucStep );
+                              DB_printMsg("ms2DHPeakingTest");
+                              ms2DHPeakingTest(ucPara1,ucPara2,ucPara3);
+                          }
+                          break;
+                  case 0x4C:  //Noise Masking
+                  {
+                      extern void msNoiseMasking(BYTE bScalerWin ,BYTE u8Strength, BYTE ucStep );
+                      DB_printMsg("msNoiseMasking");
+                      msNoiseMasking(ucPara1,ucPara2,ucPara3);
+                  }
+                  break;
+              
+                      case 0x4D:
+                          {
+                              extern void InitialPeaking(void);
+                              DB_printMsg("InitialPeaking");
+                              InitialPeaking();
+                          }
+                          break;
+                      case 0x4E:
+                          {
+                              extern void msAdjustSharpness(BYTE bScalerWin ,BYTE ucSharpness, BYTE ucStep );
+                              DB_printMsg("msAdjustSharpness");
+                              msAdjustSharpness(ucPara1,ucPara2,ucPara3);
+                          }
+                          break;
+              #endif
+ 895   2      
+ 896   2              case 0x50:
+ 897   2                  if( DebugOnlyFlag )
+ 898   2                  {
+ 899   3                      Clr_DebugOnlyFlag();
+ 900   3                      DB_printMsg( "<Free>" );
+ 901   3                  }
+ 902   2                  else
+ 903   2                  {
+ 904   3                      Set_DebugOnlyFlag();
+ 905   3                      DB_printMsg( "<Debug>" );
+ 906   3                  }
+ 907   2                  break;
+ 908   2      #if ENABLE_DPS
+ 909   2              case 0x51:
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 16  
+
+ 910   2                  REG_DPS_RUN_Flag=0;//msDPS_Off_Setting();
+ 911   2                  DB_printMsg("...Disable DPS Function...");
+ 912   2                  break;
+ 913   2              case 0x52:
+ 914   2                  msDPS_On_Setting();
+ 915   2                  DB_printMsg("...Enable DPS Function...");
+ 916   2                  break;
+ 917   2      #endif
+ 918   2              case 0x53:
+ 919   2                  msDlcOnOff(1);
+ 920   2                  DB_printMsg("...DLC ON...");
+ 921   2                  break;
+ 922   2              case 0x54:
+ 923   2                  //msDlcOnOff(0);
+ 924   2                  //msWriteByteMask( SC7_B8, 0x00, BIT6|BIT7 );
+ 925   2                  g_bDLCOnOff = 0;
+ 926   2                  DB_printMsg("...DLC Off...");
+ 927   2                  break;
+ 928   2              case 0x55:
+ 929   2                  DB_printData("\r\n g_bDLCOnOff (%d)", g_bDLCOnOff);
+ 930   2                  //DB_printData("\r\n REG_DSC_RUN_Flag (%d)", REG_DSC_RUN_Flag);
+ 931   2                  //DB_printData("\r\n REG_DPS_RUN_Flag (%d)", REG_DPS_RUN_Flag);
+ 932   2                  break;
+ 933   2      
+ 934   2      #if ENABLE_DSC
+ 935   2              case 0x56:
+ 936   2                  REG_DSC_RUN_Flag = 0;
+ 937   2                  DB_printMsg("...Disable DSC Function...");
+ 938   2                  break;
+ 939   2              case 0x57:
+ 940   2                  msDSC_On_Setting();
+ 941   2                  DB_printMsg("...Enable DSC Function...");
+ 942   2                  break;
+ 943   2              case 0x58:
+ 944   2                  msDSC_AdjustYgain(ucPara1<<8|ucPara2);
+ 945   2                  DB_printMsg("...msDSC_AdjustYgain...");
+ 946   2                  break;
+ 947   2              case 0x59:
+ 948   2                  {
+ 949   3                      extern void msDSC_Handler ( void );
+ 950   3                      msDSC_Handler();
+ 951   3                      msDSC_Off_Setting();
+ 952   3                      DB_printMsg("...msDSC_Handler...");
+ 953   3                  }
+ 954   2                  break;
+ 955   2              case 0x5A:
+ 956   2                  {
+ 957   3                      //Check SatHistrogram
+ 958   3                      BYTE ucTmp;
+ 959   3                      Flag_DSC_Latch_Busy=1;
+ 960   3                      for ( ucTmp = 0; ucTmp < 32; ucTmp++ )
+ 961   3                      {
+ 962   4                          DB_printData("...1 ISR_SatHistogram32H ==>%x...",ISR_SatHistogram32H[ucTmp] );
+ 963   4                          DB_printData("...2 ISR_SatHistogram32HL==>%x",ISR_SatHistogram32H[ucTmp] );
+ 964   4                      }
+ 965   3                      Flag_DSC_Latch_Busy=0;
+ 966   3                  }
+ 967   2                  break;
+ 968   2              case 0x5B:
+ 969   2                  {
+ 970   3                      extern void msAdjustPCXvyccContrast ( BYTE bScalerWin, WORD uwContrast );
+ 971   3                      msAdjustPCXvyccContrast ( MAIN_WINDOW, ucPara1<<8|ucPara2 );
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 17  
+
+ 972   3                  }
+ 973   2                  break;
+ 974   2              case 0x5C:
+ 975   2                  {
+ 976   3                      extern void msAdjustVideoContrast(BYTE bScalerWin, BYTE ucContrast );
+ 977   3                      //msWriteByteMask ( SC7_40, BIT0,  BIT0 );
+ 978   3                      DB_printData("...2 msAdjustVideoContrast==>%x",0);
+ 979   3                      //msAdjustVideoContrast ( MAIN_WINDOW, ucPara2 );
+ 980   3                      msAdjustVideoContrast(MAIN_WINDOW,ucPara1);
+ 981   3                  }
+ 982   2                  break;
+ 983   2              case 0x5D:
+ 984   2                  {
+ 985   3                      extern void mStar_AdjustContrast( BYTE contrast );
+ 986   3                      //msWriteByteMask ( SC7_40, BIT0,  BIT0 );
+ 987   3                      DB_printData("...2 mStar_AdjustContrast==>%x",0);
+ 988   3                      mStar_AdjustContrast( ucPara1 );
+ 989   3                  }
+ 990   2                  break;
+ 991   2      #endif
+ 992   2      
+ 993   2      #if ENABLE_DeltaE
+                      case 0x5E:
+                          {
+                              DB_printData("------Load DeltaE color mode: %x------",ucPara1);
+                              LoadDeltaEColorMode(MAIN_WINDOW, ucPara1);
+                          }
+                          break;
+              #endif
+1001   2        case 0x5F:
+1002   2          switch( ucPara1 )
+1003   2          {
+1004   3            case 0:
+1005   3            DB_printMsg("Matrix2 Hue"); // Hue default 50:
+1006   3            msAdjustXVYccVideoHue( MAIN_WINDOW, ucPara2 );
+1007   3            break;
+1008   3            case 1:
+1009   3            DB_printMsg("Matrix2 Sat"); // Sat default 128
+1010   3            msAdjustXVYccVideoSaturation( MAIN_WINDOW, ucPara2 );
+1011   3            case 2 : 
+1012   3            DB_printMsg("Matrix2Contrast/Gain"); // Con/R/G/B default 128
+1013   3            msAdjustXVYCCVideoContrastRGB(MAIN_WINDOW, ucPara2, 0x80, 0x80, 0x80);
+1014   3            break;
+1015   3            case 3:
+1016   3            DB_printMsg("Matrix2 Matrix Reset"); 
+1017   3            msAdjustXVYccVideoHue( MAIN_WINDOW, 50 );
+1018   3            msAdjustXVYCCVideoContrastRGB(MAIN_WINDOW, 0x80, 0x80, 0x80, 0x80);
+1019   3            msAdjustXVYccVideoSaturation( MAIN_WINDOW, 128 );
+1020   3            break;
+1021   3          }
+1022   2          break;
+1023   2      #if MS_DAC && (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD||CHIP_ID == CHIP_TSUM
+             -9||CHIP_ID == CHIP_TSUMF)
+                          case 0x60:
+                          {
+                              PCM_GEN(((ucPara1==1)?(TRUE):(FALSE)),ucPara2,ucPara3); //enable R_FR L_FR GAIN
+                              DB_printData("...2 PCM_GEN==>%x",0);
+                          }
+                          break;
+              #endif
+1031   2      
+1032   2      #if CHIP_ID==CHIP_TSUMD && COLORVERIFY_DEBUG
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 18  
+
+                          case 0x61:   //De-Mosquito
+                              {
+                                  extern void msDeMosquito(BYTE u8Enable, BYTE u8Strength ,BYTE u8THRD);
+                                  DB_printMsg("msDeMosquito");
+                                  msDeMosquito(ucPara1,ucPara2,ucPara3);
+                              }
+                              break;
+                          case 0x62:   //Spike noise filter
+                              {
+                                  extern void msSpikeNR(BYTE u8Enable, BYTE u8Strength ,BYTE u8THRD);
+                                  DB_printMsg("msSpikeNR");
+                                  msSpikeNR(ucPara1,ucPara2,ucPara3);
+                              }
+                              break;
+                          case 0x63:  //De-Blocking
+                              {
+                                  extern void msDeBlocking(BYTE u8Enable, /*BYTE u8Strength ,*/BYTE u8THRD);
+                                  DB_printMsg("msDeBlocking");
+                                  msDeBlocking(ucPara1,ucPara2);
+                              }
+                              break;
+                          case 0x64:  //SNR
+                              {
+                                  extern void msSNR(BYTE u8Enable, BYTE u8Strength ,BYTE u8THRD);
+                                  DB_printMsg("msSNR");
+                                  msSNR(ucPara1,ucPara2,ucPara3);
+                              }
+                              break;
+                          case 0x65:  //PreNoiseMasking(SPF APN)
+                              {
+                                  extern void msPreNoiseMasking(BYTE u8Enable, BYTE u8Strength ,BYTE u8THRD);
+                                  DB_printMsg("msPreNoiseMasking");
+                                  msPreNoiseMasking(ucPara1,ucPara2,ucPara3);
+                              }
+                              break;
+                          case 0x66:  //Hcoring(2D peaking APN)
+                              {
+                                  extern void msHcoring(BYTE u8Enable, BYTE u8Strength );
+                                  DB_printMsg("msHcoring");
+                                  msHcoring(ucPara1,ucPara2);
+                              }
+                              break;
+                          case 0x67:  //msShinnyColor
+                              {
+                                  extern void msShinnyColor(BYTE u8Enable, BYTE u8Strength ,BYTE u8THRD);
+                                  DB_printMsg("msShinnyColor");
+                                  msShinnyColor(ucPara1,ucPara2,ucPara3);
+                              }
+                              break;
+              
+                          case 0x68:  //PostSNR
+                              {
+                              extern void Peaking_PostSNR(BYTE u8Enable, BYTE u8THRD);
+                              DB_printMsg("Peaking_PostSNR");
+                              Peaking_PostSNR(ucPara1,ucPara2);
+                              }
+                              break;
+              #endif
+1091   2      #endif // ENABLE_DEBUG
+1092   2      
+1093   2      #if  ENABLE_LED_CONTROLLER
+                      case 0x69:
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 19  
+
+                      {
+                          #if LED_CTRL_BRIGHTNESS_BY_CURRENT
+                          extern void BrightnessPWMSettingToCurrentSetting(BYTE current);
+                          BYTE i;
+                          DB_printMsg("++++++++ BrightnessPWMSettingToCurrentSetting");
+                          for (i=1;i<0xFF;i++)
+                          {
+                              #if ENABLE_LED_INT
+                              Init_LEDIRQEnable(FALSE);
+                              #endif
+              
+                              BrightnessPWMSettingToCurrentSetting(i);
+                              ForceDelay1ms(10);
+                              #if ENABLE_LED_INT
+                              Init_LEDIRQEnable(TRUE);
+                              #endif
+                          }
+                          #endif
+                      }
+                      break;
+                      case 0x6A:
+                      {
+                          #if LED_CTRL_BRIGHTNESS_BY_CURRENT
+              #if 1
+                          extern void msLED_Off(void);
+                          extern void msLED_On(void);
+              
+                          UserPrefBrightness = SIORxBuffer[2];
+                          DB_printData("UserPrefBrightness:%d", UserPrefBrightness);
+                          DB_printMsg(" ------- msLED_Off");
+                          msLED_Off();
+                          DB_printMsg(" ------- msLED_On");
+                          msLED_On();
+              #else
+                          extern void BrightnessPWMSettingToCurrentSetting(BYTE current);
+                          BYTE i;
+                          DB_printMsg(" ------- BrightnessPWMSettingToCurrentSetting");
+                          for (i=0xFF;i>1;i--)
+                          {
+                              #if ENABLE_LED_INT
+                              Init_LEDIRQEnable(FALSE);
+                              #endif
+              
+                              BrightnessPWMSettingToCurrentSetting(i);
+                              ForceDelay1ms(10);
+                              #if ENABLE_LED_INT
+                              Init_LEDIRQEnable(TRUE);
+                              #endif
+                          }
+              #endif
+                          #endif
+                      }
+                      break;
+                      case 0x6B:
+                      {
+                          extern void msLED_On(void);
+                          DB_printMsg(" ------- msLED_On");
+                          msLED_On();
+                      }
+                      break;
+                      case 0x6C:
+                      {
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 20  
+
+                          extern void msLED_Off(void);
+                          DB_printMsg(" ------- msLED_Off");
+                          msLED_Off();
+                      }
+                      break;
+              
+                case 0xFC:
+                      {
+                          DB_printData(" =====SetDimmingPWMFreq====%d",(ucPara1<<8|ucPara2));
+                          SetDimmingPWMFreq(BRIGHTNESS_VSYNC_ALIGN, ucPara1<<8|ucPara2);
+                      }
+                      break;
+                      case 0xFD:
+                      {
+                  DB_printMsg(" =====>>LED_TEST BUS (BOOST CLK and SAR_CK_SAM)");
+              
+                  msWriteByte(REG_1EEB,0x51);
+                  msWriteByte(REG_1E02,0x01);
+                  msWriteByte(REG_0A9A,0x01);
+                  msWriteByte(REG_0201,0x10);
+                  msWriteByte(REG_0202,0x04);
+                  msWriteByteMask(REG_0A67,0x00,BIT7);
+                  msWriteByteMask(REG_0A6F,0x00,BIT7);
+                      }
+                      break;
+              #endif
+1183   2      
+1184   2      
+1185   2      
+1186   2                  /*
+1187   2                  case 0x20:
+1188   2                  {
+1189   2                      if(SIORxBuffer[2] == 2)
+1190   2                          DB_printMsg( "<check> 2" );
+1191   2                      DB_printMsg( "SIORxBuffer[1] = 0x20" );
+1192   2      
+1193   2                      break;
+1194   2                  }
+1195   2                  */
+1196   2      #if ENABLE_DEBUG && ENABLE_MHL
+                      case 0x6D:
+                      {
+                          WORD waddr, wdata;
+                          waddr = (WORD)(SIORxBuffer[2]<<8);
+                          waddr |= SIORxBuffer[3];
+                          wdata = (WORD)(SIORxBuffer[4]<<8);
+                          wdata |= SIORxBuffer[5];
+                          DB_printData( "<ElandWriteWord_waddr:%x>",  waddr);
+                          DB_printData( "<ElandWriteWord_wdata:%x>",  wdata);
+                          break;
+                      }
+                      case 0x6E:
+                      {
+                          WORD waddr, wdata;
+                          waddr = (WORD)(SIORxBuffer[2]<<8);
+                          waddr |= SIORxBuffer[3];
+                          DB_printData( "<ElandReadWord:%x>",  wdata);
+                          break;
+                      }
+                      case 0x6F:
+                      {
+                          mhal_mhl_SetHPD(SIORxBuffer[2]);
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 21  
+
+                          if(SIORxBuffer[2])
+                              DB_printMsg( "<mhl_SetHPD HIGH>");
+                          else
+                              DB_printMsg( "<mhl_SetHPD LOW>");
+                          break;
+                      }
+                      #if CHIP_ID == CHIP_TSUM2
+                      case 0x70:
+                          MhlTestfunction(SIORxBuffer[2], SIORxBuffer[3], SIORxBuffer[4], SIORxBuffer[5]);
+                       break;
+                      case 0x71:
+                          MhlTestfunction1(SIORxBuffer[2], SIORxBuffer[3], SIORxBuffer[4], SIORxBuffer[5]);
+                       break;
+                       #endif
+              #endif
+1234   2      #if ENABLE_DEBUG && (ENABLE_TOUCH_PANEL||ENABLE_TOUCH_PANEL_CTRL_OSD)
+                      case 0x78:
+                      {
+                          if(TPL_ReadSurface() == FALSE)
+                              DB_printMsg( "<TPL_ReadSurface FAIL>");
+                          break;
+                      }
+                      case 0x79:
+                      {
+                          break;
+                      }
+              #endif
+1246   2      
+1247   2              case 0x72: // Keypad_LEFT
+1248   2                  KeyDebug = KEY_MINUS;
+1249   2                  break;
+1250   2      
+1251   2              case 0x73: // Keypad_MENU
+1252   2                  KeyDebug = KEY_MENU;
+1253   2                  break;
+1254   2      
+1255   2              case 0x74: // Keypad_RIGHT
+1256   2                  KeyDebug = KEY_PLUS;
+1257   2                  break;
+1258   2      
+1259   2              case 0x75: // Keypad_RIGHT
+1260   2                  KeyDebug = KEY_IncVal;//KEY_SELECT;
+1261   2                  break;
+1262   2      
+1263   2              case 0x76: // Keypad_POWER
+1264   2                  KeyDebug = KEY_POWER;
+1265   2                  break;
+1266   2      
+1267   2              case 0x77: // Keypad_Enter
+1268   2                  KeyDebug = KEY_EXIT;
+1269   2                  break;
+1270   2      
+1271   2              case 0x98:
+1272   2                  MenuPageIndex = RootMenu;
+1273   2                  MenuItemIndex = 0;
+1274   2                  ExecuteKeyEvent( MIA_RedrawMenu );
+1275   2                  MenuPageIndex = ucPara1;
+1276   2                  MenuItemIndex = 0;
+1277   2                  ExecuteKeyEvent( MIA_RedrawMenu );
+1278   2                  break;
+1279   2      
+1280   2      #if ENABLE_DEBUG && ENABLE_TOUCH_PANEL_DATA_FROM_USB
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 22  
+
+                      case 0x80:
+                      {
+                          USB_SPI_WriteRegister(SIORxBuffer[2], SIORxBuffer[3]);
+                          DB_printData("WriteAddr:%x", SIORxBuffer[2]);
+                          DB_printData("WriteData:%x", SIORxBuffer[3]);
+                      }
+                      case 0x81:
+                      {
+                          BYTE xdata tempbuf[0x20], i;
+                          USB_SPI_ReadRegister(0xC0, tempbuf, 0x20);
+                          for(i=0; i<0x20; i++)
+                              DB_printData("tempbuf[%x]", tempbuf[i]);
+              
+                          break;
+                      }
+              #endif
+1297   2      #if ENABLE_DEBUG && ENABLE_TOUCH_KEY
+                      case 0x90:
+                      {
+                          DB_printData("TouchKey:%x", IT7230_GetKeyStatus());
+                          break;
+                      }
+              #endif
+1304   2      
+1305   2      #if ENABLE_DEBUG
+1306   2              case 0x91:
+1307   2              {
+1308   3                  extern void drvADC_Test_Funct(BYTE tb1, BYTE tb2);
+1309   3                  drvADC_Test_Funct(SIORxBuffer[2], SIORxBuffer[3]);
+1310   3                  break;
+1311   3              }
+1312   2      #endif
+1313   2      
+1314   2      #if OSD_TO_IP_DEBUG
+                  case 0x92:
+                  {
+                    TestCommand_OsdToIp(SIORxBuffer[2]);
+                    break;
+                  }
+              #endif
+1321   2      
+1322   2      #if DEBUG_SELFTEST
+                      case 0x99:
+                      {
+                          SelfTest();
+                          break;
+                      }
+              #endif
+1329   2          case 0xA0:
+1330   2          {
+1331   3            AdjustOSDTransparency(ucPara1);
+1332   3          }
+1333   2          break;
+1334   2          
+1335   2      #if ENABLE_MCUTOPTEST
+                  case 0xF0:
+                  {
+                      #define CACHE_ENABLE()  (msWriteBit( REG_1018, 1, _BIT3 ), msWriteBit( REG_2BA0, 0, _BIT0 ))
+                      #define CACHE_DISABLE()  (msWriteBit( REG_2BA0, 1, _BIT0 ), msWriteBit( REG_1018, 0, _BIT3 ))
+                      if (ucPara1==0x01)
+                      {
+                          CACHE_ENABLE();
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 23  
+
+                          DB_printMsg("AAA CACHE_ENABLE");
+                      }
+                      else
+                      {
+                          CACHE_DISABLE();
+                          DB_printMsg("BBB CACHE_DISABLE");
+                      }
+                      break;
+                  }
+                  case 0xF1:
+                  {
+                      extern void mcuSetMcuSpeed( BYTE ucSpeedIdx );
+                      mcuSetMcuSpeed(ucPara1);
+                      DB_printData(" mcuSetMcuSpeed ==%d",ucPara1);
+                      break;
+                  }
+                  case 0xF2:
+                  {
+                      extern void mcuSetSpiSpeed( BYTE ucIndex );
+                      mcuSetSpiSpeed(ucPara1);
+                      DB_printData(" mcuSetSpiSpeed ==%d",ucPara1);
+                      break;
+                  }
+                  case 0xF3:
+                  {
+                      extern void mcuSetSpiMode( BYTE ucMode );
+                      mcuSetSpiMode(ucPara1);
+                      DB_printData(" mcuSetSpiMode ==%d",ucPara1);
+                      break;
+                  }
+              #endif
+1374   2      #if ENABLE_DP_INPUT&&((CHIP_ID==CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID==CHIP_TSUMD)||(CHIP_ID==CHIP_
+             -TSUM9)||(CHIP_ID==CHIP_TSUMF))
+                  case 0xF4:
+                          DB_printMsg(" =====HPD====");
+                          DPRxHPDDisable();                                                                           //
+             - HPD ouput enable and set Low
+                          ForceDelay1ms( 100 );
+                          DPRxHPDEnable();
+                       break;
+              
+                  case 0xF5:
+                        m_ucState = eSTATE_RETRAIN;
+                        DB_printMsg(" =====Chg State====");
+                       break;
+              
+              
+              
+                      default:
+                      break;
+              #endif
+1392   2      
+1393   2      #if CHIP_ID == CHIP_TSUMC || CHIP_ID == CHIP_TSUMK ||CHIP_ID == CHIP_TSUMD ||CHIP_ID == CHIP_TSUMJ
+                case 0xF6:
+                {
+              
+                  #define DELAY_LINES  2 //  default: 2
+                  #define DELAY_LINE_Offset  1 //  default: 1
+                  BYTE xdata u8VSyncTime=GetVSyncTime();
+                  WORD xdata Hi_Act=SC0_READ_AUTO_WIDTH();   //  OK
+                  WORD xdata Vi_Act=SC0_READ_AUTO_HEIGHT();  //  OK
+                  WORD xdata Hi_Total=mSTar_GetInputHTotal();   //  OK
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 24  
+
+                  WORD xdata Vi_Total=SC0_READ_VTOTAL();           //  OK
+              
+                  WORD xdata Ho_Act=PanelWidth;
+                  WORD xdata Vo_Act=PanelHeight;
+                  WORD xdata Ho_Total=PanelMinHTotal;
+                  WORD xdata Vo_Total=( (DWORD)Vo_Act*Vi_Total/Vi_Act);
+              
+                  WORD xdata Toha = ((DWORD)Ho_Act * Vi_Total*1000)/((DWORD)Ho_Total*Vo_Total);
+                  WORD xdata Tiha = ((DWORD)Hi_Act * 1000) /Hi_Total ;
+              
+                  DB_printData(" == Hi_Act ==%d",Hi_Act);
+                  DB_printData(" == Vi_Act ==%d",Vi_Act);
+                  DB_printData(" == Hi_Total ==%d",Hi_Total);
+                  DB_printData(" == Vi_Total ==%d",Vi_Total);
+                  DB_printData(" == Vo_Total ==%d",Vo_Total);
+                  DB_printData(" == Toha ==%d",Toha);
+                  DB_printData(" == Tiha ==%d",Tiha);
+              
+                #if ENABLE_R2_2DTO3D
+                  if (UserPref2Dto3D)
+                  {
+                    msWriteByteMask(SC0_90, (((Toha<=Tiha)?(DELAY_LINES+1+DELAY_LINE_Offset):(DELAY_LINES+DELAY_LINE_Offset
+             -)))<<4 ,BIT6|BIT5|BIT4);
+                    DB_printData(" ==SC0_90 ==%d",(((Toha<=Tiha)?(DELAY_LINES+1+DELAY_LINE_Offset):(DELAY_LINES+DELAY_LINE_
+             -Offset))));
+                  }
+                  else
+                #endif
+                  {
+                    msWriteByteMask(SC0_90, (((Toha<=Tiha)?(DELAY_LINES+1):(DELAY_LINES)))<<4 ,BIT6|BIT5|BIT4);
+                    DB_printData(" ==SC0_90 ==%d",(((Toha<=Tiha)?(DELAY_LINES+1):(DELAY_LINES))));
+                  }
+                  //-------------------------------------------------------------
+                  //SCD_64[1]:"flag 1 once afifo can't receive pixels when IP sends.0: don't happen1: occur"
+                  //SCD_65[1]:"flag 1 once afifo can't give pixels when OP needs.0: don't happen1: occur"
+                  //-------------------------------------------------------------
+                  msWriteByteMask(SCD_64, BIT2 ,BIT2);
+                  msWriteByteMask(SCD_65, BIT2 ,BIT2);
+                  Delay1ms(1);
+                  msWriteByteMask(SCD_64, 0x00 ,BIT2);
+                  msWriteByteMask(SCD_65, 0x00 ,BIT2);
+                  Delay1ms(u8VSyncTime);
+                  if ((msReadByte(SCD_64)&BIT1) || (msReadByte(SCD_65)&BIT1))
+                    DB_printMsg("FAIL");
+                  else
+                    DB_printMsg("PASS");
+                }
+                 break;
+              #endif
+1450   2      
+1451   2      
+1452   2      
+1453   2      #if Enable_Expansion
+1454   2        case 0xFE:
+1455   2        {
+1456   3          extern void SetExpansionMode( void );
+1457   3          UserprefExpansionMode = ucPara1;
+1458   3          DB_printData(" =====UserprefExpansionMode  ==%x====",UserprefExpansionMode);
+1459   3          SetExpansionMode();//This Function will mute when reset all setting.
+1460   3        }
+1461   2        break;
+1462   2      #endif
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 25  
+
+1463   2      
+1464   2      #if ENABLE_TIME_MEASUREMENT
+1465   2              case 0xFF:
+1466   2              {
+1467   3                  DWORD i;
+1468   3                  TIME_MEASURE_BEGIN();
+1469   3                  for( i = 0; i < 1000; i++ )
+1470   3                      ForceDelay1ms( 1 );
+1471   3                  TIME_MEASURE_END();
+1472   3      
+1473   3                  TIME_MEASURE_BEGIN();
+1474   3                  for( i = 0; i < 250000; i++ );
+1475   3                  TIME_MEASURE_END();
+1476   3      
+1477   3                  TIME_MEASURE_BEGIN();
+1478   3                  for( i = 0; i < 250000; i++ )
+1479   3                      Delay4us();
+1480   3                  TIME_MEASURE_END();
+1481   3              }
+1482   2              break;
+1483   2      #endif
+1484   2          }
+1485   1      }
+1486          void ProcessCommand( void )
+1487          {
+1488   1          switch( UART_CMD )
+1489   1          {
+1490   2              case kWrite_MST_Bank_n:
+1491   2              {
+1492   3      #if ENABLE_MHL && ENABLE_DEBUG// 120403 coding, addition for eland uart debug
+                          if(UART_CMD_MS_BANK&0x80)
+                          {
+                  #if CHIP_ID == CHIP_TSUM2
+                              ElandWriteHalfWord((UART_CMD_MS_BANK & 0x0F) << 8|UART_CMD_MS_REGINDEX, UART_CMD_MS_REGDAT
+             -A);
+                  #endif
+                          }
+                          else
+              #endif
+1501   3                  {
+1502   4                      const volatile BYTE ucBank = scReadByte( SC0_00 ); // store original bank
+1503   4                      scWriteByte( SC0_00, UART_CMD_MS_BANK );
+1504   4                      scWriteByte( UART_CMD_MS_REGINDEX, UART_CMD_MS_REGDATA );
+1505   4                      scWriteByte( SC0_00, ucBank ); // restore original bank
+1506   4                  }
+1507   3                  putSIOChar( 0xF1 );
+1508   3                  break;
+1509   3              }
+1510   2      
+1511   2              case kRead_MST_Bank_n:
+1512   2              {
+1513   3      #if ENABLE_MHL && ENABLE_DEBUG// 120403 coding, addition for eland uart debug
+                          if(UART_CMD_MS_BANK&0x80)
+                          {
+                  #if CHIP_ID == CHIP_TSUM2
+                              UART_CMD_MS_REGDATA = ElandReadHalfWord((UART_CMD_MS_BANK & 0x0F) << 8|UART_CMD_MS_REGINDE
+             -X);
+                  #endif
+                          }
+                          else
+              #endif
+1522   3                  {
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 26  
+
+1523   4                      const volatile BYTE ucBank = scReadByte( SC0_00 ); // store original bank
+1524   4                      scWriteByte( SC0_00, UART_CMD_MS_BANK );
+1525   4                      UART_CMD_MS_REGDATA = scReadByte( UART_CMD_MS_REGINDEX );
+1526   4                      scWriteByte( SC0_00, ucBank ); // restore original bank
+1527   4                  }
+1528   3                  putSIOChar( 0xF2 );
+1529   3                  putSIOChar( UART_CMD_MS_REGDATA );
+1530   3                  break;
+1531   3              }
+1532   2      
+1533   2              case kWrite_MCU_XDATA:
+1534   2              {
+1535   3                  //msWriteByte( MAKEWORD( UART_CMD_MCU_IDX_H, UART_CMD_MCU_IDX_L ), UART_CMD_MCU_DATA );
+1536   3                  msRegs[MAKEWORD( UART_CMD_MCU_IDX_H, UART_CMD_MCU_IDX_L )] =  UART_CMD_MCU_DATA;
+1537   3                  putSIOChar( 0xF1 );
+1538   3                  break;
+1539   3              }
+1540   2      
+1541   2              case kRead_MCU_XDATA:
+1542   2              {
+1543   3                  //UART_CMD_MCU_DATA = msReadByte( MAKEWORD( UART_CMD_MCU_IDX_H, UART_CMD_MCU_IDX_L ) );
+1544   3                  UART_CMD_MCU_DATA = msRegs[( MAKEWORD( UART_CMD_MCU_IDX_H, UART_CMD_MCU_IDX_L ) )];
+1545   3                  putSIOChar( 0xF2 );
+1546   3                  putSIOChar( UART_CMD_MCU_DATA );
+1547   3                  break;
+1548   3              }
+1549   2      
+1550   2              case kTest_Command:
+1551   2      
+1552   2              {
+1553   3                  ExecTestCommand();
+1554   3                  break;
+1555   3              }
+1556   2          #if !USEFLASH
+                      case kWrite_EEPROM:
+                      {
+                          WORD uwEEADDR;
+                          uwEEADDR = MAKEWORD(SIORxBuffer[1],SIORxBuffer[2]);
+                          #if 0//ENABLE_HDCP
+                          if (uwEEADDR>=RM_HDCP_KEY_BASEADDR1)
+                              g_wHDCP_KeyChkSum += g_UartCommand.Buffer[_UART_CMD_INDEX3_];
+                          #endif // ENABLE_HDCP
+                          NVRam_WriteByte(uwEEADDR, SIORxBuffer[3]);
+                          //if (!g_bDebugASCIICommandFlag)
+                              putSIOChar(0xF1);
+                              //printData("EEPROM[0x%x]=", uwEEADDR);
+                              //printData("0x%x \r\n", SIORxBuffer[_UART_CMD_INDEX3_]);
+              
+                          break;
+                      }
+                      case kRead_EEPROM:
+                      {
+                      WORD uwEEADDR;
+                          uwEEADDR = MAKEWORD(SIORxBuffer[1],SIORxBuffer[2]);
+                          //uwEEADDR = g_UartCommand.Buffer[_UART_CMD_INDEX1_] & 0x0E;
+                          //uwEEADDR = (uwEEADDR << 7) + g_UartCommand.Buffer[_UART_CMD_INDEX2_];
+                      NVRam_ReadByte(uwEEADDR , &SIORxBuffer[3]);
+                          putSIOChar(0xF2);
+                          putSIOChar(SIORxBuffer[3]);
+                          //if (g_bDebugASCIICommandFlag)
+                          //{
+                              //printData("EEPROM[0x%x]=", uwEEADDR);
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 27  
+
+                              //printData("0x%x \r\n", SIORxBuffer[_UART_CMD_INDEX3_]);
+                          //}
+                          break;
+                      }
+                  #endif
+1590   2              default:
+1591   2                  break;
+1592   2          }
+1593   1      }
+1594          
+1595          Bool GetCommand( void )
+1596          {
+1597   1      #if 1
+1598   1      
+1599   1          if ( (SIORxIndex >= UART_CMD_LENGTH) && (UART_CMD_LENGTH))
+1600   1          {
+1601   2              Set_RxBusyFlag();
+1602   2              return TRUE;
+1603   2          }
+1604   1          else
+1605   1              return FALSE;
+1606   1      
+1607   1      #else
+                  if( u8ReSyncCounter )
+                  {
+                      if( SIORxIndex > 2 && SIORxIndex == CommandLength )
+                      {
+                          Set_RxBusyFlag();
+                          return TRUE;
+                      }
+                      if( u8ReSyncCounter < 5 )
+                      {
+                          Clr_RxBusyFlag();
+                          SIORxIndex = 0;
+                          u8ReSyncCounter = 0;
+                      }
+                  }
+                  else if( SIORxIndex )
+                  {
+                      SIORxIndex = 0;
+                  }
+                  return FALSE;
+              #endif
+1628   1      }
+1629          void DebugHandler( void )
+1630          {
+1631   1      
+1632   1          if( !UART_READ_ES())
+1633   1              return;
+1634   1      #if 1
+1635   1          if( GetCommand() )
+1636   1          {
+1637   2              ProcessCommand();
+1638   2              SIORxIndex = 0;
+1639   2              Clr_RxBusyFlag();
+1640   2          }
+1641   1      #else
+                  if( GetCommand() )
+                  {
+                      ProcessCommand();
+                      SIORxIndex = 0;
+                      u8ReSyncCounter = 0;
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 28  
+
+                      Clr_RxBusyFlag();
+                  }
+                  else if( SIORxIndex > 7 )
+                  {
+                      AOCAlign();
+                      Clr_RxBusyFlag();
+                      SIORxIndex = 0;
+                  }
+              #endif
+1656   1      }
+1657          #if !ENABLE_DEBUG
+              BYTE code msDebugNullData[] = {0};
+              void msDebugDummy(void)
+              {
+                  BYTE xdata i = msDebugNullData[0];
+              }
+              #endif
+1664          
+1665          #if ENABLE_DEBUG_TIMING_CHANGE_POINT
+              void ResetTimingChangeFirstPoint(void)
+              {
+                  bTimingChangeFirstPointFlag = 0;
+                  TimingChangeFirstPoint = TimingChange_Def;
+                  bTimingChangeFirstPointFlag = 1;
+              }
+              
+              void SetTimingChangeFirstPoint(TimingChangeFirstPointType firstpoint)
+              {
+                  if(bTimingChangeFirstPointFlag)
+                  {
+                      bTimingChangeFirstPointFlag = 0;
+                      TimingChangeFirstPoint = firstpoint;
+                  }
+              }
+              #endif
+1682          
+1683          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2408    ----
+   CONSTANT SIZE    =    873    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      38
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

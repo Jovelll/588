@@ -1,0 +1,64 @@
+C51 COMPILER V9.60.0.0   DRVMHL                                                            12/22/2020 19:50:48 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DRVMHL
+OBJECT MODULE PLACED IN .\Obj\drvMHL.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\DRIVER\drvMHL.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\INC;
+                    -..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;..\
+                    -Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\drvMHL.lst) TABS(2) OBJECT(.\Obj\drvMHL.obj)
+
+line level    source
+
+   1          
+   2          #include "global.h"
+   3          
+   4          #if ENABLE_MHL
+              #if CHIP_ID == CHIP_TSUM2
+              #include "swI2c.c"
+              #include "mhal_mhl_2.c"
+              #include "mdrv_mhl_2.c"
+              #include "mapi_mhl_2.c"
+              #elif CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK
+              #include "mhal_mhl_C.c"
+              #include "mdrv_mhl_C.c"
+              #include "mapi_mhl_C.c"
+              #elif CHIP_ID == CHIP_TSUMD
+              #include "mhal_mhl_D.c"
+              #include "mdrv_mhl_D.c"
+              #include "mapi_mhl_D.c"
+              #elif CHIP_ID == CHIP_TSUM9
+              #include "mhal_mhl_9.c"
+              #include "mdrv_mhl_9.c"
+              #include "mapi_mhl_9.c"
+              #elif CHIP_ID == CHIP_TSUMF
+              #include "mhal_mhl_F.c"
+              #include "mdrv_mhl_F.c"
+              #include "mapi_mhl_F.c"
+              #elif (CHIP_ID == CHIP_TSUML || CHIP_ID == CHIP_TSUMU || CHIP_ID == CHIP_TSUMY || CHIP_ID == CHIP_TSUMV ||
+             - CHIP_ID == CHIP_TSUMJ)
+              
+              #else  //dont have mhl code for TSUMB
+              #message "please implement MHL function for new chip"
+              #endif
+              #endif
+  32          BYTE code drvMHLDummy[] = {0};
+  33          void msMHLDummy(void)
+  34          {
+  35   1          BYTE x = drvMHLDummy[0];
+  36   1      }
+  37          
+  38          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      8    ----
+   CONSTANT SIZE    =      1    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

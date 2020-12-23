@@ -1,0 +1,879 @@
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE KEYPAD
+OBJECT MODULE PLACED IN .\Obj\Keypad.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\UI\Keypad.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\INC;..\K
+                    -ERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;..\Cust
+                    -omer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\Keypad.lst) TABS(2) OBJECT(.\Obj\Keypad.obj)
+
+line level    source
+
+   1          #include <math.h>    //MST_MCU
+   2          #include "types.h"
+   3          #include "board.h"
+   4          #include "keypaddef.h"
+   5          #include "ms_reg.h"
+   6          #include "global.h"
+   7          #include "debug.h"
+   8          #include "Common.h"
+   9          #include "misc.h"
+  10          #include "ms_rwreg.h"
+  11          #include "mcu.h"
+  12          #include "menudef.h"
+  13          #include "gpio_def.h"
+  14          #if USEFLASH
+  15          #include "userpref.h"
+  16          #endif
+  17          
+  18          //VS CCFLAG ADD
+  19          #if TimerComboKey
+  20          bit bDoComboKeyFlag=0;
+  21          bit bEnableComboKeyFlag=0;
+  22          BYTE XDATA ComboCounter=0;
+  23          BYTE XDATA ComboKey=0;
+  24          BYTE XDATA PreComboKey=0;
+  25          //BYTE XDATA ComboKeyType=0;
+  26          #endif
+  27          BYTE xdata KeyDebug=0;
+  28          
+  29          #if IR_FUNC_EN  //20130824
+              extern bit bIrHoldFlag;
+              extern bit bIrEndFlag;
+              extern WORD idata g_IRRawdata[2];
+              extern unIrDataType idata unIrData;
+              WORD xdata g_IRdata[2];
+              BYTE idata byMixKeyBak = 0xff; // 复合键存储单元;
+              WORD xdata Backup_IRdata[2];
+              bit IRSourceFlag=0;
+              bit IRInputSourceFlag=0;
+              #endif
+  40          
+  41          #if ENABLE_FACTORY_AUTOTEST
+  42          extern bit BFactoryAutoTest;
+  43          #endif
+  44          
+  45          extern void Osd_Hide( void );
+  46          extern void SaveMonitorSetting( void );
+  47          extern Bool ExecuteKeyEvent( MenuItemActionType menuAction );
+  48          
+  49          
+  50          //================================================================
+  51          extern BYTE xdata MenuPageIndex;
+  52          //extern BYTE xdata MenuItemIndex;
+  53          
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 2   
+
+  54          #define  adckey1(temp)    ((temp>=0x00 && temp<0x0A))
+  55          #define  adckey2(temp)    ((temp>=0x42 && temp<0x4F))  //40--4A,   00,  48,  70
+  56          //#define  adckey3(temp)    ((temp>=0x69 && temp<0x75))  //v3811  ok
+  57          #define  adckey3(temp)    ((temp>=0x69&& temp<0x85))   //v3811+v8811  ok
+  58          
+  59          typedef enum
+  60               {   
+  61                 ADC1key1   =KEY_EXIT,    
+  62                 ADC1key2   =KEY_IncVal,
+  63                 ADC1key3   =KEY_PLUS,       //  + up  
+  64                 ADC2key1   =KEY_MINUS,  //  - down 
+  65                 ADC2key2   =KEY_MENU,
+  66                 ADC2key3   =KEY_DecVal,    
+  67                 IOkey1  =KEY_POWER,    
+  68               } KeypadType;
+  69          
+  70          //2006-07-10
+  71          
+  72          BYTE Key_GetKeypadStatus( void )
+  73          { 
+  74   1      
+  75   1        BYTE keypad = 0xFF;
+  76   1        BYTE temp;
+  77   1        BYTE loop=0;
+  78   1        #if ENABLE_FACTORY_AUTOTEST
+  79   1        BYTE FACTORY_AUTOTESTflash=0;
+  80   1        #endif
+  81   1         temp = KEYPAD_ADC_A&0xFF;//sar1  
+  82   1        
+  83   1      
+  84   1        if(temp!=0xFF)
+  85   1        {
+  86   2      
+  87   2           Delay1ms(2);
+  88   2        while((abs(temp-(KEYPAD_ADC_A&0xFF))<2)&&(loop<15))
+  89   2        {
+  90   3            if(temp!=0xFF)
+  91   3              #if 0//(MainBoardType==MainBoard_TSUML88CMC2)
+                        Delay1ms(2);
+                      #else
+  94   3                Delay1ms(1);
+  95   3              #endif
+  96   3          loop++;
+  97   3        }
+  98   2        if(loop<15)
+  99   2        return 0xFF;
+ 100   2         }
+ 101   1        
+ 102   1      #if 0//ENABLE_DEBUG 
+                if(temp<0xf0)
+                printData("ADC2=%d",temp);
+              #endif
+ 106   1          //if (adckey1(temp))
+ 107   1        //  keypad &= ~ADC2key3;
+ 108   1          //else if(adckey2(temp))
+ 109   1          //keypad &= ~ADC1key2;
+ 110   1          //else if(adckey3(temp))
+ 111   1          //keypad &=~ADC1key1;
+ 112   1         #if 0
+                     if(temp < 90) // 0
+                     keypad &= ~KEY_POWER;
+                   else if(temp <140) // 0x48
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 3   
+
+                     keypad &=~KEY_MENU;//
+                #elif Customer_Type_Sel==Customer_GUANRONG
+                
+                     if(temp < 0x20) // 0
+                      keypad &=~KEY_MINUS;//
+                     else if(temp < 0xf0) // 0x48
+                      keypad &=  ~KEY_PLUS;//~KEY_EXIT;//
+                 #else
+ 124   1      #if Customer_Type_Sel==Customer_HONGXUN
+                //鸿讯按键
+                  if(temp < 0x20) // 0
+                     keypad &=~KEY_EXIT;//~KEY_MINUS;// 
+                   else if(temp < 0xf0) // 0x48
+                     keypad &= ~KEY_MINUS;//~KEY_EXIT;//
+              #elif 0//DisplayLogo ==SONGUAN  
+                  
+                if(temp < 0x20) // 0
+                     keypad &=~KEY_PLUS;//~KEY_MINUS;// ~KEY_EXIT;
+                else if(temp < 0xf0) // 0x48
+                     keypad &= ~KEY_EXIT;//~KEY_MINUS;//~KEY_MINUS;
+              #elif Enable_4LINE_KEY////Enable_ONE_LED//1       
+                if(temp < 90) // 0    
+                  keypad &= ~KEY_POWER;   
+                else if(temp <140) // 0x48    
+                  keypad &=~KEY_EXIT;//~KEY_MENU;//
+              #else
+ 142   1        // 原来的按键
+ 143   1        if(temp < 0x20) // 0
+ 144   1             keypad &=~KEY_MINUS;// ~KEY_EXIT;
+ 145   1           else if(temp < 0xf0) // 0x48
+ 146   1             keypad &= ~KEY_EXIT;//~KEY_MINUS;
+ 147   1      #endif
+ 148   1         #endif
+ 149   1      
+ 150   1      #if ENABLE_FACTORY_AUTOTEST
+ 151   1         if(temp < 0x20) // 0x48
+ 152   1            FACTORY_AUTOTESTflash++;
+ 153   1      #endif     
+ 154   1      
+ 155   1        loop=0;
+ 156   1        temp = KEYPAD_ADC_B&0xFF;
+ 157   1        if(temp!=0xFF)
+ 158   1        {
+ 159   2            Delay1ms(2);
+ 160   2        while((abs(temp-(KEYPAD_ADC_B&0xFF))<2)&&(loop<15))
+ 161   2        {
+ 162   3            if(temp!=0xFF)
+ 163   3          Delay1ms(1);
+ 164   3          loop++;
+ 165   3        }
+ 166   2        if(loop<15)
+ 167   2        return 0xFF;
+ 168   2         }
+ 169   1      #if 0//ENABLE_DEBUG 
+                if(temp<0xf0)
+                printData("ADC3=%d",temp);
+              #endif  
+ 173   1          //if(adckey1(temp))
+ 174   1          //keypad &= ~ADC2key1;
+ 175   1          //else if(adckey2(temp))
+ 176   1          //keypad &= ~ADC1key3;
+ 177   1          //else if(adckey3(temp))
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 4   
+
+ 178   1          //keypad &=~ADC2key2;
+ 179   1      
+ 180   1        #if 0
+                    if(temp < 20) // 0
+                      keypad &=~KEY_PLUS;//
+                    else if(temp < 80) // 0x48
+                      keypad &= ~KEY_EXIT;
+                    else if(temp < 120) // 0x48
+                      keypad &=~KEY_MINUS;
+              #elif Customer_Type_Sel==Customer_GUANRONG
+                    if(temp < 0x20) // 0
+                        keypad &=~KEY_MENU;//  ~KEY_PLUS;//
+                      else if(temp < 0x60) // 0x48
+                        keypad &= ~KEY_MINUS;
+                      else if(temp < 0x80) // 0x48
+                        keypad &=~KEY_EXIT;//~KEY_MENU;//
+                      
+                    if(PowerKey == 0 )
+                     {
+                      keypad &= ~IOkey1;
+                     }
+              
+                #else
+ 201   1      
+ 202   1      #if Customer_Type_Sel==Customer_HONGXUN
+                //鸿讯按键    
+                    if(temp < 0x20) // 0
+                      keypad &= ~KEY_PLUS;//~KEY_MENU;
+                    else if(temp < 0x60) // 0x48
+                      keypad &=~KEY_MENU;// ~KEY_MINUS;
+                    else if(temp < 0x80) // 0x48
+                      keypad &=~KEY_EXIT;//;//~KEY_MENU;//  ~KEY_SELECT;
+              #elif 0//DisplayLogo ==SONGUAN  
+                    if(temp < 0x20) // 0
+                      keypad &= ~KEY_PLUS;//~KEY_MENU;// ~KEY_PLUS;
+                    else if(temp < 0x60) // 0x48
+                      keypad &= ~KEY_MINUS;
+                    else if(temp < 0x80) // 0x48
+                      keypad &=~KEY_MENU;
+              #elif Enable_4LINE_KEY//    
+                  if(temp < 20) // 0    
+                    keypad &=~KEY_PLUS;//   
+                  else if(temp < 80) // 0x48    
+                    keypad &= ~KEY_MENU;//~KEY_EXIT;   
+                  else if(temp < 120) // 0x48    
+                    keypad &=~KEY_MINUS;  
+               #else
+ 225   1      //原来的按键
+ 226   1          if(temp < 0x20) // 0
+ 227   1              keypad &=  ~KEY_PLUS;//~KEY_MENU;
+ 228   1            else if(temp < 0x60) // 0x48
+ 229   1              keypad &= ~KEY_MINUS;
+ 230   1            else if(temp < 0x80) // 0x48
+ 231   1              keypad &=~KEY_MENU;//  ~KEY_SELECT;
+ 232   1      #endif      
+ 233   1          if(PowerKey == 0 )
+ 234   1           {
+ 235   2           #if ENABLE_FACTORY_AUTOTEST
+ 236   2          FACTORY_AUTOTESTflash++;
+ 237   2           #endif
+ 238   2            keypad &= ~IOkey1;
+ 239   2           }
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 5   
+
+ 240   1        #endif
+ 241   1      
+ 242   1      #if ENABLE_FACTORY_AUTOTEST
+ 243   1         if(temp < 0x20) // 0x48
+ 244   1          FACTORY_AUTOTESTflash++;
+ 245   1      
+ 246   1      
+ 247   1      
+ 248   1            if(FACTORY_AUTOTESTflash==3)
+ 249   1            keypad=~KEY_FACTORY_AUTOTEC;
+ 250   1      
+ 251   1         
+ 252   1      #endif
+ 253   1      
+ 254   1          //if(keypad!=0xff)
+ 255   1          //printData("keypad=%d",keypad);
+ 256   1      
+ 257   1          return keypad;
+ 258   1      }
+ 259          
+ 260          void Key_ScanKeypad(void)
+ 261          {
+ 262   1          BYTE keypadStatus=0;
+ 263   1      
+ 264   1      #if ENABLE_FACTORY_AUTOTEST
+ 265   1      
+ 266   1          if (BFactoryAutoTest==1)
+ 267   1            { 
+ 268   2            return;
+ 269   2                  }
+ 270   1      #endif
+ 271   1      
+ 272   1      #if IR_FUNC_EN  //20130824  
+                
+                      if (bIrHoldFlag || bIrEndFlag)
+                      { // Ir key;
+                
+                      BYTE i;
+                      BYTE  tempdata,temp11,temp22,temp33,temp44,RepeatFlag=0;
+                      
+                        temp11=g_IRRawdata[0]>>8;
+                        temp22=(BYTE)(g_IRRawdata[0]&0xff);
+                        temp33=g_IRRawdata[1]>>8;
+                        temp44=(BYTE)(g_IRRawdata[1]&0xff);
+                        
+                
+                        tempdata =temp11;
+                        temp11 =0;
+                        for(i =0;i<7;i++)
+                        {
+                          temp11=(temp11 | (tempdata&0x01));
+                          tempdata=tempdata>>1;
+                          temp11 =temp11 <<1;
+                        }
+                        temp11=(temp11 | (tempdata&0x01));
+                        
+                
+                        tempdata =temp22;
+                        temp22 =0;
+                        for(i =0;i<7;i++)
+                        {
+                          temp22=(temp22 | (tempdata&0x01));
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 6   
+
+                          tempdata=tempdata>>1;
+                          temp22 =temp22 <<1;
+                        }
+                        temp22=(temp22 | (tempdata&0x01));
+                        
+                
+                        tempdata =temp33;
+                        temp33 =0;
+                        for(i =0;i<7;i++)
+                        {
+                          temp33=(temp33 | (tempdata&0x01));
+                          tempdata=tempdata>>1;
+                          temp33 =temp33 <<1;
+                        }
+                        temp33=(temp33 | (tempdata&0x01));
+                                
+                
+                        tempdata =temp44;
+                        temp44 =0;
+                        for(i =0;i<7;i++)
+                        {
+                          temp44=(temp44 | (tempdata&0x01));
+                          tempdata=tempdata>>1;
+                          temp44 =temp44 <<1;
+                        }
+                        temp44=(temp44 | (tempdata&0x01));        
+                        
+                
+                        g_IRdata[0]=(temp11<<8)|temp22;
+                        g_IRdata[1]=(temp33<<8)|temp44;
+                        if(bIrHoldFlag)
+                        {         
+                          bIrHoldFlag = 0;
+                          IRClearCounter++;
+                                    RepeatFlag=1;
+                            if(IRClearCounter>5)
+                              {
+                                g_IRdata[0]=Backup_IRdata[0];
+                                g_IRdata[1]=Backup_IRdata[1];
+                              }
+                        }
+                        if(bIrEndFlag)
+                        {
+                          bIrEndFlag = 0;
+                          IRClearCounter=0;
+                          Backup_IRdata[0]=g_IRdata[0];
+                          Backup_IRdata[1]=g_IRdata[1];
+                        }
+                    #if ENABLE_DEBUG
+                        printData("ccflag1111=%x", temp11 );
+                        printData("ccflag222=%x", temp22 );
+                        printData("ccflag333=%x", temp33 );
+                        printData("ccflag444=%x", temp44 );
+                        printData("g_IRdata0=%x",g_IRdata[0]);
+                        printData("g_IRdata1=%x", g_IRdata[1]);
+                        printData("IRClearCounter=%x", IRClearCounter);
+                  //      printData("IRFLAG=%x", IRFLAG);
+                    #endif  
+                  //        IRFLAG = 0;
+                        switch (g_IRdata[1])
+                        {
+                          case IR_KEY_POWER: // IR Power key;
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 7   
+
+                          {
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                              keypadStatus = ~KEY_POWER;
+                              byMixKeyBak &= ~KEY_POWER;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                          }
+                          break;
+                          
+                        case IR_KEY_MENU:
+                        case IR_KEY_ENTRY:
+                          {
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                              keypadStatus = ~ KEY_MENU;
+                              byMixKeyBak &= ~ KEY_MENU;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                          }
+                          break;
+                        case IR_KEY_RIGHT:
+                          {
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                              keypadStatus = ~KEY_IncVal;
+                              byMixKeyBak &= ~KEY_IncVal;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                    
+                          }
+                          break;
+                        case IR_KEY_LEFT:
+                          { 
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                                keypadStatus = ~KEY_DecVal;
+                              byMixKeyBak &= ~KEY_DecVal;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                          }
+                          break;
+                        case IR_KEY_DOWN:
+                          { 
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                                keypadStatus = ~KEY_MINUS;
+                              byMixKeyBak &= ~KEY_MINUS;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                          }
+                          break;
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 8   
+
+                          case IR_KEY_UP:
+                          { 
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                                keypadStatus = ~KEY_PLUS;
+                              byMixKeyBak &= ~KEY_PLUS;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                          }
+                          break;
+                        case IR_KEY_EXIT:
+                          {
+                            if ((g_IRdata[0]==IR_CUSTOMER_CODE))
+                            {
+                                keypadStatus = ~ KEY_EXIT;
+                              byMixKeyBak &= ~ KEY_EXIT;
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                              }
+                            }
+                          }
+                          break;
+                        case IR_Hot43CHING169:
+                          {
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                              ExecuteKeyEvent(MIA_HOT43CHING169);
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                                Delay1ms(500);
+                              }
+                            }
+                
+                          }
+                          break;
+                        case IR_HotChangeSource:
+                          {
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                              ExecuteKeyEvent(MIA_HotInput);
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                                Delay1ms(500);
+                              }
+                            }
+                            
+                          }
+                          break;
+                    #if AudioFunc
+                           case IR_HotMUTE:
+                          {
+                            if (g_IRdata[0]==IR_CUSTOMER_CODE)
+                            {
+                              ExecuteKeyEvent(MIA_HotMute);
+                              {
+                                g_IRdata[1] = 0; // 使该键无连续动作;
+                                Delay1ms(500);
+                              }
+                            }
+                            
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 9   
+
+                          }
+                          break;
+                    #endif
+                //----------------------------------------------------------------------------  
+                          default:
+                          {
+                            keypadStatus = 0;
+                            byMixKeyBak = 0xff;
+                            IRSourceFlag=0;
+                            IRInputSourceFlag=0;
+                          }
+                          break;
+                        }   
+                        g_IRdata[0]=0;
+                        
+                        if (PowerOnFlag == 0)
+                        {
+                          keypadStatus = byMixKeyBak;
+                        }
+                        keypadStatus=(keypadStatus^KeypadMask)&KeypadMask;
+                        
+                      }
+                      else        
+              #endif
+ 512   1      
+ 513   1          if (gBoolVisualKey == 0)
+ 514   1            {
+ 515   2          keypadStatus = (Key_GetKeypadStatus() ^ KeypadMask) &KeypadMask;
+ 516   2            }
+ 517   1          else if (gBoolVisualKey == 1)
+ 518   1           {
+ 519   2              gBoolVisualKey = 0;
+ 520   2              keypadStatus = (gByteVisualKey ^ KeypadMask) &KeypadMask;
+ 521   2           }
+ 522   1         
+ 523   1          if (keypadStatus)
+ 524   1          {
+ 525   2        //  printData("keypad112233=%d", keypadStatus );
+ 526   2          #if 0//ENABLE_DEBUG&&DEBUG_SCANKEY// 090624 coding test
+                  printData("  keypadStatus:%d", keypadStatus);
+                  
+                  #endif
+ 530   2              {
+ 531   3                  if (keypadStatus == KEY_LOCK )
+ 532   3                  {
+ 533   4                      // 091019
+ 534   4                      #if 0//ENABLE_DEBUG
+                             // printData("  keypadStatus == KEY_LOCK", 1);
+                              #endif
+ 537   4                      if (!PowerOnFlag && !(MonitorFlags &OsdLockModeFlag))
+ 538   4                      {
+ 539   5                          Set_OsdLockModeFlag();
+ 540   5                          //Set_PowerOnFlag();
+ 541   5                          Set_ShowOsdLockFlag();
+ 542   5                          KeypadButton = BTN_Power;
+ 543   5                      }
+ 544   4                      else if ((!PowerOnFlag) && (MonitorFlags &OsdLockModeFlag))
+ 545   4                      {
+ 546   5                          Clr_OsdLockModeFlag();
+ 547   5                          //Set_PowerOnFlag();
+ 548   5                          Clr_ShowOsdLockFlag();
+ 549   5                          KeypadButton = BTN_Power;
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 10  
+
+ 550   5                      }
+ 551   4                  else if(PowerOnFlag)
+ 552   4                      KeypadButton = BTN_Repeat;
+ 553   4      
+ 554   4                    #if USEFLASH
+ 555   4                      UserPref_EnableFlashSaveBit(bFlashSaveMonitorBit);
+ 556   4                      #else
+                              SaveMonitorSetting();
+                              #endif
+ 559   4      
+ 560   4                      
+ 561   4                  }
+ 562   3                  else if (keypadStatus == KEY_PLUS)
+ 563   3          {
+ 564   4                      if (MenuPageIndex == RootMenu)
+ 565   4                      {
+ 566   5                          if (KeypadButton == BTN_Plus || KeypadButton == BTN_Repeat)
+ 567   5                                  KeypadButton = BTN_Repeat;
+ 568   5                          else
+ 569   5                              KeypadButton = BTN_Plus;
+ 570   5                      }
+ 571   4                      else
+ 572   4                          KeypadButton = BTN_Plus;
+ 573   4            #if ENABLE_DEBUG
+ 574   4            printMsg("press KEY_PLUS");
+ 575   4            #endif
+ 576   4                  }
+ 577   3                  
+ 578   3                  else if (keypadStatus == KEY_MINUS)
+ 579   3                  {
+ 580   4                      if (MenuPageIndex == RootMenu)
+ 581   4                      {
+ 582   5                          if (KeypadButton == BTN_Minus || KeypadButton == BTN_Repeat)
+ 583   5                                  KeypadButton = BTN_Repeat;
+ 584   5                          else
+ 585   5                              KeypadButton = BTN_Minus;
+ 586   5                      }
+ 587   4                      else
+ 588   4                          KeypadButton = BTN_Minus;
+ 589   4            #if ENABLE_DEBUG
+ 590   4                      printMsg("press KEY_MINUS");
+ 591   4            #endif
+ 592   4                  }
+ 593   3                  else if (keypadStatus == KEY_MENU)
+ 594   3                  {
+ 595   4                      if ((KeypadButton == BTN_Menu || KeypadButton == BTN_Repeat))
+ 596   4                          KeypadButton = BTN_Repeat;
+ 597   4                      else
+ 598   4                        KeypadButton = BTN_Menu;
+ 599   4      
+ 600   4              
+ 601   4          #if ENABLE_DEBUG
+ 602   4            printMsg("press KEY_MENU");
+ 603   4          #endif
+ 604   4          
+ 605   4      #if LOCKPOWER_USE_OTHER_KEY
+ 606   4          #if TimerComboKey && Enable_LockPowerKey
+ 607   4              ComboKey=BTN_Menu;
+ 608   4          #endif
+ 609   4      #endif      
+ 610   4                  }
+ 611   3                  else if (keypadStatus == KEY_EXIT)
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 11  
+
+ 612   3                  {
+ 613   4                      if (KeypadButton == BTN_Exit || KeypadButton == BTN_Repeat) //120420 Modify
+ 614   4                          KeypadButton = BTN_Repeat;
+ 615   4                      else
+ 616   4                          KeypadButton = BTN_Exit;
+ 617   4                      
+ 618   4          #if TimerComboKey && Enable_Menu_LockOSD
+ 619   4            ComboKey=BTN_Exit;
+ 620   4          #endif
+ 621   4          #if ENABLE_DEBUG
+ 622   4                      printMsg("press KEY_EXIT");
+ 623   4          #endif
+ 624   4                  }
+ 625   3        #if (SevenKey_Function)
+                          else if (keypadStatus == KEY_DecVal)
+                          {
+                              if (KeypadButton == BTN_Repeat)
+                                  KeypadButton = BTN_Repeat;
+                              else
+                              {
+                                  KeypadButton = BTN_DecVal;
+                              }
+                          }
+                    else if (keypadStatus == KEY_IncVal)
+                          {
+                              if (KeypadButton == BTN_Repeat)
+                                  KeypadButton = BTN_Repeat;
+                              else
+                              {
+                                  KeypadButton = BTN_IncVal;
+                              }
+                          }
+                    #endif
+ 645   3                  else if (keypadStatus == KEY_POWER)
+ 646   3                  {
+ 647   4                      {
+ 648   5                          if (KeypadButton == BTN_Power || KeypadButton == BTN_Repeat)
+ 649   5                          {
+ 650   6                            KeypadButton = BTN_Repeat;
+ 651   6                          }
+ 652   5                          else  
+ 653   5                          {
+ 654   6              KeypadButton = BTN_Power;
+ 655   6          #if (Customer_Type_Sel==Customer_XINTAO)
+                      if (FactoryModeFlag||BurninModeFlag)
+                  #else
+ 658   6              if (FactoryModeFlag)
+ 659   6          #endif
+ 660   6              {
+ 661   7              Clr_SaveSettingFlag();
+ 662   7      
+ 663   7              Clr_FactoryModeFlag();
+ 664   7              Clr_BurninModeFlag();
+ 665   7              Clr_DoBurninModeFlag(); //120112 Modify for TPV Request
+ 666   7              }
+ 667   6                          }
+ 668   5                      } 
+ 669   4          #if ENABLE_DEBUG
+ 670   4            printMsg("press KEY_POWER");
+ 671   4          #endif
+ 672   4      
+ 673   4      #if !LOCKPOWER_USE_OTHER_KEY
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 12  
+
+                  #if TimerComboKey && Enable_LockPowerKey
+                    ComboKey=BTN_Power;
+                  #endif
+              #endif
+ 678   4                  }
+ 679   3        else  if (keypadStatus==KEY_FACTORY)
+ 680   3          { 
+ 681   4            #if ENABLE_DEBUG
+ 682   4            printMsg(" key FACTORY");
+ 683   4            #endif
+ 684   4            
+ 685   4            if(FactoryModeFlag)   
+ 686   4                   KeypadButton=BTN_Repeat;
+ 687   4            else
+ 688   4                   KeypadButton=BTN_Power;
+ 689   4            
+ 690   4               if(!PowerOnFlag)
+ 691   4                {
+ 692   5                  Set_FactoryModeFlag();
+ 693   5      
+ 694   5                  if (SyncLossState())
+ 695   5                    {
+ 696   6                  Set_BurninModeFlag();
+ 697   6                  Set_DoBurninModeFlag();   //120703 Modify for TPV Request
+ 698   6                } 
+ 699   5                } 
+ 700   4      
+ 701   4          } 
+ 702   3      #if(Customer_Type_Sel==Customer_XINTAO)
+                else  if (keypadStatus==KEY_BRUNIN)
+                  { 
+                    #if ENABLE_DEBUG
+                    printMsg(" key BRUNIN");
+                    #endif
+                    
+                    if(FactoryModeFlag)   
+                           KeypadButton=BTN_Repeat;
+                    else
+                           KeypadButton=BTN_Power;
+                    
+                       if(!PowerOnFlag)
+                        {
+                          
+                          Set_BurninModeFlag();
+                          Set_DoBurninModeFlag();   //120703 Modify for TPV Request
+                          
+                        } 
+              
+                  } 
+              #endif
+ 724   3      #if ENABLE_FACTORY_AUTOTEST
+ 725   3         else  if (keypadStatus==KEY_FACTORY_AUTOTEC)
+ 726   3            { 
+ 727   4            
+ 728   4      #if ENABLE_DEBUG
+ 729   4          printMsg(" KEY_FACTORY_AUTOTEC");
+ 730   4      #endif
+ 731   4          //if(BFactoryAutoTest)   
+ 732   4          //     KeypadButton=BTN_Repeat;
+ 733   4          //else
+ 734   4               KeypadButton=BTN_Nothing;
+ 735   4          
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 13  
+
+ 736   4               BFactoryAutoTest=1;
+ 737   4              #if 0//ENABLE_DEBUG
+                      printMsg(" key FACTORY");
+                      #endif        
+ 740   4                     //Clr_FactoryModeFlag();
+ 741   4                     //Clr_BurninModeFlag();    
+ 742   4                     //Clr_DoBurninModeFlag();  
+ 743   4               Second=0;
+ 744   4      
+ 745   4             
+ 746   4               if (SrcInputType!= Input_VGA)
+ 747   4                 {           
+ 748   5               SrcInputType=UserPrefSelectInputType=Input_VGA;  
+ 749   5               mStar_SetupInputPort();
+ 750   5               Set_InputTimingChangeFlag();
+ 751   5               SrcFlags |= SyncLoss;
+ 752   5                 }
+ 753   4      
+ 754   4      
+ 755   4      
+ 756   4               
+ 757   4            } 
+ 758   3      
+ 759   3      #endif  
+ 760   3                  else
+ 761   3                  {
+ 762   4                      KeypadButton = BTN_Nothing;
+ 763   4                  }                                
+ 764   3              }
+ 765   2          //--------------------------
+ 766   2      #if TimerComboKey
+ 767   2            #if Enable_Menu_LockOSD
+ 768   2         if(ComboKey==BTN_Exit && keypadStatus==KEY_EXIT) 
+ 769   2          {
+ 770   3                      if (PowerOnFlag)
+ 771   3                      {
+ 772   4                          bEnableComboKeyFlag=1;
+ 773   4                      }
+ 774   3              }
+ 775   2             #endif
+ 776   2          #if Enable_LockPowerKey
+ 777   2          #if LOCKPOWER_USE_OTHER_KEY
+ 778   2          else if (ComboKey==BTN_Menu && keypadStatus==KEY_MENU)
+ 779   2          #else
+                  else if (ComboKey==BTN_Power && keypadStatus==KEY_POWER)
+                   #endif
+ 782   2                  {
+ 783   3                      if (PowerOnFlag)
+ 784   3                      {
+ 785   4                          bEnableComboKeyFlag=1;
+ 786   4                      }
+ 787   3                  }
+ 788   2        #endif
+ 789   2              else
+ 790   2              {
+ 791   3                  bEnableComboKeyFlag=0;
+ 792   3                  ComboKey=0;
+ 793   3                  PreComboKey=0;
+ 794   3                  ComboCounter=0;
+ 795   3              }
+ 796   2        #endif
+ 797   2      
+C51 COMPILER V9.60.0.0   KEYPAD                                                            12/22/2020 19:50:47 PAGE 14  
+
+ 798   2          }
+ 799   1      //======================================================================================  
+ 800   1          else //check when key release
+ 801   1          {
+ 802   2              #if TimerComboKey
+ 803   2              bEnableComboKeyFlag=0;
+ 804   2              ComboKey=0;
+ 805   2              PreComboKey=0;
+ 806   2              ComboCounter=0;
+ 807   2              #endif
+ 808   2      
+ 809   2        #if (ENABLE_SUPERRESOLUTION)
+                  if( PressMinusFlag )
+                  {
+                    if( MenuPageIndex == RootMenu )
+                    {
+                      KeypadButton = BTN_Plus;
+                      HotKeyMinusCounter = 0;
+                      Clr_EnableClrVisionDemoFlag();
+                    }
+                    if( SyncLossState() )
+                      Clr_PressMinusFlag();
+                  }
+                #endif
+ 822   2      
+ 823   2              KeypadButton = BTN_Nothing;
+ 824   2          }
+ 825   1         KeyDebug = 0;  
+ 826   1      }
+ 827          
+ 828          //================================================================
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    872    ----
+   CONSTANT SIZE    =    111    ----
+   XDATA SIZE       =      4    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       5
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      2    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

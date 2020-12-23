@@ -1,0 +1,486 @@
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE COLORPALETTE
+OBJECT MODULE PLACED IN .\Obj\ColorPalette.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\UI\ColorPalette.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\IN
+                    -C;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;.
+                    -.\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\ColorPalette.lst) TABS(2) OBJECT(.\Obj\ColorP
+                    -alette.obj)
+
+line level    source
+
+   1          ///////////////////////////////////////////////////////////////////////////////
+   2          /// @file ColorPalette.c
+   3          /// @brief
+   4          /// @author MStarSemi Inc.
+   5          ///
+   6          /// Functions to load color palette.
+   7          ///
+   8          /// Features
+   9          ///  -
+  10          ///////////////////////////////////////////////////////////////////////////////
+  11          #define _COLORPALETTE_C
+  12          
+  13          #include "types.h"
+  14          #include "board.h"
+  15          #include "ms_reg.h"
+  16          #include "Global.h"
+  17          #include "menudef.h"
+  18          #include "ColorPalette.h"
+  19          #include "ColorPaletteTbl.h"
+  20          //#include "debugMsg.h"
+  21          #include "ms_rwreg.h"
+  22          //#include "mstar.h"
+  23          #include "drvOSD.h"
+  24          #include "msOSD.h"
+  25          
+  26          #include "Common.h"
+  27          
+  28          ColorPaletteType code tOSDColorPalette0[] =   //2bit logo
+  29          {
+  30            {0xFF, 0xF8, 0xFF,    CP_COLORKEY_F},  //  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // Palette 0 // White
+  31            {0xFF, 0x00, 0x00,    CP_COLORKEY_F},  // Palette 1 // Red
+  32            {0x00, 0x80, 0xff,    CP_COLORKEY_F},  // Palette 2 //lightblue Green
+  33            {0x00, 0x00, 0xFF,    CP_COLORKEY_F},  // Palette 3 // Blue
+  34          
+  35            {0xF6, 0xB8, 0x00,    CP_COLORKEY_F},  // Palette 4 // Envision PowerOnLogo "O"Color
+  36            {0xc0, 0xc0, 0xc0,    CP_COLORKEY_F},  // Palette 5 //gray
+  37            {0x49, 0x56, 0x77,    CP_COLORKEY_F},  // Palette 6 //Main Logo Color +AOC power On
+  38            {0x00, 0x00, 0x00,    CP_COLORKEY_F},  // Palette 7
+  39          
+  40            {0xFF, 0xF8, 0xFF,    CP_COLORKEY_F},  // {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // Palette 8 // White
+  41          
+  42          };
+  43          
+  44          //--color
+  45          
+  46          ColorPaletteType code tOSDColorPalette256[] =
+  47          {
+  48              // 0x00
+  49            {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F}, // {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+  50              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 1
+  51              {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // 2
+  52              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 3
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 2   
+
+  53          
+  54              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 4
+  55              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 5
+  56              {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // 6
+  57             {0xFF, 0xF8, 0xF8,  CP_COLORKEY_F},// {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 7
+  58          
+  59              // 0x08
+  60              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 8   // {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // 8
+  61              {0xE0, 0x10, 0xA0,  CP_COLORKEY_F},  // 9
+  62             {0xFF, 0xFF, 0x00,  CP_COLORKEY_F},// {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // A
+  63              {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // B
+  64          
+  65              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // C
+  66              {0xB0, 0xB0, 0xB0,  CP_COLORKEY_F},  // D
+  67              {0xFF, 0xF8, 0xF8,  CP_COLORKEY_F},//  {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // E
+  68              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // F
+  69              
+  70          //=========4 COLOR =========0x10//------------------
+  71              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+  72              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  73              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  74              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+  75            // {0x00, 0x00, 0x00,    CP_COLORKEY_F},           // 0
+  76            // {0xFF, 0xFF, 0xFF,    CP_COLORKEY_F},           // 1
+  77            //  {0xFF, 0x00, 0x00,    CP_COLORKEY_F},           // 2
+  78            // {NULL, NULL, NULL,    CP_COLORKEY_F},           // 3」
+  79              
+  80              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+  81              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+  82              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  83              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+  84          // 0X18
+  85              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  86              {0x50, 0xA0, 0xF0,  CP_COLORKEY_F},  // 0
+  87              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+  88              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  89              
+  90              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+  91              {0x50, 0xA0, 0xF0,  CP_COLORKEY_F},  // 0
+  92              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+  93              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  94          // 0X20
+  95              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  96              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+  97              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+  98              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+  99              
+ 100              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 101              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 102              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 103              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 104           //==========4 COLOR END======0x28
+ 105              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 106              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 107              {0x00, 0x00, 0xF0,  CP_COLORKEY_F},  // 0
+ 108              {0x00, 0x00, 0xF0,  CP_COLORKEY_F},  // 0
+ 109              
+ 110              {0x60, 0x60, 0x60,  CP_COLORKEY_F},  // 0
+ 111              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 112              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 113              {0x00, 0x80, 0x00,  CP_COLORKEY_F},  // 0
+ 114            //========8 COLOR ============0x30
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 3   
+
+ 115              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 116              {0xF0, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 117              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 118              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 119              
+ 120              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 121              {0xD0, 0xD0, 0x00,  CP_COLORKEY_F},  // 0
+ 122              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 123              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 124          // 0X38
+ 125              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 126              {0xD0, 0xD0, 0x00,  CP_COLORKEY_F},  // 0
+ 127              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 128              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 129              
+ 130              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 131              {0x00, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 132              {0xF0, 0x00, 0xF0,  CP_COLORKEY_F},  // 0
+ 133              {0x10, 0x10, 0x10,  CP_COLORKEY_F},  // 0
+ 134          // 0X40
+ 135             {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 136              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 137              {0x00, 0x00, 0xE0,  CP_COLORKEY_F},  // 0
+ 138              {0x00, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 139            
+ 140              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 141              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 142              {0x00, 0x00, 0xE0,  CP_COLORKEY_F},  // 0
+ 143              {0x00, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 144          // 0X48
+ 145              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 146              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 147              {0x00, 0x00, 0xE0,  CP_COLORKEY_F},  // 0
+ 148              {0x00, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 149              
+ 150              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 151              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 152              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 153              {0x80, 0x90, 0xC0,  CP_COLORKEY_F},  // 0
+ 154          // 0X50
+ 155              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 156              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 157              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 158              {0x80, 0x90, 0xC0,  CP_COLORKEY_F},  // 0
+ 159              
+ 160              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 161              {0x20, 0x80, 0xD0,  CP_COLORKEY_F},  // 0
+ 162              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 163              {0x80, 0x90, 0xC0,  CP_COLORKEY_F},  // 0
+ 164          // 0X58
+ 165              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 166              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 167              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 168              {0x80, 0x90, 0xC0,  CP_COLORKEY_F},  // 0
+ 169              
+ 170              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 171              {0x20, 0x80, 0xD0,  CP_COLORKEY_F},  // 0
+ 172              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 173              {0x80, 0x90, 0xC0,  CP_COLORKEY_F},  // 0
+ 174          //===========hotkeyMenu color Palette=//
+ 175          //HotKeyDCROnMenu   //0x60
+ 176              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 4   
+
+ 177              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 178              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 179              {0x80, 0x90, 0xC0,  CP_COLORKEY_F},  // 0
+ 180          //HotKeyDCROffMenu    //0x64
+ 181              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 182              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 183              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 184              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 185          //HotKeyECOStandardMenu //0x68
+ 186              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 187              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 188              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 189              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 190          //HotKeyECOWebMenu    //0x6C
+ 191              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 192              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 193              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 194              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 195          //HotKeyECOGameMenu   //0x70
+ 196              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 197              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 0
+ 198              {0xF0, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 199              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 200          //HotKeyECOMoveMenu   //0x74
+ 201              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 202              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
+ 203              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 204              {0xF0, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
+ 205                        //--0X78
+ 206              {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // 0
+ 207              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 208              {0xE0, 0x00, 0x70,  CP_COLORKEY_F},  // 0
+ 209              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 210                           //--0X7C
+ 211              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
+ 212              {0xB0, 0xB0, 0xB0,  CP_COLORKEY_F},  // 0
+ 213              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 214              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 215                        //--0X80
+ 216              {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // --OK
+ 217              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 218              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 219              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use
+ 220          
+ 221              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 222              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 223              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 224              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use
+ 225          
+ 226              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 227              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 228              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 229              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use
+ 230          
+ 231              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 232              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 233              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use,
+ 234              {NULL, NULL, NULL,  CP_COLORKEY_F},  // no use
+ 235          
+ 236          #if DisplayLogo!=NoBrand
+ 237          #if DisplayLogo ==NANCHANG
+              //NANCAHNG          //0x90
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 5   
+
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0x21, 0x8C, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xEF, 0x8C, 0x21,  CP_COLORKEY_F},  // 0
+                  {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==EPAI
+              //EPAI            
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0x21, 0x18, 0x18,  CP_COLORKEY_F},  // 0
+                  {0x29, 0x18, 0x18,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==MAYA
+              //MAYA            
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0x00, 0x4A, 0x18,  CP_COLORKEY_F},  // 0
+                  {0x31, 0x42, 0x29,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==IMAGIC
+               //IMAGIC         
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xE7, 0x5A, 0x31,  CP_COLORKEY_F},  // 0
+                  {0x8C, 0x8C, 0x8C,  CP_COLORKEY_F},  // 0
+                  {0xEF, 0xEF, 0xEF, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==FANGZHENG
+              //FANGZHENG                         
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xFF, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+                  {0xFF, 0x7B, 0x7B,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==GRC
+              //GRC                             
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xFF, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+                  {0xFF, 0x7B, 0x7B,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==BUBALUS
+              //BUBALUS                           
+                  {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+                  {0xEF, 0xEF, 0xEF,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==BUBALUSWHITE
+              //BUBALUSWHITE                       
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xC6, 0xCE, 0xCE,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==SAMPIN
+              //SAMPIN                               
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xA5, 0xA5, 0xA5,  CP_COLORKEY_F},  // 0
+                  {0x29, 0x29 ,0x29,  CP_COLORKEY_F},  // 0
+                  {0x63, 0x63 ,0x6B, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==PCTOP
+              //PCTOP               
+                {0x00, 0x00, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0x80, 0x8A, 0x87,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==FOXIN
+              //foxin           
+                {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+                  {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 6   
+
+                  {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 
+              #elif (DisplayLogo ==ZEBION || DisplayLogo == INFORCE)              
+ 304            {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+ 305              {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+ 306              {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+ 307              {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+ 308          #elif DisplayLogo ==SUGON
+                {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xBD, 0x10, 0x18,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==SONGUAN               
+                {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+                  {0xCE, 0x21, 0x63,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+                  {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==MAGIX
+              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
+              {0xDE, 0x29, 0x21,  CP_COLORKEY_F},  // 0
+              {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+              {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==DRAZILPC
+              {0x18, 0x18, 0xFA,  CP_COLORKEY_F},  // 0
+              {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+              {0x9C, 0xCE, 0x42,  CP_COLORKEY_F},  // 0
+              {0XF7, 0XAD, 0X18, CP_COLORKEY_F},  // 0
+              #elif DisplayLogo ==MEGAONIC
+              {0x03, 0x03, 0xF0,  CP_COLORKEY_F},  // 0
+              {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
+              {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
+              {NULL, NULL, NULL, CP_COLORKEY_F},  // 0
+              
+              
+              #endif
+ 336          #endif
+ 337          };
+ 338          
+ 339          
+ 340          #if CHIP_ID>=CHIP_TSUMV
+ 341          void Load256ColorPalette(BYTE u8Group, BYTE u8Addr, ColorPaletteType *colorPtr, WORD u16Num)
+ 342          {
+ 343   1      
+ 344   1        #if CHIP_ID==CHIP_TSUM2||CHIP_ID==CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID==CHIP_TSUMD||CHIP_ID==CHIP_TSU
+             -MJ || CHIP_ID == CHIP_TSUM9 || CHIP_ID == CHIP_TSUMF
+ 345   1         WORD i;
+ 346   1          if (u8Group==0)
+ 347   1              WRITE_PSRAM0_ADDR();
+ 348   1          else
+ 349   1              WRITE_PSRAM1_ADDR();
+ 350   1          //write R/G/B
+ 351   1          msWriteByte(OSD1_66, u8Addr);
+ 352   1          if (u8Group==0)
+ 353   1              WRITE_PSRAM0_COLOR();
+ 354   1          else
+ 355   1              WRITE_PSRAM1_COLOR();
+ 356   1      
+ 357   1          for (i=0;i<u16Num;i++)
+ 358   1          {
+ 359   2              msWriteByte(OSD1_66, ((colorPtr+i)->u8Blue));
+ 360   2              msWriteByte(OSD1_66, ((colorPtr+i)->u8Green));
+ 361   2              msWriteByte(OSD1_66, ((colorPtr+i)->u8Red));
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 7   
+
+ 362   2          }
+ 363   1      
+ 364   1          //write colorkey
+ 365   1          if (u8Group==0)
+ 366   1              WRITE_PSRAM0_ADDR();
+ 367   1          else
+ 368   1              WRITE_PSRAM1_ADDR();
+ 369   1          msWriteByte(OSD1_66, u8Addr);
+ 370   1          if (u8Group==0)
+ 371   1              WRITE_PSRAM0_COLOR_KEY();
+ 372   1          else
+ 373   1              WRITE_PSRAM0_COLOR_KEY();
+ 374   1          while (u16Num--)
+ 375   1          {
+ 376   2              if(colorPtr->u8ColorKey)
+ 377   2                  msWriteByteMask(OSD1_66, BIT0,BIT0);
+ 378   2              else
+ 379   2                  msWriteByteMask(OSD1_66, 0,BIT0);
+ 380   2              colorPtr++;
+ 381   2          }
+ 382   1      
+ 383   1      
+ 384   1        #else
+              
+              
+                  WORD xdata i,u16PSRAM_AddrPort;
+                  BYTE u8Bank=msReadByte(OSD1_00);
+                  msWriteByte(OSD1_00,0x00);//subbank 0
+                  if (u8Group==0)
+                      u16PSRAM_AddrPort=OSD1_76;
+                  else
+                      u16PSRAM_AddrPort=OSD1_86;
+              //u8Addr=0;
+                  //write R/G/B
+                  msWriteByte(u16PSRAM_AddrPort, u8Addr);
+                  for (i=0;i<u16Num;i++)
+                  {
+                      msWriteByte(u16PSRAM_AddrPort+2, ((colorPtr+i)->u8Blue));
+                      msWriteByte(u16PSRAM_AddrPort+2, ((colorPtr+i)->u8Green));
+                      msWriteByte(u16PSRAM_AddrPort+2, ((colorPtr+i)->u8Red));
+                  }
+              
+                  //write colorkey
+                  msWriteByte(u16PSRAM_AddrPort, u8Addr);
+                  while (u16Num--)
+                  {
+                      if(colorPtr->u8ColorKey)
+                          msWriteByteMask(u16PSRAM_AddrPort+3, BIT0,BIT0);
+                      else
+                          msWriteByteMask(u16PSRAM_AddrPort+3, 0,BIT0);
+                      colorPtr++;
+                  }
+                  msWriteByte(OSD1_00,u8Bank);//subbank 0
+                  #endif
+ 416   1      }
+ 417          #else
+              void Load256ColorPalette(BYTE u8Group, BYTE u8Addr, ColorPaletteType *colorPtr, WORD u16Num)
+              {
+                  u8Group=u8Group;
+                  msWriteByte(OSD2_AC, u8Addr);
+                  while (u16Num--)
+                  {
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 8   
+
+                      msWriteByte(OSD2_AD, (colorPtr->u8Red));
+                      msWriteByte(OSD2_AD, (colorPtr->u8Green));
+                      msWriteByte(OSD2_AD, (colorPtr->u8Blue));
+                      colorPtr++;
+                  }
+              }
+              #endif
+ 431          
+ 432          void Osd_LoadColorPalette( void )
+ 433          {
+ 434   1      
+ 435   1          Load256ColorPalette(0, 0, &tOSDColorPalette0, sizeof( tOSDColorPalette0 )/sizeof(ColorPaletteType) );
+ 436   1      }
+ 437          
+ 438          void Osd_LoadColorPalette256( void )
+ 439          {
+ 440   1      
+ 441   1          Load256ColorPalette(0, 0, &tOSDColorPalette256, sizeof( tOSDColorPalette256 )/sizeof(ColorPaletteType)
+             - );
+ 442   1      }
+ 443          
+ 444          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    304    ----
+   CONSTANT SIZE    =    628    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       9
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

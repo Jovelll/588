@@ -1,0 +1,25 @@
+80 2 0 20 3a f 1 1
+107 01 Resolution 'Resolution\x00F\x013' x80x
+107 02 Resolution '\x130\x131\x132\x013' x80x
+107 01 HFreq 'H\x010Freq\x00F\x013' x80x
+107 02 HFreq 'H\x010Freq\x00F\x013' x80x
+107 01 VFreq 'V\x010Freq\x00F\x013' x80x
+107 02 VFreq 'V\x010Freq\x00F\x013' x80x
+107 01 x 'x' x80x
+107 02 x 'x' x80x
+107 01 Hz 'Hz' x80x
+107 02 Hz 'Hz' x80x
+107 01 KHz 'KHz' x80x
+107 02 KHz 'KHz' x80x
+107 01 VTotal 'V\x010Total\x00F\x013' x80x
+107 02 VTotal 'V\x010Total\x00F\x013' x80x
+107 01 Line 'Lines' x80x
+107 02 Line 'Lines' x80x
+107 01 ColorFormat 'Color\x00FFormat\x00F\x013' x80x
+107 02 ColorFormat 'Color\x00FFormat\x00F\x013' x80x
+107 01 RGB 'RGB' x80x
+107 02 RGB 'RGB' x80x
+107 01 YUV444 'YUV444' x80x
+107 02 YUV444 'YUV444' x80x
+107 01 YUV422 'YUV422' x80x
+107 02 YUV422 'YUV422' x80x

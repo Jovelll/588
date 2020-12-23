@@ -1,0 +1,1423 @@
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDLC
+OBJECT MODULE PLACED IN .\Obj\MsDLC.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\MsDLC.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTE
+                    -M\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\I
+                    -NC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\MsDLC.lst) TABS(2) OBJECT(.\Obj\MsDLC.obj
+                    -)
+
+line level    source
+
+   1          /******************************************************************************
+   2          Copyright (c) 2003 MStar Semiconductor, Inc.
+   3          All rights reserved.
+   4          [Module Name]: MsDLC.c
+   5          [Date]:        26-Dec-2003
+   6          [Comment]:
+   7          MST DLC subroutines.
+   8          [Reversion History]:
+   9          *******************************************************************************/
+  10          #include "board.h"
+  11          #include "types.h"
+  12          #include "msDLC.h"
+  13          #include "ms_reg.h"
+  14          #include "debug.h"
+  15          #include "Common.h"
+  16          #include "global.h"
+  17          #include "adjust.h"
+  18          //#include "msADC.h"
+  19          //#include "Panel.h"
+  20          #include "ms_rwreg.h"
+  21          #include <global.h>
+  22          #include <math.h>
+  23          //#include "msACE.h"
+  24          //#define LOCAL_TYPE
+  25          #define msDoubleBufferStart()
+  26          #define msDoubleBufferEnd()
+  27          
+  28          extern code short tSRGB[3][3];
+  29          extern code short tNormalColorCorrectionMatrix[3][3];
+  30          
+  31          #if DLC_LG_MODE
+  32          XDATA BYTE g_ucLumaCurve[18];
+  33          #else
+              XDATA BYTE g_ucLumaCurve[16];
+              #endif
+  36          #if ENABLE_DSC
+  37          extern xdata BOOL  REG_DSC_RUN_Flag;
+  38          #endif
+  39          #if ENABLE_DPS
+  40          extern xdata BOOL  REG_DPS_RUN_Flag;
+  41          #endif
+  42          XDATA WORD g_ucTable[16];
+  43          XDATA BYTE g_bLockDlc; // When this bit is true, DLC don't work!!
+  44          XDATA DWORD g_dwFactory;
+  45          XDATA DWORD g_dwFactory_7;
+  46          XDATA DWORD g_dwFactory_9;
+  47          XDATA DWORD g_dwLstep;
+  48          XDATA DWORD g_dwHstep;
+  49          XDATA BYTE g_LowStrength = 120;
+  50          XDATA BYTE g_HighStrength = 100;
+  51          XDATA BYTE g_bDLCOnOff = 0;
+  52          XDATA BYTE g_bNeedRequest = 0;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 2   
+
+  53          XDATA BYTE ucDLCCCount = 0;
+  54          XDATA BYTE BrightData = 0xff;
+  55          XDATA BYTE DarkData = 0x00;
+  56          XDATA BYTE PreBrightData = 0xff;
+  57          XDATA BYTE ReadFrameDataCnt = 1;
+  58          XDATA BYTE SetDarkestFlag = 0;
+  59          XDATA BYTE DarkSegmentData;
+  60          #define TopLimit_Upper  (0)
+  61          #define DownLimit_Upper (((PanelHeight/2)/8)-1)
+  62          #define TopLimit_Lower  ((PanelHeight/2)/8)
+  63          #define DownLimit_Lower ((PanelHeight/8)-1)
+  64          #define DarkestValue    0
+  65          #define DarkestRange    ((CURRENT_INPUT_IS_VGA())?(16):(20))
+  66          #define BlackWhiteDifference    21    //16      //20081201
+  67          //#define TOP_LIMIT       ((WORD)wHeight/64)
+  68          //#define DOWN_LIMIT      ((WORD)wHeight*7/64)
+  69          /*
+  70          #define TOP_LIMIT       (1)// 2004/11/10
+  71          #define DOWN_LIMIT      (255)//((WORD)wHeight/8)// 2005/01/21
+  72          #define TOTAL_PIXEL     ((DWORD)wHeight*0.04375*wWidth)
+  73          */
+  74          #define TOP_LIMIT           ((WORD)PanelHeight/64)
+  75          #define DOWN_LIMIT          ((WORD)PanelHeight*7/64)
+  76          #define TOTAL_PIXEL    ((DWORD)(DOWN_LIMIT-TOP_LIMIT)*0.04375*PanelWidth/4)
+  77          #define FACTORY_7       g_dwFactory_7    // low threshold
+  78          #define FACTORY_9       g_dwFactory_9    // high threshold
+  79          #define Lstep           g_dwLstep
+  80          #define Hstep           g_dwHstep
+  81          //#define TOP_LIMIT   (g_wHeight/64)
+  82          //#define DOWN_LIMIT  (g_wHeight*7/64)
+  83          //#define TOTAL_PIXEL ((DWORD)g_wHeight*0.04375*g_wWidth)
+  84          //#define FACTORY     (TOTAL_PIXEL / 8)
+  85          //#define FACTORY_7   (FACTORY * 7 / 8)      // low threshold
+  86          //#define FACTORY_9   (FACTORY + (FACTORY/8))  // high threshold
+  87          //#define Lstep       (FACTORY *1/16)*g_ucLstrength
+  88          //#define Hstep       (FACTORY *3/8)*g_ucHstrength
+  89          //#define FACTORY_M1  (FACTORY_7 - ((FACTORY *8/16)*g_ucLstrength))
+  90          //#define FACTORY_0   (FACTORY_7 - ((FACTORY *7/16)*g_ucLstrength))
+  91          //#define FACTORY_1   (FACTORY_7 - ((FACTORY *6/16)*g_ucLstrength))
+  92          //#define FACTORY_2   (FACTORY_7 - ((FACTORY *5/16)*g_ucLstrength))
+  93          //#define FACTORY_3   (FACTORY_7 - ((FACTORY *4/16)*g_ucLstrength))
+  94          //#define FACTORY_4   (FACTORY_7 - ((FACTORY *3/16)*g_ucLstrength))
+  95          //#define FACTORY_5   (FACTORY_7 - ((FACTORY *2/16)*g_ucLstrength))
+  96          //#define FACTORY_6   (FACTORY_7 - ((FACTORY *1/16)*g_ucLstrength))
+  97          //#define FACTORY_11  (FACTORY_9 + ((FACTORY*2/8)*g_ucHstrength))
+  98          //#define FACTORY_13  (FACTORY_9 + ((FACTORY*4/8)*g_ucHstrength)
+  99          //#define FACTORY_16  (FACTORY_9 + ((FACTORY*7/8)*g_ucHstrength)
+ 100          //#define FACTORY_19  (FACTORY_9 + (((FACTORY)+(FACTORY*2/8))*g_ucHstrength))
+ 101          //#define FACTORY_21  (FACTORY_9 + (((FACTORY)+(FACTORY*4/8))*g_ucHstrength))
+ 102          //#define FACTORY_23  (FACTORY_9 + (((FACTORY)+(FACTORY*6/8))*g_ucHstrength))
+ 103          //#define FACTORY_27  (FACTORY_9 + (((FACTORY*2)+(FACTORY*2/8))*g_ucHstrength))
+ 104          //#define FACTORY_30  (FACTORY_9 + (((FACTORY*2)+(FACTORY*5/8))*g_ucHstrength))
+ 105          //#define FACTORY_32  (FACTORY_9 + (((FACTORY*2)+(FACTORY*7/8))*g_ucHstrength))
+ 106          void InitDLCVar()
+ 107          {
+ 108   1          // DLC table initial table
+ 109   1          g_ucLumaCurve[0] = 0x07;
+ 110   1          g_ucLumaCurve[1] = 0x17;
+ 111   1          g_ucLumaCurve[2] = 0x27;
+ 112   1          g_ucLumaCurve[3] = 0x37;
+ 113   1          g_ucLumaCurve[4] = 0x47;
+ 114   1          g_ucLumaCurve[5] = 0x57;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 3   
+
+ 115   1          g_ucLumaCurve[6] = 0x67;
+ 116   1          g_ucLumaCurve[7] = 0x77;
+ 117   1          g_ucLumaCurve[8] = 0x87;
+ 118   1          g_ucLumaCurve[9] = 0x97;
+ 119   1          g_ucLumaCurve[10] = 0xA7;
+ 120   1          g_ucLumaCurve[11] = 0xB7;
+ 121   1          g_ucLumaCurve[12] = 0xC7;
+ 122   1          g_ucLumaCurve[13] = 0xD7;
+ 123   1          g_ucLumaCurve[14] = 0xE7;
+ 124   1          g_ucLumaCurve[15] = 0xF7;
+ 125   1      }
+ 126          #if DLC_LG_MODE
+ 127          typedef enum
+ 128          {
+ 129              DLC_STATIC = 0,
+ 130              DLC_MEDIUM = 1,
+ 131              DLC_HIGH = 2,
+ 132          
+ 133          } DLC_MODE_T;
+ 134          
+ 135          XDATA BYTE DLC_Loop_Cnt;
+ 136          XDATA BYTE DLC_Loop_Cnt_THD = 64;
+ 137          
+ 138          XDATA DLC_MODE_T DlcMode;
+ 139          
+ 140          BYTE code s_CurveH_High[] =
+ 141          {
+ 142              0, 6, 8, 10, 6, 0,
+ 143          };
+ 144          BYTE code s_CurveL_High[] =
+ 145          {
+ 146              8, 12, 16, 16, 16, 16, 12, 10,
+ 147          };
+ 148          BYTE code s_CurveH_Low[] =
+ 149          {
+ 150              0, 3, 6, 8, 3, 0,
+ 151          };
+ 152          BYTE code s_CurveL_Low[] =
+ 153          {
+ 154              0, 2, 4, 6, 4, 2, 0, 0,
+ 155          };
+ 156          
+ 157          #endif
+ 158          //////////////////////////////////////////////////////////////////////////////
+ 159          // <Name>: msSetDlcStrength
+ 160          //
+ 161          // <Description>: This function set DLC strength.
+ 162          //
+ 163          // <Parameter>:    -  <Flow>  -  <Description>
+ 164          // ---------------------------------------------------------------------------
+ 165          //  ucLowStrength  -    In    -  Strength of low level, from 1 to 255
+ 166          //  ucHighStrenght -    In    -  Strength of high level from 1 to 255
+ 167          // The unit is 0.01; the value is small and the effect is strong
+ 168          // Lstrength :  0.50(strong)   <------------>   1.70 (weak) ; default = 1.20
+ 169          // Hstrength:   0.50(strong)   <------------>   2.00 (weak) ; default = 1.00
+ 170          //////////////////////////////////////////////////////////////////////////////
+ 171          void msSetDlcStrength( BYTE pucLowStrength, BYTE pucHighStrenght )
+ 172          {
+ 173   1          BYTE LOCAL_TYPE ucLowStrength;
+ 174   1          BYTE LOCAL_TYPE ucHighStrenght;
+ 175   1          ucLowStrength = pucLowStrength;
+ 176   1          ucHighStrenght = pucHighStrenght;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 4   
+
+ 177   1          if( 0 == ucLowStrength )
+ 178   1              ucLowStrength = 1;
+ 179   1          if( 0 == ucHighStrenght )
+ 180   1              ucHighStrenght = 1;
+ 181   1          g_dwLstep = g_dwFactory * 1 / 16 * ucLowStrength / 100;
+ 182   1          g_dwHstep = g_dwFactory * 3 / 8 * ucHighStrenght / 100;
+ 183   1      }
+ 184          void msDlcInit( WORD pwWidth, WORD pwHeight )
+ 185          {
+ 186   1          //BYTE LOCAL_TYPE ucBank;
+ 187   1          WORD LOCAL_TYPE wWidth;
+ 188   1          WORD LOCAL_TYPE wHeight;
+ 189   1          WORD LOCAL_TYPE vtotal = 0;
+ 190   1          wWidth = pwWidth;
+ 191   1          wHeight = pwHeight;
+ 192   1          g_bLockDlc = 0;
+ 193   1          g_dwFactory = TOTAL_PIXEL / 8;
+ 194   1          g_dwFactory_7 = ( g_dwFactory * 7 / 8 );
+ 195   1          g_dwFactory_9 = ( g_dwFactory + ( g_dwFactory / 8 ) );
+ 196   1          g_dwLstep = g_dwFactory * 1 / 16 * 12 / 10;
+ 197   1          g_dwHstep = g_dwFactory * 3 / 8;
+ 198   1          //printf("TOP_LIMIT = 0x%x\r\n", TOP_LIMIT);
+ 199   1          //printf("DOWN_LIMIT = 0x%x\r\n", DOWN_LIMIT);
+ 200   1          /*
+ 201   1          printf("TOTAL_PIXEL = 0x%x", dwTotalPixel>>16);
+ 202   1          printf("%x\r\n", dwTotalPixel);
+ 203   1          printf("FACTORY = 0x%x", dwFactory>>16);
+ 204   1          printf("%x\r\n", dwFactory);
+ 205   1          printf("FACTORY7 = 0x%x", g_dwFactory_7>>16);
+ 206   1          printf("%x\r\n", g_dwFactory_7);
+ 207   1          printf("FACTORY9 = 0x%x", g_dwFactory_9>>16);
+ 208   1          printf("%x\r\n", g_dwFactory_9);
+ 209   1          printf("Lstep = 0x%x", g_dwLstep>>16);
+ 210   1          printf("%x\r\n", g_dwLstep);
+ 211   1          printf("Hstep = 0x%x", g_dwHstep>>16);
+ 212   1          printf("%x\r\n", g_dwHstep);
+ 213   1           */
+ 214   1      #if 1 // wait for checking
+ 215   1          msWriteByte(SC3_B6, TOP_LIMIT);
+ 216   1          msWriteByte(SC3_B7, DOWN_LIMIT);
+ 217   1          msWriteByteMask(SC3_B5, BIT0, BIT0);
+ 218   1      #else
+                  ucBank = msReadByte( BK0_00 );
+                  // get vtotal// 2005/1/24
+                  msWriteByte( BK0_00, REGBANK0 );
+                  vtotal = msReadByte( BK0_95 ) + ( msReadByte( BK0_96 ) & 0x07 ) * 256;
+                  //
+                  msWriteByte( BK0_00, REGBANK3 );
+              
+              #ifdef TSUMXXNX     // Rex 100712 for max pixel value is not close to max
+                  mStar_WriteByteMask( BK3_3B, (BIT6), (BIT6) );
+              #endif
+                  //msWriteByte(BK3_B6, TOP_LIMIT);
+                  // msWriteByte(BK3_B7, vtotal/8-1);// 2005/1/24
+                  msWriteByte( BK3_BC, 0x00 ); // xxxx 0909
+                  //    msWriteByte(BK3_B5, BIT0);  // Enable range for Histogram
+              #if ((PanelWidth==1280&&PanelHeight==720)||(PanelWidth==1366&&PanelHeight==768))
+                  msWriteByte( BK3_B6, 0x00 );
+                  msWriteByte( BK3_B7, PanelHeight / 8 ); // 2005/1/24
+              #else
+                  msWriteByte( BK3_B6, 0x20 );
+                  msWriteByte( BK3_B7, 0x70 ); // 2005/1/24
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 5   
+
+              #endif
+                  msWriteByte( BK3_B5, BIT0 ); // Enable range for Histogram
+                  msWriteByte( BK3_B9, 0x10 );
+                  //msWriteByte(BK3_B8, _BIT6);
+                  msWriteByte( BK0_00, ucBank );
+              #endif
+ 245   1      }
+ 246          extern Bool SupportMWE( void );
+ 247          void msDlcOnOff( BYTE pbSwitch )
+ 248          {
+ 249   1          //BYTE LOCAL_TYPE ucBank;
+ 250   1          BYTE LOCAL_TYPE bSwitch;
+ 251   1          WORD LOCAL_TYPE time_out = 0;
+ 252   1          bSwitch = pbSwitch;
+ 253   1      
+ 254   1      #if 1 // wait for coding
+ 255   1          // wait output v blank
+ 256   1          time_out = 10000;
+ 257   1          while( !( msReadByte( SC0_E0 ) & 0x01 ) && ( time_out-- ) )
+ 258   1              ;
+ 259   1          // waiting for V active area
+ 260   1          time_out = 10000;
+ 261   1          while(( msReadByte( SC0_E0 ) & 0x01 ) && ( time_out-- ) )
+ 262   1              ;
+ 263   1          // waiting for V blanking
+ 264   1      
+ 265   1          if( bSwitch == _ENABLE )
+ 266   1          {
+ 267   2              //msWriteByteMask( SC3_B8, (BIT6), (BIT6) );
+ 268   2              g_bDLCOnOff = 1;
+ 269   2              g_bNeedRequest = 1;
+ 270   2              DLCStatus = DLC_WAIT;
+ 271   2              #if DLC_LG_MODE
+ 272   2              DlcMode = DLC_HIGH;
+ 273   2              msWriteByteMask ( SC7_B8,  BIT6|BIT7, BIT6|BIT7 );
+ 274   2              msWriteByteMask ( SC7_B8, 0, 0x0F );
+ 275   2              msWriteByteMask ( SC7_B8, BIT2 | BIT1, BIT2 | BIT1 | BIT0 );
+ 276   2              //msWriteByteMask ( SC0_CE, BIT3, BIT3 );
+ 277   2              #endif
+ 278   2              /*
+ 279   2              #if ENABLE_DPS
+ 280   2              REG_DPS_RUN_Flag = 0;
+ 281   2              #endif
+ 282   2              #if ENABLE_DSC
+ 283   2              REG_DSC_RUN_Flag = 0;
+ 284   2              #endif
+ 285   2              */
+ 286   2          }
+ 287   1          else
+ 288   1          {
+ 289   2              #if DLC_LG_MODE
+ 290   2              msWriteByteMask ( SC0_CE, 0, BIT3 );
+ 291   2              #endif
+ 292   2              msWriteByteMask( SC7_B8, 0x00, BIT6|BIT7 );
+ 293   2              g_bDLCOnOff = 0;
+ 294   2          }
+ 295   1      
+ 296   1      #else
+                  //bWindow=SUB_WINDOW;
+              #if 0
+                  if( !SupportMWE() )
+                      return ;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 6   
+
+              #endif
+                  //bWindow=1;
+                  ucBank = msReadByte( BK0_00 );
+                  // wait output v blank
+                  msWriteByte( BK0_00, REGBANK0 ); // bank 0
+                  time_out = 10000;
+                  while( !( msReadByte( BK0_E0 ) & 0x01 ) && ( time_out-- ) )
+                      ;
+                  // waiting for V active area
+                  time_out = 10000;
+                  while(( msReadByte( BK0_E0 ) & 0x01 ) && ( time_out-- ) )
+                      ;
+                  // waiting for V blanking
+                  //
+                  msWriteByte( BK0_00, REGBANK3 );
+                  //if (bWindow == MAIN_WINDOW)
+                  //if (0)
+                  //{
+                  //  if (bSwitch == _ENABLE)
+                  //     msWriteByte(BK3_B8, msReadByte(BK3_B8) | _BIT7);
+                  //  else
+                  //     msWriteByte(BK3_B8, msReadByte(BK3_B8) & ~_BIT7);
+                  //}
+                  //else // Sub-Window
+                  {
+                      if( bSwitch == _ENABLE )
+                      {
+                          mStar_WriteByteMask( BK3_B8, (BIT6), (BIT6) );
+                          g_bDLCOnOff = 1;
+                          g_bNeedRequest = 1;
+                          DLCStatus = DLC_WAIT;
+                          if( UserPrefDcrMode )
+                          {
+                              BrightData = 0xff;
+                              PreBrightData = 0xff;
+                              DarkData = 0x00;
+                              ReadFrameDataCnt = 1;
+                              SetDarkestFlag = 0;
+                          }
+                      }
+                      else
+                      {
+                          mStar_WriteByteMask( BK3_B8, 0x00, (BIT6) );
+                          g_bDLCOnOff = 0;
+                      }
+                  }
+                  msWriteByte( BK0_00, ucBank );
+              #endif
+ 349   1      }
+ 350          static XDATA BYTE s_Slope2, s_Slope5;
+ 351          #define DYNAMIC_DLC 1
+ 352          BYTE XDATA DLCStatus;
+ 353          #if DLC_LG_MODE
+ 354          WORD XDATA uwArray[32];
+ 355          #else
+              WORD XDATA uwArray[8];
+              #endif
+ 358          BYTE XDATA ucTmp;
+ 359          
+ 360          void msDlcHandler()
+ 361          {
+ 362   1          //BYTE LOCAL_TYPE ucBank; //, ucTmp;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 7   
+
+ 363   1          WORD retry = 2000;
+ 364   1          BYTE tempvalue = 0;
+ 365   1          //BYTE Backlight_Final;
+ 366   1          #if DLC_LG_MODE
+ 367   1          BYTE  i, j;
+ 368   1          BYTE  CurveIdx;
+ 369   1          BYTE  CurveWgt;
+ 370   1          DWORD TempVar1, TempVar2;
+ 371   1          BYTE  s_CurveGain = 1;
+ 372   1          BYTE  *s_CurveH;// = {0, 6, 8, 10, 6, 2};
+ 373   1          BYTE  *s_CurveL;// = {8, 12, 15, 15, 15, 15, 12, 10};
+ 374   1          #endif
+ 375   1      
+ 376   1      #if 0
+                  if( !SupportMWE() )
+                      return ;
+              #endif
+ 380   1          if( !g_bDLCOnOff )
+ 381   1          {
+ 382   2              return ;
+ 383   2          }
+ 384   1      #if DEBUG_DLC_HISTOGRAM
+                  printMsg("\r\n ===== (DLC) Histogram Start ======");
+                  for ( i = 0; i < 32; i++ )
+                      printData("\r\n  %x", uwArray[i]);
+                  printMsg("\r\n ===== (DLC)Histogram End ======");
+              #endif
+ 390   1      
+ 391   1          if(!retry)
+ 392   1              mStar_AdjustDcrBrightness();
+ 393   1      
+ 394   1      #if DLC_LG_MODE
+ 395   1       if( DlcMode == DLC_STATIC )
+ 396   1          {
+ 397   2              for( i = 0; i < 18; i++ )
+ 398   2              {
+ 399   3                  msWriteByte( SC8_AE+i, g_ucLumaCurve[i] );
+ 400   3              }
+ 401   2          }
+ 402   1          else
+ 403   1          {
+ 404   2              if( DlcMode == DLC_HIGH)
+ 405   2              {
+ 406   3                  s_CurveH = s_CurveH_High;
+ 407   3                  s_CurveL = s_CurveL_High;
+ 408   3              }
+ 409   2              else
+ 410   2              {
+ 411   3                  s_CurveH = s_CurveH_Low;
+ 412   3                  s_CurveL = s_CurveL_Low;
+ 413   3              }
+ 414   2              //printMsg("==========");
+ 415   2              j = 0;
+ 416   2              for( i = 0; i < 16; i++ )
+ 417   2              {
+ 418   3                  g_ucLumaCurve[i] = j;
+ 419   3                  j += 0x10;
+ 420   3              }
+ 421   2              g_ucLumaCurve[16] = 0xFF;
+ 422   2              g_ucLumaCurve[17] = 0;
+ 423   2      
+ 424   2              TempVar1 = 0;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 8   
+
+ 425   2              TempVar2 = 0;
+ 426   2              for( i = 0; i < 32; i++ )
+ 427   2              {
+ 428   3                  TempVar1 += (DWORD)uwArray[i] * (DWORD)(i);
+ 429   3                  TempVar2 += (DWORD)uwArray[i];
+ 430   3              }
+ 431   2              CurveIdx = TempVar1/TempVar2;
+ 432   2              CurveIdx = CurveIdx>>1;
+ 433   2              //printData("CurveIdx = %d", CurveIdx);
+ 434   2      
+ 435   2              #if 0
+                      TempVar1 = 0;
+                      TempVar2 = 0;
+                      for( i = 0; i < 31; i++ )
+                      {
+                          TempVar1 = DlcTotal>>5;
+                          TempVar1 = uwArray[i]>TempVar1 ? uwArray[i]-TempVar1 : TempVar1-uwArray[i];
+                          TempVar2 += TempVar1;
+                      }
+                      //printData("DiffSum = %d", TempVar2);
+                      TempVar2 = TempVar2>>10;
+                      TempVar2 = TempVar2>10 ? TempVar2-10 : 0;
+                      CurveWgt = TempVar2>32 ? 32 : TempVar2;
+                      //printData("CurveWgt = %d", CurveWgt);
+                      #else
+ 450   2              CurveWgt = 32;
+ 451   2              #endif
+ 452   2      
+ 453   2              for ( i = 0; i < 17; i++ )
+ 454   2              {
+ 455   3                  if (i>CurveIdx)
+ 456   3                  {
+ 457   4      
+ 458   4                      TempVar1 = i-CurveIdx;
+ 459   4                      TempVar1 = TempVar1>=5 ? 5 : TempVar1;
+ 460   4                      TempVar1 = (DWORD)g_ucLumaCurve[i] + ((DWORD)s_CurveH[TempVar1]*s_CurveGain*CurveWgt)/32;
+ 461   4                      g_ucLumaCurve[i] = TempVar1 > 0x00FF ? 0xff : TempVar1;
+ 462   4                  }
+ 463   3                  if (i<=CurveIdx)
+ 464   3                  {
+ 465   4                      TempVar1 = CurveIdx-i;
+ 466   4                      TempVar1 = TempVar1>=7 ? 7 : TempVar1;
+ 467   4                      TempVar1 = (DWORD)g_ucLumaCurve[i] - ((DWORD)s_CurveL[TempVar1]*s_CurveGain*CurveWgt)/32;
+ 468   4                      g_ucLumaCurve[i] = TempVar1 > 0xF000 ? 0x00 : TempVar1;
+ 469   4                  }
+ 470   3              }
+ 471   2      
+ 472   2      #if DEBUG_DLC_CURVE
+                  printMsg("\r\n ===== (DLC)  ======");
+                  for ( i = 0; i < 18; i++ )
+                      printData("\r\n  %x", g_ucLumaCurve[i]);
+                  printMsg("\r\n ===== (DLC) End ======");
+              #endif
+ 478   2      
+ 479   2              if (DLC_Loop_Cnt==0)
+ 480   2              {
+ 481   3                  for( i = 0; i < 16; i++ )
+ 482   3                  {
+ 483   4                      TempVar1 = msReadByte( SC8_AE+i);
+ 484   4                      if (g_ucLumaCurve[i]>TempVar1)
+ 485   4                      {
+ 486   5                          msWriteByte( SC8_AE+i, TempVar1+1 );
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 9   
+
+ 487   5                      }
+ 488   4                      else if (g_ucLumaCurve[i]<TempVar1)
+ 489   4                      {
+ 490   5                          msWriteByte( SC8_AE+i, TempVar1-1 );
+ 491   5                      }
+ 492   4                  }
+ 493   3                  TempVar1 = msRead2Byte( SC8_AE+16);
+ 494   3                  TempVar2 = (((WORD)g_ucLumaCurve[17]<<8)+g_ucLumaCurve[16]);
+ 495   3                  if (TempVar2>TempVar1)
+ 496   3                  {
+ 497   4                      TempVar1 +=1;
+ 498   4                      msWriteByte( SC8_AE+17, TempVar1>>8 );
+ 499   4                      msWriteByte( SC8_AE+16, TempVar1&0xFF );
+ 500   4                  }
+ 501   3                  else if (TempVar2<TempVar1)
+ 502   3                  {
+ 503   4                      TempVar1 -=1;
+ 504   4                      msWriteByte( SC8_AE+16, TempVar1&0xFF );
+ 505   4                      msWriteByte( SC8_AE+17, TempVar1>>8 );
+ 506   4                  }
+ 507   3              }
+ 508   2      
+ 509   2              if (DLC_Loop_Cnt == DLC_Loop_Cnt_THD)
+ 510   2              {
+ 511   3                  DLC_Loop_Cnt = 0;
+ 512   3              }
+ 513   2              else
+ 514   2              {
+ 515   3                  DLC_Loop_Cnt++;
+ 516   3              }
+ 517   2          }
+ 518   1      #endif
+ 519   1      #if 0 // wait for coding
+                  //bWindow=1;
+                  ucBank = msReadByte( BK0_00 );
+                  msWriteByte( BK0_00, REGBANK3 );
+                  //if( MAIN_WINDOW == bWindow ) // Main window
+                  //if( 0 ) // Main window
+                  //{
+                  //    msWriteByte(BK3_B8, msReadByte(BK3_B8) | _BIT2 | _BIT1);
+                  //}
+                  //else // Sub window
+                  {
+                      if( g_bNeedRequest )            // 2004/11/19
+                      {
+                          mStar_WriteByteMask( BK3_B8, (BIT4 | BIT2 | BIT0), (BIT4 | BIT2 | BIT0) );
+                          g_bNeedRequest = 0;
+                          //printMsg("request");
+                      }
+                  }
+                  switch( DLCStatus )
+                  {
+                      case DLC_WAIT:
+                          if( UserPrefDcrMode )
+                          {
+                              if( ReadFrameDataCnt % 2 == 0 ) // set to lower of panel height
+                              {
+                                  msWriteByte( BK3_B6, TopLimit_Lower );
+                                  msWriteByte( BK3_B7, DownLimit_Lower );
+                              }
+                              else // set to upper of panel height
+                              {
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 10  
+
+                                  msWriteByte( BK3_B6, TopLimit_Upper );
+                                  msWriteByte( BK3_B7, DownLimit_Upper );
+                              }
+                          }
+                          #if DYNAMIC_DLC// 2004/11/10
+                          if( !( msReadByte( BK3_B8 ) &BIT3 ) )                // 2004/11/19
+                          {
+                              msWriteByte( BK0_00, ucBank );
+                              return ;
+                          }
+                          //while (!(msReadByte(BK3_B8) & _BIT3));  // Wait until ready// 2004/11/3
+                          #endif
+                          DLCStatus = DLC_READ1;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                      case DLC_READ1:
+                          msWriteByte( BK3_B9, 0 );
+                          #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          //=======Define the capture area===========
+                          // msWriteByte(BK3_B5,0x01);
+                          // msWriteByte(BK3_B6,0x030);// start
+                          // msWriteByte(BK3_B6,0x070);// start
+                          //===================================AutoBacklight function Start=====================
+                          tempvalue = msReadByte( BK3_B8 );
+                          msWriteByte( BK3_B8, 0x16 );
+                          while( retry-- && !( msReadByte( BK3_B8 ) &BIT3 ) )
+                              ;
+                          for( ucTmp = 0; ucTmp < 1; ucTmp++ )                // 2004/11/3
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );  
+             -          // 2004/11/3
+                          #endif
+                          {
+              #if DCRNew
+              
+                              DWORD PixelCount, LumCount;
+                              BYTE AveLumi , AveLumi2;
+              
+              
+              #else //!DCRNew
+              
+                              WORD reduceAry;
+                              BYTE CurrentVal;
+                              BYTE OffsetlVal, OffsetlBL;
+                              BYTE noise_th = 8;   //8  //20081202
+              #if 1
+                              BYTE BL_HIGH = 0xFF;
+                              BYTE BL_LOW = 0;
+              #else
+                              BYTE BL_HIGH = UserprefAutolightHigh; // 0xFF;
+                              BYTE BL_LOW = UserprefAutolightLow; //0x00;
+              #endif
+                              UserprefALha = 60;
+                              reduceAry = uwArray[0];
+                              //  printData("uwArray[0]  = 0x%x\r\n", reduceAry);
+              
+              #endif // end of DCRNew
+              
+                              // 081117
+                              if( ReadFrameDataCnt % 2 == 0 ) // get all display data
+                              {
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 11  
+
+                                  BYTE tempVal;
+              
+                                  if(( tempVal = msReadByte( BK3_3A ) ) > BrightData ) // get max bright data
+                                      BrightData = tempVal;
+                                  if(( tempVal = msReadByte( BK3_39 ) ) < DarkData ) // get min dark data
+                                      DarkData = tempVal;
+                                  if( abs( BrightData - DarkData ) <= BlackWhiteDifference )
+                                  {
+                                      if( abs( DarkData - DarkestValue ) <= DarkestRange ) // all display data are dark
+                                      {
+                                          SetDarkestFlag = 1;
+                                      }
+                                  }
+              
+              #if DCRNew // 081204
+                                  PixelCount = mStar_ReadWord( BK3_35 );
+                                  LumCount = mStar_ReadWord( BK3_37 );
+                                  AveLumi = ( LumCount * 256 ) / PixelCount;
+                                  AveLumi = (( WORD )PreAveLumi + AveLumi ) / 2;
+              
+                                  PixelCount = mStar_ReadWord( BK3_35 );
+                                  LumCount = mStar_ReadWord( BK3_37 );
+                                  AveLumi2 = ( LumCount * 256 ) / PixelCount;
+                                  AveLumi2 = (( WORD )PreAveLumi2 + AveLumi2 ) / 2;
+                                  if( abs( AveLumi2 - AveLumi ) > 10 ) // read twice to confirm? (not stable)
+                                  {
+                                      mStar_WriteByteMask( BK3_B8, 0x00, (BIT3 | BIT2 | BIT1 | BIT0) );
+                                      g_bNeedRequest = 1;
+                                      DLCStatus = DLC_WAIT;
+                                      msWriteByte( BK0_00, ucBank );
+                                      ReadFrameDataCnt ++;
+                                      break;
+                                  }
+              
+              #if DCRMotionTest
+                                  BackLightTargetValue = AveLumi;
+              
+                                  if( abs( BackLightTargetValue - BacklightPrev ) >= DCRStep )
+                                  {
+                                      bDCRSmoothMotionFlag = 1;
+                                      DCRStepTransValue = DCRStep / 2; //abs(BackLightTargetValue-BacklightPrev)/DCRStep
+             -;
+                                  }
+                                  else
+                                  {
+                                      bDCRSmoothMotionFlag = 0;
+                                  }
+              
+                                  if( bDCRSmoothMotionFlag ) // DCR operating range is over DCRStep
+                                  {
+                                      if( BackLightTargetValue >= BacklightPrev ) // increasement
+                                      {
+                                          BacklightNow = ( BacklightNow + DCRStepTransValue >= BackLightTargetValue ) ? 
+             -( BackLightTargetValue ) : ( BacklightNow + DCRStepTransValue );
+                                          //BacklightPrev = BacklightNow;//2009-07-29//20091104
+                                      }
+                                      else // decreasement
+                                      {
+                                          BacklightNow = ( BacklightNow - DCRStepTransValue <= BackLightTargetValue ) ? 
+             -( BackLightTargetValue ) : ( BacklightNow - DCRStepTransValue );
+                                      }
+                                  }
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 12  
+
+                                  else
+                                  {
+                                      BacklightNow = BackLightTargetValue;
+                                  }
+              
+              #else // !DCRMotionTest
+                                  BacklightNow = AveLumi;
+              #endif
+              
+                                  if( 0 ) //(abs(BacklightNow - BacklightPrev) < 3)
+                                  {
+                                      mStar_WriteByteMask( BK3_B8, 0x00, (BIT3 | BIT2 | BIT1 | BIT0) );
+                                      g_bNeedRequest = 1;
+                                      DLCStatus = DLC_WAIT;
+                                      msWriteByte( BK0_00, ucBank );
+                                      break;
+                                  }
+              
+              #else // !DCRNew
+              
+                                  CurrentVal = ( reduceAry >> 8 ) & 0xFF;
+                                  CurrentVal = (( WORD )( CurrentVal ) + DarkSegmentData ) / 2;
+                                  HistogramNow = CurrentVal;
+                                  HistogramNow = ( WORD )( UserprefALha * HistogramNow + ( 100 - UserprefALha ) * Histog
+             -ramPrev ) / 100;
+                                  OffsetlVal = abs( HistogramNow - HistogramPrev ) / 2;
+                                  if( HistogramNow > HistogramPrev )
+                                      HistogramNow = HistogramPrev + OffsetlVal;
+                                  else if( HistogramNow < HistogramPrev )
+                                      HistogramNow = HistogramPrev - OffsetlVal;
+                                  //printData("UserprefALha = %d\r\n", UserprefALha);
+                                  //printData("HistogramNow = %d\r\n",HistogramNow);
+                                  if( UserprefHistogram1 > HistogramNow )
+                                      BacklightNow = BL_HIGH;
+                                  //  LIGHT
+                                  else if( UserprefHistogram2 < HistogramNow )
+                                      BacklightNow = BL_LOW;
+                                  // DARK
+                                  else
+                                      BacklightNow = ( WORD )(( UserprefHistogram2 - HistogramNow ) * ( BL_HIGH - BL_LOW
+             - ) / abs( UserprefHistogram2 - UserprefHistogram1 ) ) + BL_LOW;
+                                  OffsetlBL = abs( BacklightNow - BacklightPrev ) / 2; //2         //20081201
+                                  if( BacklightNow > BacklightPrev )
+                                      BacklightNow = BacklightPrev + OffsetlBL;
+                                  else if( BacklightNow < BacklightPrev )
+                                      BacklightNow = BacklightPrev - OffsetlBL;
+                                  if(( BacklightNow > BacklightPrev ) && (( BacklightNow - BacklightPrev ) >= noise_th )
+             - )
+                                      BacklightNow = BacklightNow - noise_th;
+                                  else if(( BacklightPrev > BacklightNow ) && (( BacklightPrev - BacklightNow ) >= noise
+             -_th ) )
+                                      BacklightNow = BacklightNow + noise_th;
+                                  else
+                                      BacklightNow = BacklightPrev;
+              #endif // end of DCRNew
+              
+                                  //=====Get the Histogram value=============
+              #if DCRMotionTest
+                                  if( !u8DCRStepTransCnt )
+              #endif
+                                      if(( BacklightNow != BacklightPrev ) || ( BrightData != PreBrightData ) )
+                                      {
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 13  
+
+                                          BacklightPrev = BacklightNow;
+                                          PreBrightData = BrightData;
+                                          mStar_AdjustDcrBrightness();
+              #if DCRMotionTest
+                                          u8DCRStepTransCnt = DCRStepTransPeriod;
+              #endif
+                                  }
+                                  msWriteByte( BK0_00, REGBANK3 );
+                                  HistogramPrev = HistogramNow;
+                                  //BacklightPrev = BacklightNow;
+                                  //=============================================================
+                              }
+                              else // get upper dark / bright data
+                              {
+              #if !DCRNew
+                                  DarkSegmentData = ( reduceAry >> 8 ) & 0xFF;
+              #endif
+              
+                                  DarkData = msReadByte( BK3_39 );
+                                  BrightData = msReadByte( BK3_3A );
+                                  PixelCount = mStar_ReadWord( BK3_35 );
+                                  LumCount = mStar_ReadWord( BK3_37 );
+                                  PreAveLumi = ( LumCount * 256 ) / PixelCount;
+                                  PixelCount = mStar_ReadWord( BK3_35 );
+                                  LumCount = mStar_ReadWord( BK3_37 );
+                                  PreAveLumi2 = ( LumCount * 256 ) / PixelCount;
+                              }
+              
+                              ReadFrameDataCnt ++;
+                          }
+                          // 081109 modified for it's unnecessary to execute others case below when DCR on.
+                          //DLCStatus = DLC_READ2;
+                          if( UserPrefDcrMode )
+                          {
+                              mStar_WriteByteMask( BK3_B8, 0x00, (BIT3 | BIT2 | BIT1 | BIT0) );
+                              g_bNeedRequest = 1;
+                              DLCStatus = DLC_WAIT;
+                          }
+                          else
+                              DLCStatus = DLC_READ2;
+              
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ2:
+                          msWriteByte( BK3_B9, 2 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          for( ucTmp = 1; ucTmp < 2; ucTmp++ )
+                              // 2004/11/3
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+              #endif
+                          DLCStatus = DLC_READ3;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ3:
+                          msWriteByte( BK3_B9, 4 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 14  
+
+                          for( ucTmp = 2; ucTmp < 3; ucTmp++ )
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+              #endif
+                          DLCStatus = DLC_READ4;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ4:
+                          msWriteByte( BK3_B9, 6 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          for( ucTmp = 3; ucTmp < 4; ucTmp++ )
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+              #endif
+                          DLCStatus = DLC_READ5;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ5:
+                          msWriteByte( BK3_B9, 8 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          for( ucTmp = 4; ucTmp < 5; ucTmp++ )
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+              #endif
+                          DLCStatus = DLC_READ6;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ6:
+                          msWriteByte( BK3_B9, 10 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          for( ucTmp = 5; ucTmp < 6; ucTmp++ )
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+              #endif
+                          DLCStatus = DLC_READ7;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ7:
+                          msWriteByte( BK3_B9, 12 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          for( ucTmp = 6; ucTmp < 7; ucTmp++ )
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+              #endif
+                          DLCStatus = DLC_READ8;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_READ8:
+                          msWriteByte( BK3_B9, 14 );
+              #if DYNAMIC_DLC// 2004/11/10
+                          // 8 segment pixel count extraction
+                          // Sequencial read
+                          for( ucTmp = 7; ucTmp < 8; ucTmp++ )
+                              uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 15  
+
+              #endif
+                          DLCStatus = DLC_CAL1;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_CAL1:
+                          uwArray[3] = (( uwArray[0] / 2 ) + ( uwArray[1] / 4 ) + ( uwArray[2] / 4 ) );
+                          uwArray[4] = (( uwArray[5] / 4 ) + ( uwArray[6] / 4 ) + ( uwArray[7] / 2 ) );
+                          //if ((uwArray[3]>tpArray[8]) && ((uwArray[3]-uwArray[8])> FACTORY_19))
+                          //    g_fcount=2;
+                          // g_ucTable[5] value LUT
+                          //if (g_ucTable[5] == 0)        // this line should be removed!
+                          //    g_ucTable[5] = 0x57;
+                          if( uwArray[3] < FACTORY_7 )
+                          {
+                              ucTmp = (( FACTORY_7 - uwArray[3] ) / Lstep ) + 1;
+                              if( ucTmp > 10 )
+                                  ucTmp = 10;
+                              g_ucTable[5] = 0x57 - ucTmp;
+                          }
+                          else if( uwArray[3] > FACTORY_9 )
+                          {
+                              ucTmp = (( uwArray[3] - FACTORY_9 ) / Hstep ) + 1;
+                              if( ucTmp > 10 )
+                                  ucTmp = 10;
+                              g_ucTable[5] = 0x57 + ucTmp;
+                          }
+                          else
+                              g_ucTable[5] = 0x57;
+                          //flicker avoid
+                          if( s_Slope5 == 0 )
+                              s_Slope5 = 0x57;
+                          DLCStatus = DLC_CAL2;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_CAL2:
+                          if(( g_ucTable[5] > s_Slope5 ) && (( g_ucTable[5] - s_Slope5 ) >= 2 ) )
+                              g_ucTable[5] = g_ucTable[5] - 1;
+                          else if(( s_Slope5 > g_ucTable[5] ) && (( s_Slope5 - g_ucTable[5] ) >= 2 ) )
+                              g_ucTable[5] = g_ucTable[5] + 1;
+                          else
+                              g_ucTable[5] = s_Slope5;
+                          //uwArray[8] =  uwArray[3];
+                          // g_ucTable[2] value LUT
+                          uwArray[3] = uwArray[0];
+                          //if (g_ucTable[2] == 0)  // Can this line be removed
+                          //    g_ucTable[2] = 0x27;// Can this line be removed
+                          g_ucTable[2] = (( g_ucTable[5] - 0x07 ) * 2 / 5 ) + 0x07;
+                          if( uwArray[3] < FACTORY_7 )
+                          {
+                              ucTmp = (( FACTORY_7 - uwArray[3] ) / Lstep ) + 1;
+                              if( ucTmp > 10 )
+                                  ucTmp = 10;
+                              g_ucTable[2] = g_ucTable[2] - ucTmp;
+                          }
+                          else if( uwArray[3] > FACTORY_9 )
+                          {
+                              ucTmp = (( uwArray[3] - FACTORY_9 ) / Hstep ) + 1;
+                              if( ucTmp > 10 )
+                                  ucTmp = 10;
+                              g_ucTable[2] = g_ucTable[2] + ucTmp;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 16  
+
+                          }
+                          //else
+                          //    g_ucTable[2] = g_ucTable[2];
+                          //flicker avoid
+                          if( s_Slope2 == 0 )
+                              s_Slope2 = 0x27;
+                          DLCStatus = DLC_CAL3;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_CAL3:
+                          if(( g_ucTable[2] > s_Slope2 ) && (( g_ucTable[2] - s_Slope2 ) >= 2 ) )
+                              g_ucTable[2] = g_ucTable[2] - 1;
+                          else if(( s_Slope2 > g_ucTable[2] ) && (( s_Slope2 - g_ucTable[2] ) >= 2 ) )
+                              g_ucTable[2] = g_ucTable[2] + 1;
+                          else
+                              g_ucTable[2] = s_Slope2;
+              
+                          // g_ucTable[10] value LUT
+                          //if (g_ucTable[10] == 0)       // this line should be removed
+                          //    g_ucTable[10] = 0xA7;
+                          if( uwArray[4] < FACTORY_7 )
+                          {
+                              ucTmp = (( FACTORY_7 - uwArray[4] ) / Lstep ) + 1;
+                              if( ucTmp > 8 )
+                                  ucTmp = 8;
+                              g_ucTable[10] = 0xA7 + ucTmp;
+                          }
+                          else if( uwArray[4] > FACTORY_9 )
+                          {
+                              ucTmp = (( uwArray[4] - FACTORY_9 ) / Hstep ) + 1;
+                              if( ucTmp > 8 )
+                                  ucTmp = 8;
+                              g_ucTable[10] = 0xA7 - ucTmp;
+                          }
+                          else
+                              g_ucTable[10] = 0xA7;
+              
+                          // g_ucTable[13] value LUT
+                          uwArray[4] = uwArray[7];
+                          //if (g_ucTable[13] == 0)       // this line should be removed
+                          //    g_ucTable[13] = 0xd7;
+                          DLCStatus = DLC_CAL4;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_CAL4:
+                          g_ucTable[13] = 0xf7 - (( 0xf7 - g_ucTable[10] ) * 2 / 5 );
+                          if( uwArray[4] < FACTORY_7 )
+                          {
+                              ucTmp = (( FACTORY_7 - uwArray[4] ) / Lstep ) + 1;
+                              if( ucTmp > 8 )
+                                  ucTmp = 8;
+                              g_ucTable[13] = g_ucTable[13] + ucTmp;
+                          }
+                          else if( uwArray[4] > FACTORY_9 )
+                          {
+                              ucTmp = (( uwArray[4] - FACTORY_9 ) / Hstep ) + 1;
+                              if( ucTmp > 8 )
+                                  ucTmp = 8;
+                              g_ucTable[13] = g_ucTable[13] - ucTmp;
+                          }
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 17  
+
+                          //else
+                          //    g_ucTable[13] =g_ucTable[13];
+                          s_Slope5 = g_ucTable[5];
+                          s_Slope2 = g_ucTable[2];
+                          DLCStatus = DLC_CAL5;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_CAL5:
+              #if 0
+                          if( g_bLockDlc == 1 )
+                              // For test
+                          {
+                              g_ucTable[2] = 0x27;
+                              g_ucTable[5] = 0x57;
+                              g_ucTable[10] = 0xA7;
+                              g_ucTable[13] = 0xd7;
+                          }
+              #endif
+                          g_ucTable[1] = ( 0x07 + g_ucTable[2] ) / 2;
+                          g_ucTable[3] = g_ucTable[5] - (( g_ucTable[5] - g_ucTable[2] ) * 2 / 3 );
+                          g_ucTable[4] = g_ucTable[2] + (( g_ucTable[5] - g_ucTable[2] ) * 2 / 3 );
+                          g_ucTable[7] = g_ucTable[5] + (( g_ucTable[10] - g_ucTable[5] ) * 2 / 5 );
+                          g_ucTable[6] = ( g_ucTable[5] / 2 ) + ( g_ucTable[7] / 2 );
+                          g_ucTable[8] = g_ucTable[10] - (( g_ucTable[10] - g_ucTable[5] ) * 2 / 5 );
+                          g_ucTable[9] = ( g_ucTable[8] / 2 ) + ( g_ucTable[10] / 2 );
+                          g_ucTable[11] = g_ucTable[13] - (( g_ucTable[13] - g_ucTable[10] ) * 2 / 3 );
+                          g_ucTable[14] = ( g_ucTable[13] / 2 ) + ( 0xf7 / 2 );
+                          g_ucTable[12] = g_ucTable[10] + (( g_ucTable[13] - g_ucTable[10] ) * 2 / 3 );
+                          DLCStatus = DLC_CAL6;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_CAL6:
+                          g_ucTable[0] = ( 0x07 + ( g_ucTable[1] / 3 ) ) / 2; // fine tune lowest level
+                          //if(DLCMode==MODE2_DLC)  // xxxx 0909
+                          //   g_ucTable[0] = 0x05;
+                          g_ucTable[15] = 0xff - (( 0xff - g_ucTable[14] ) / 3 );
+                          g_ucTable[15] = (( g_ucTable[15] ) / 2 ) + ( 0xff / 2 ); // fine tune highest level
+                          g_ucTable[0] = g_ucTable[0] + g_ucLumaCurve[0] - 0x07;
+                          g_ucTable[1] = g_ucTable[1] + g_ucLumaCurve[1] - 0x17;
+                          g_ucTable[2] = g_ucTable[2] + g_ucLumaCurve[2] - 0x27;
+                          g_ucTable[3] = g_ucTable[3] + g_ucLumaCurve[3] - 0x37;
+                          g_ucTable[4] = g_ucTable[4] + g_ucLumaCurve[4] - 0x47;
+                          g_ucTable[5] = g_ucTable[5] + g_ucLumaCurve[5] - 0x57;
+                          g_ucTable[6] = g_ucTable[6] + g_ucLumaCurve[6] - 0x67;
+                          g_ucTable[7] = g_ucTable[7] + g_ucLumaCurve[7] - 0x77;
+                          g_ucTable[8] = g_ucTable[8] + g_ucLumaCurve[8] - 0x87;
+                          g_ucTable[9] = g_ucTable[9] + g_ucLumaCurve[9] - 0x97;
+                          g_ucTable[10] = g_ucTable[10] + g_ucLumaCurve[10] - 0xa7;
+                          g_ucTable[11] = g_ucTable[11] + g_ucLumaCurve[11] - 0xb7;
+                          g_ucTable[12] = g_ucTable[12] + g_ucLumaCurve[12] - 0xc7;
+                          g_ucTable[13] = g_ucTable[13] + g_ucLumaCurve[13] - 0xd7;
+                          g_ucTable[14] = g_ucTable[14] + g_ucLumaCurve[14] - 0xe7;
+                          g_ucTable[15] = g_ucTable[15] + g_ucLumaCurve[15] - 0xf7;
+              
+                          for( ucTmp = 0; ucTmp < 16; ucTmp++ )
+                          {
+                              if( g_ucTable[ucTmp] > 0x1FF )
+                                  g_ucTable[ucTmp] = 0x00;
+                              else if( g_ucTable[ucTmp] > 0xFF )
+                                  g_ucTable[ucTmp] = 0xFF;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 18  
+
+                          }
+              #if !DYNAMIC_DLC// 2004/11/10
+                          g_ucTable[0] = g_ucLumaCurve[0];
+                          g_ucTable[1] = g_ucLumaCurve[1];
+                          g_ucTable[2] = g_ucLumaCurve[2];
+                          g_ucTable[3] = g_ucLumaCurve[3];
+                          g_ucTable[4] = g_ucLumaCurve[4];
+                          g_ucTable[5] = g_ucLumaCurve[5];
+                          g_ucTable[6] = g_ucLumaCurve[6];
+                          g_ucTable[7] = g_ucLumaCurve[7];
+                          g_ucTable[8] = g_ucLumaCurve[8];
+                          g_ucTable[9] = g_ucLumaCurve[9];
+                          g_ucTable[10] = g_ucLumaCurve[10];
+                          g_ucTable[11] = g_ucLumaCurve[11];
+                          g_ucTable[12] = g_ucLumaCurve[12];
+                          g_ucTable[13] = g_ucLumaCurve[13];
+                          g_ucTable[14] = g_ucLumaCurve[14];
+                          g_ucTable[15] = g_ucLumaCurve[15];
+              #endif
+                          DLCStatus = DLC_WRITE1;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE1:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x10 );
+                          for( ucTmp = 0; ucTmp <= 1; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE2;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE2:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x12 );
+                          for( ucTmp = 2; ucTmp <= 3; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE3;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE3:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x14 );
+                          for( ucTmp = 4; ucTmp <= 5; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE4;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE4:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x16 );
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 19  
+
+                          for( ucTmp = 6; ucTmp <= 7; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE5;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE5:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x18 );
+                          for( ucTmp = 8; ucTmp <= 9; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE6;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE6:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x1A );
+                          for( ucTmp = 0x0a; ucTmp <= 0x0b; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE7;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE7:
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x1C );
+                          for( ucTmp = 0x0c; ucTmp <= 0x0d; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          DLCStatus = DLC_WRITE8;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                      case DLC_WRITE8:
+                          if( ucDLCCCount < 255 )
+                              ucDLCCCount++;
+                          msWriteByte( BK0_00, REGBANK3 ); // bank 3
+                          msWriteByte( BK3_B9, 0x1E );
+                          for( ucTmp = 0x0e; ucTmp <= 0x0f; ucTmp++ )
+                          {
+                              msWriteByte( BK3_BA, g_ucTable[ucTmp] );
+                          }
+                          //msWriteByte(BK3_BA, g_ucLumaCurve[ucTmp][uc2]);
+                          msWriteByte( BK0_00, REGBANK3 );
+                          mStar_WriteByteMask( BK3_B8, 0x00, (BIT3 | BIT2 | BIT1 | BIT0) );
+                          //printMsg("reset");
+                          g_bNeedRequest = 1; // 2004/11/19
+                          msWriteByte( BK0_00, ucBank );
+                          DLCStatus = DLC_WAIT;
+                          msWriteByte( BK0_00, ucBank );
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 20  
+
+                          return ;
+                          break;
+                      default:
+                          g_bNeedRequest = 1;
+                          DLCStatus = DLC_WAIT;
+                          msWriteByte( BK0_00, ucBank );
+                          return ;
+                          break;
+                  }
+              #endif
+1171   1      }
+1172          void LoadDLCTable( BYTE *pDLCtable ) // 2004/10/15
+1173          {
+1174   1          BYTE LOCAL_TYPE index;
+1175   1          LOCAL_TYPE BYTE *DLCtable;
+1176   1          DLCtable = pDLCtable;
+1177   1          // dlc function
+1178   1          for( index = 0; index < 16; index++ )
+1179   1          {
+1180   2              g_ucLumaCurve[index] = DLCtable[index];
+1181   2          }
+1182   1          g_LowStrength = DLCtable[16];
+1183   1          g_HighStrength = DLCtable[17];
+1184   1          msSetDlcStrength( g_LowStrength, g_HighStrength );
+1185   1          msDlcOnOff( _ENABLE );
+1186   1      }
+1187          
+1188          
+1189          #define DCRNew  1   // 081204
+1190          #define DCRMotionTest   1 // 081205
+1191          #if DCRNew
+1192          WORD xdata PreAveLumi, PreAveLumi2;
+1193          #endif
+1194          #if DCRMotionTest
+1195          #define DCRStep     8 // DCR increasement/decreasement step
+1196          #define DCRStepTransPeriod  2 // unit: 10ms
+1197          BYTE xdata DCRStepTransValue; //
+1198          BYTE xdata BackLightTargetValue; //
+1199          BYTE xdata u8DCRStepTransCnt; // unit: DCRStepTransPeriod*10ms
+1200          bit bDCRSmoothMotionFlag = 0;
+1201          #endif
+1202          
+1203          void msDCROnOff( BYTE ucSwitch, BYTE win)
+1204          {
+1205   1          if(ucSwitch)
+1206   1          {
+1207   2              BrightData = 0xff;
+1208   2              PreBrightData = 0xff;
+1209   2              DarkData = 0x00;
+1210   2              ReadFrameDataCnt = 1;
+1211   2              SetDarkestFlag = 0;
+1212   2              HISTOGRAM_WHOLE_VERTICAL_RANGE_EN(1);//msWriteByteMask(SC3_B5, 0, BIT0); // whole DE range
+1213   2              HISTOGRAM_RGB_TO_Y_EN(IsColorspaceRGB());//msWriteByteMask(SC7_40, BIT2, BIT2); // enable R2Y     
+             -  //A008 item
+1214   2              if(win == 0) // 0: main win
+1215   2              {
+1216   3                  MWE_FUNCTION_EN(0);//msWriteByteMask(SC0_5C, 0, BIT3);
+1217   3                  STATISTIC_REQUEST_MAIN_ENABLE();//msWriteByte(SC7_B8, (BIT2|BIT1));
+1218   3              }
+1219   2              else // 1: sub win
+1220   2              {
+1221   3                  MWE_FUNCTION_EN(1);//msWriteByteMask(SC0_5C, BIT3, BIT3);
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 21  
+
+1222   3                  STATISTIC_REQUEST_SUB_ENABLE();//msWriteByte(SC7_B8, (BIT2|BIT0));
+1223   3              }
+1224   2          }
+1225   1          else
+1226   1          {
+1227   2              STATISTIC_REQUEST_EN(0);//msWriteByte(SC7_B8, 0);
+1228   2          }
+1229   1      }
+1230          
+1231          void msDCRHandler(void)
+1232          {
+1233   1          DWORD xdata TotalPixelCount;
+1234   1          WORD xdata AveLumi , AveLumi2;
+1235   1      
+1236   1          if(!UserPrefDcrMode)
+1237   1              return;
+1238   1      
+1239   1          if(!STATISTIC_ACKNOWLEDGE())//(!(msReadByte(SC7_B8)&BIT3)) // histogram is not ready
+1240   1              return;
+1241   1      
+1242   1          if( ReadFrameDataCnt % 2 == 0 ) // get all display data
+1243   1          {
+1244   2              BYTE tempVal;
+1245   2      
+1246   2              if(( tempVal = Y_CHANNEL_MAX_PIXEL() ) > BrightData )//(( tempVal = msReadByte( SC7_3A ) ) > Brigh
+             -tData ) // get max bright data
+1247   2                  BrightData = tempVal;
+1248   2              if(( tempVal = Y_CHANNEL_MIN_PIXEL() ) < DarkData )//(( tempVal = msReadByte( SC7_39 ) ) < DarkDat
+             -a ) // get min dark data
+1249   2                  DarkData = tempVal;
+1250   2              if( abs( BrightData - DarkData ) <= BlackWhiteDifference )
+1251   2              {
+1252   3                  if( abs( DarkData - DarkestValue ) <= DarkestRange ) // all display data are dark
+1253   3                  {
+1254   4                      SetDarkestFlag = 1;
+1255   4                  }
+1256   3              }
+1257   2      
+1258   2              TotalPixelCount = TOTAL_PIXEL_COUNT();
+1259   2              AveLumi = TOTAL_PIXEL_WEIGHT();//msRead2Byte(SC7_36);  //weight
+1260   2              AveLumi = AVERAGE_LUMINANCE(AveLumi, TotalPixelCount);//((((DWORD)AveLumi)*16384 +(u16HistogramHR>
+             ->1))/u16HistogramHR +(u16HistogramVR>>1))/ u16HistogramVR; //average
+1261   2              AveLumi = (( DWORD )PreAveLumi + AveLumi ) / 2;
+1262   2      
+1263   2              AveLumi2 = TOTAL_PIXEL_WEIGHT();//msRead2Byte(SC7_36);  //weight
+1264   2              AveLumi2 = AVERAGE_LUMINANCE(AveLumi2, TotalPixelCount);//((((DWORD)AveLumi2)*16384 +(u16Histogram
+             -HR>>1))/u16HistogramHR +(u16HistogramVR>>1))/ u16HistogramVR; //average
+1265   2              AveLumi2 = (( DWORD )PreAveLumi + AveLumi2 ) / 2;
+1266   2      
+1267   2              if( abs( AveLumi2 - AveLumi ) > 10 ) // read twice to confirm? (not stable)
+1268   2              {
+1269   3                  ReadFrameDataCnt ++;
+1270   3                  STATISTIC_REQUEST_EN(0);//msWriteByteMask(SC7_B8, 0, BIT2);
+1271   3                  STATISTIC_REQUEST_EN(1);//msWriteByteMask(SC7_B8, BIT2, BIT2);
+1272   3                  return;
+1273   3              }
+1274   2      
+1275   2              BackLightTargetValue = (AveLumi > 0x100)?(0xff):((BYTE)AveLumi);
+1276   2      
+1277   2              if( abs( BackLightTargetValue - BacklightPrev ) >= DCRStep )
+1278   2              {
+1279   3                  bDCRSmoothMotionFlag = 1;
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 22  
+
+1280   3                  DCRStepTransValue = DCRStep / 2; //abs(BackLightTargetValue-BacklightPrev)/DCRStep;
+1281   3              }
+1282   2              else
+1283   2              {
+1284   3                  bDCRSmoothMotionFlag = 0;
+1285   3              }
+1286   2      
+1287   2              if( bDCRSmoothMotionFlag ) // DCR operating range is over DCRStep
+1288   2              {
+1289   3                  if( BackLightTargetValue >= BacklightPrev ) // increasement
+1290   3                  {
+1291   4                      BacklightNow = ( BacklightNow + DCRStepTransValue >= BackLightTargetValue ) ? ( BackLightT
+             -argetValue ) : ( BacklightNow + DCRStepTransValue );
+1292   4                  }
+1293   3                  else // decreasement
+1294   3                  {
+1295   4                      BacklightNow = ( BacklightNow - DCRStepTransValue <= BackLightTargetValue ) ? ( BackLightT
+             -argetValue ) : ( BacklightNow - DCRStepTransValue );
+1296   4                  }
+1297   3              }
+1298   2              else
+1299   2              {
+1300   3                  BacklightNow = BackLightTargetValue;
+1301   3              }
+1302   2      
+1303   2      #if DCRMotionTest
+1304   2              if( !u8DCRStepTransCnt )
+1305   2      #endif
+1306   2                  if(( BacklightNow != BacklightPrev ) || ( BrightData != PreBrightData ) )
+1307   2                  {
+1308   3                      BacklightPrev = BacklightNow;
+1309   3                      PreBrightData = BrightData;
+1310   3                      mStar_AdjustDcrBrightness();
+1311   3      #if DCRMotionTest
+1312   3                      u8DCRStepTransCnt = DCRStepTransPeriod;
+1313   3      #endif
+1314   3              }
+1315   2              HistogramPrev = HistogramNow;
+1316   2          }
+1317   1          else // get upper dark / bright data
+1318   1          {
+1319   2              DarkData = Y_CHANNEL_MIN_PIXEL();//msReadByte( SC7_39 );
+1320   2              BrightData = Y_CHANNEL_MAX_PIXEL();//msReadByte( SC7_3A );
+1321   2      
+1322   2              TotalPixelCount = TOTAL_PIXEL_COUNT();
+1323   2              AveLumi = TOTAL_PIXEL_WEIGHT();//msRead2Byte(SC7_36);  //weight
+1324   2              PreAveLumi = AVERAGE_LUMINANCE(AveLumi, TotalPixelCount);//((((DWORD)AveLumi)*16384 +(u16Histogram
+             -HR>>1))/u16HistogramHR +(u16HistogramVR>>1))/ u16HistogramVR; //average
+1325   2              AveLumi = TOTAL_PIXEL_WEIGHT();//msRead2Byte(SC7_36);  //weight
+1326   2              PreAveLumi2 = AVERAGE_LUMINANCE(AveLumi, TotalPixelCount);//((((DWORD)AveLumi)*16384 +(u16Histogra
+             -mHR>>1))/u16HistogramHR +(u16HistogramVR>>1))/ u16HistogramVR; //average
+1327   2          }
+1328   1      
+1329   1          ReadFrameDataCnt ++;
+1330   1      
+1331   1          STATISTIC_REQUEST_EN(0);//msWriteByteMask(SC7_B8, 0, BIT2);
+1332   1          STATISTIC_REQUEST_EN(1);//msWriteByteMask(SC7_B8, BIT2, BIT2);
+1333   1      
+1334   1      }
+1335          
+1336          
+
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 23  
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2567    ----
+   CONSTANT SIZE    =     28    ----
+   XDATA SIZE       =    160      23
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      21
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =      1    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

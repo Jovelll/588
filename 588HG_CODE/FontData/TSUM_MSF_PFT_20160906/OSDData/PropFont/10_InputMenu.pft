@@ -1,0 +1,21 @@
+20 2 0 20 3a f 1 1
+10 01 AutoAnalog 'Auto\x00FSelect\x018VGA\x019' x20x
+10 02 AutoAnalog '\x105\x106\x122\x123\x018VGA\x019' x20x
+10 01 AutoDigital 'Auto\x00FSelect\x018DVI\x019' x20x
+10 02 AutoDigital '\x105\x106\x122\x123\x018DVI\x019' x20x
+10 01 AutoHDMI 'Auto\x00FSelect\x018HDMI\x019' x20x
+10 02 AutoHDMI '\x105\x106\x122\x123\x018HDMI\x019' x20x
+10 01 AutoDP 'Auto\x00FSelect\x018DisplayPort\x019' x20x
+10 02 AutoDP '\x105\x106\x122\x123\x018DisplayPort\x019' x20x
+10 01 AutoMHL 'Auto\x00FSelect\x018MHL\x019' x20x
+10 02 AutoMHL '\x105\x106\x122\x123\x018MHL\x019' x20x
+10 01 AnalogInput 'VGA\x00FInput' x20x
+10 02 AnalogInput 'VGA\x00F\x109\x10A' x20x
+10 01 DigitalInput 'DVI\x00FInput' x20x
+10 02 DigitalInput 'DVI\x00F\x109\x10A' x20x
+10 01 HDMIInput 'HDMI\x00FInput' x20x
+10 02 HDMIInput 'HDMI\x00F\x109\x10A' x20x
+10 01 DP_Input 'DisplayPort\x00FInput' x20x
+10 02 DP_Input 'DisplayPort\x00F\x109\x10A' x20x
+10 01 MHL_Input 'MHL\x00FInput' x20x
+10 02 MHL_Input 'MHL\x00F\x109\x10A' x20x

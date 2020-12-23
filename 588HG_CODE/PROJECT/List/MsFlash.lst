@@ -1,0 +1,3117 @@
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSFLASH
+OBJECT MODULE PLACED IN .\Obj\MsFlash.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\MsFlash.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYS
+                    -TEM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER
+                    -\INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\MsFlash.lst) TABS(2) OBJECT(.\Obj\MsFla
+                    -sh.obj)
+
+line level    source
+
+   1          /******************************************************************************
+   2           Copyright (c) 2005 MStar Semiconductor, Inc.
+   3           All rights reserved.
+   4          
+   5           [Module Name]: Msflash.c
+   6           [Date]:        25-Apr-2003
+   7           [Comment]:
+   8             MST Flash subroutines.
+   9           [Reversion History]:
+  10          *******************************************************************************/
+  11          #define _MSFLASH_C_
+  12          
+  13          #include <intrins.h>
+  14          #include "types.h"
+  15          #include "board.h"
+  16          //#include "mode.h"
+  17          //#include "UserPrefDef.h"
+  18          #include "global.h"
+  19          #include "ms_reg.h"
+  20          #include "ms_rwreg.h"
+  21          #include "menudef.h"
+  22          #include "msOSD.h"
+  23          #include "debug.h"
+  24          #include "Common.h"
+  25          #include "misc.h"
+  26          #include "Mcu.h"
+  27          #include "msflash.h"
+  28          #include "gpio_def.h"
+  29          //#include "halRwreg.h"
+  30          #define _FLASH_CODE_VERSION_    0x200
+  31          
+  32          #define FLASH_DEBUG    0
+  33          #if FLASH_DEBUG && ENABLE_DEBUG
+              #define FLASH_printData(str, value)   printData(str, value)
+              #define FLASH_printMsg(str)           printMsg(str)
+              #else
+  37          #define FLASH_printData(str, value)
+  38          #define FLASH_printMsg(str)
+  39          #endif
+  40          
+  41          //#define CacheStatus()   (_bit3_(MEM_MSREAD_BYTE(REG_1018)))
+  42          //#define EnableCache()  (MEM_MSWRITE_BIT(REG_1018, BIT3, BIT3), MEM_MSWRITE_BIT(REG_2BA0, 0, BIT0))
+  43          //#define DisableCache()  (MEM_MSWRITE_BIT(REG_2BA0, BIT0, BIT0), MEM_MSWRITE_BIT(REG_1018, 0, BIT3))
+  44          
+  45          Bool xdata bFlashWriteFactory = FALSE;
+  46          Bool xdata bFlashEraseBufferFinish = FALSE; // // jeff add it in 2009 0907
+  47          BYTE xdata g_ucFlashDeviceID = 0;
+  48          BYTE xdata g_FlashSize = FLASH_SIZE_2M;
+  49          ///////////////////////////////////////////////////////////////////////////////
+  50          // <DRV><Description>: Check current MsFlash.c code version
+  51          // <Returns> : MsFlash.c version number
+  52          ///////////////////////////////////////////////////////////////////////////////
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 2   
+
+  53          WORD FlashVersionCheck( void )
+  54          {
+  55   1          BYTE ucTemp = 0;
+  56   1          if( ucTemp )
+  57   1          {
+  58   2              Flash_GetBufferAddr();
+  59   2              Flash_AllocateBufferAddr();
+  60   2              Flash_CheckBufferType();
+  61   2              Flash_ClearModeSet();
+  62   2              Flash_WriteFactorySet( &ucTemp, 0 );
+  63   2              Flash_ReadFactorySet( &ucTemp, 0 );
+  64   2              Flash_WriteMonitorSet( &ucTemp, 0 );
+  65   2              Flash_ReadMonitorSet( &ucTemp, 0 );
+  66   2              Flash_WriteMonitorSet2( &ucTemp, 0 );
+  67   2              Flash_ReadMonitorSet2( &ucTemp, 0 );
+  68   2              Flash_WriteModeSet( 0, &ucTemp );
+  69   2              Flash_ReadModeSet( 0, &ucTemp );
+  70   2          FlashWriteAnyByte( 0, 0, 0);
+  71   2          FlashReadAnyByte( 0 );    
+  72   2          }
+  73   1          return _FLASH_CODE_VERSION_;
+  74   1      }
+  75          
+  76          void drvFlashWaitSPINotBusy(void)
+  77          {
+  78   1          WORD u16Retry = 0xFFFF;
+  79   1          while(!(SPI_STATUS&BIT0)&&u16Retry--)
+  80   1              Delay4us();
+  81   1          if (SPI_STATUS&BIT0)
+  82   1              SPI_CLR_STATUS= 0x01; //clr int
+  83   1          //printData("u8Retry=%d",u8Retry);
+  84   1      }
+  85          
+  86          ///////////////////////////////////////////////////////////////////////////////
+  87          // <DRV><Description>: Return true when flash type is PMC .
+  88          ///////////////////////////////////////////////////////////////////////////////
+  89          Bool FlashTypeIs_PMC( void )
+  90          {
+  91   1          BYTE ucID = 0;
+  92   1      
+  93   1          // 1st
+  94   1          SPI_SI_BUF[0] = PMC_READ_ID;
+  95   1          
+  96   1          // 2nd
+  97   1          SPI_SI_BUF[1] = RDSR;
+  98   1      
+  99   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 100   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 101   1          SET_WBF_SIZE(1, 1, 0);
+ 102   1          SET_RBF_SIZE(3, 1, 0);
+ 103   1      
+ 104   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 105   1          drvFlashWaitSPINotBusy();
+ 106   1          
+ 107   1          ucID = SPI_SO_BUF[1];
+ 108   1      
+ 109   1          if( ucID == FLASH_PMC )
+ 110   1          {
+ 111   2              if( SPI_SO_BUF[2] == PM25_LD020 )
+ 112   2                  g_ucFlashDeviceID = PM25_LD020;
+ 113   2              else if( SPI_SO_BUF[2] == PM25_LV020 )
+ 114   2                  g_ucFlashDeviceID = PM25_LV020;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 3   
+
+ 115   2              else if( SPI_SO_BUF[2] == PM25_LQ020 )
+ 116   2                  g_ucFlashDeviceID = PM25_LQ020;
+ 117   2              return TRUE;
+ 118   2          }
+ 119   1          return FALSE;
+ 120   1      }
+ 121          ///////////////////////////////////////////////////////////////////////////////
+ 122          // <DRV><Description>: Return true when flash type is SST.
+ 123          ///////////////////////////////////////////////////////////////////////////////
+ 124          Bool FlashTypeIs_SST( void )
+ 125          {
+ 126   1          BYTE ucID = 0;
+ 127   1      
+ 128   1          // 1st
+ 129   1          SPI_SI_BUF[0] = SST_READ_ID;
+ 130   1          
+ 131   1          // 2nd
+ 132   1          SPI_SI_BUF[1] = RDSR;
+ 133   1      
+ 134   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 135   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 136   1          SET_WBF_SIZE(1, 1, 0);
+ 137   1          SET_RBF_SIZE(3, 1, 0);
+ 138   1      
+ 139   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 140   1          drvFlashWaitSPINotBusy();
+ 141   1          
+ 142   1          ucID = SPI_SO_BUF[0];
+ 143   1      
+ 144   1          if( ucID == FLASH_SST )
+ 145   1              return TRUE;
+ 146   1          return FALSE;
+ 147   1      }
+ 148          ///////////////////////////////////////////////////////////////////////////////
+ 149          // <DRV><Description>: Return true when flash type is MXIC.
+ 150          ///////////////////////////////////////////////////////////////////////////////
+ 151          Bool FlashTypeIs_MXIC( void )
+ 152          {
+ 153   1          BYTE ucID = 0;
+ 154   1      
+ 155   1          // 1st
+ 156   1          SPI_SI_BUF[0] = MXIC_READ_ID;
+ 157   1          
+ 158   1          // 2nd
+ 159   1          SPI_SI_BUF[1] = RDSR;
+ 160   1      
+ 161   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 162   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 163   1          SET_WBF_SIZE(1, 1, 0);
+ 164   1          SET_RBF_SIZE(3, 1, 0);
+ 165   1      
+ 166   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 167   1          drvFlashWaitSPINotBusy();
+ 168   1          
+ 169   1          ucID = SPI_SO_BUF[0];
+ 170   1      
+ 171   1          if( ucID == FLASH_MXIC )
+ 172   1              return TRUE;
+ 173   1          return FALSE;
+ 174   1      }
+ 175          ///////////////////////////////////////////////////////////////////////////////
+ 176          // <DRV><Description>: Return true when flash type is EON.
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 4   
+
+ 177          ///////////////////////////////////////////////////////////////////////////////
+ 178          Bool FlashTypeIs_EON( void )
+ 179          {
+ 180   1          BYTE ucID = 0;
+ 181   1      
+ 182   1          // 1st
+ 183   1          SPI_SI_BUF[0] = EON_READ_ID;
+ 184   1          
+ 185   1          // 2nd
+ 186   1          SPI_SI_BUF[1] = RDSR;
+ 187   1      
+ 188   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 189   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 190   1          SET_WBF_SIZE(1, 1, 0);
+ 191   1          SET_RBF_SIZE(3, 1, 0);
+ 192   1      
+ 193   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 194   1          drvFlashWaitSPINotBusy();
+ 195   1          
+ 196   1          ucID = SPI_SO_BUF[0];
+ 197   1      
+ 198   1          if( ucID == FLASH_EON )
+ 199   1              return TRUE;
+ 200   1          return FALSE;
+ 201   1      }
+ 202          ///////////////////////////////////////////////////////////////////////////////
+ 203          // <DRV><Description>: Return true when flash type is AMIC.
+ 204          ///////////////////////////////////////////////////////////////////////////////
+ 205          Bool FlashTypeIs_AMIC( void )
+ 206          {
+ 207   1          BYTE ucID = 0;
+ 208   1      
+ 209   1          // 1st
+ 210   1          SPI_SI_BUF[0] = AMIC_READ_ID;
+ 211   1          
+ 212   1          // 2nd
+ 213   1          SPI_SI_BUF[1] = RDSR;
+ 214   1      
+ 215   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 216   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 217   1          SET_WBF_SIZE(1, 1, 0);
+ 218   1          SET_RBF_SIZE(3, 1, 0);
+ 219   1      
+ 220   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 221   1          drvFlashWaitSPINotBusy();
+ 222   1          
+ 223   1          ucID = SPI_SO_BUF[0];
+ 224   1      
+ 225   1          if( ucID == FLASH_AMIC )
+ 226   1              return TRUE;
+ 227   1          return FALSE;
+ 228   1      }
+ 229          ///////////////////////////////////////////////////////////////////////////////
+ 230          // <DRV><Description>: Return true when flash type is WINBOND.
+ 231          ///////////////////////////////////////////////////////////////////////////////
+ 232          Bool FlashTypeIs_WINBOND( void )
+ 233          {
+ 234   1          BYTE ucID = 0;
+ 235   1      
+ 236   1          // 1st
+ 237   1          SPI_SI_BUF[0] = WINBOND_READ_ID;
+ 238   1          
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 5   
+
+ 239   1          // 2nd
+ 240   1          SPI_SI_BUF[1] = RDSR;
+ 241   1      
+ 242   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 243   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 244   1          SET_WBF_SIZE(1, 1, 0);
+ 245   1          SET_RBF_SIZE(3, 1, 0);
+ 246   1      
+ 247   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 248   1          drvFlashWaitSPINotBusy();
+ 249   1          
+ 250   1          ucID = SPI_SO_BUF[0];
+ 251   1          
+ 252   1          //FLASH_printData("W9F-2:%x",SPI_SO_BUF[2]);
+ 253   1      
+ 254   1          if( ucID == FLASH_WINBOND )
+ 255   1          {
+ 256   2              ucID = SPI_SO_BUF[2];
+ 257   2              if(ucID == W25X05CL)
+ 258   2                  g_ucFlashDeviceID = W25X05CL;
+ 259   2              else if(ucID == W25X10CL)
+ 260   2                  g_ucFlashDeviceID = W25X10CL;
+ 261   2              else if(ucID == W25X20CL)
+ 262   2                  g_ucFlashDeviceID = W25X20CL;
+ 263   2              else if(ucID == W25X40BV)
+ 264   2                  g_ucFlashDeviceID = W25X40BV;
+ 265   2                  
+ 266   2              return TRUE;
+ 267   2          }
+ 268   1          return FALSE;
+ 269   1      }
+ 270          
+ 271          BYTE ReadFlashUniqueID_Winbond(void)
+ 272          {
+ 273   1          // 1st
+ 274   1          SPI_SI_BUF[0] = WINBOND_READ_UNIQUE_ID; // with 4 dummy bytes
+ 275   1          
+ 276   1          // 2nd
+ 277   1          SPI_SI_BUF[5] = RDSR;
+ 278   1      
+ 279   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 280   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 281   1          SET_WBF_SIZE(5, 1, 0);
+ 282   1          SET_RBF_SIZE(1, 1, 0);
+ 283   1      
+ 284   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 285   1          drvFlashWaitSPINotBusy();
+ 286   1      
+ 287   1          return SPI_SO_BUF[0];
+ 288   1      }
+ 289          
+ 290          BYTE ReadFlashDeviceID_MXIC( void )
+ 291          {
+ 292   1          // 1st
+ 293   1          SPI_SI_BUF[0] = MXIC_RES;
+ 294   1          SPI_SI_BUF[1] = 0x00;
+ 295   1          SPI_SI_BUF[2] = 0x00;
+ 296   1          SPI_SI_BUF[3] = 0x00;
+ 297   1          // 2nd
+ 298   1          SPI_SI_BUF[4] = RDSR;
+ 299   1      
+ 300   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 6   
+
+ 301   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 302   1          SET_WBF_SIZE(4, 1, 0);
+ 303   1          SET_RBF_SIZE(1, 1, 0);
+ 304   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 305   1          drvFlashWaitSPINotBusy();
+ 306   1          
+ 307   1          return SPI_SO_BUF[0];
+ 308   1      }
+ 309          
+ 310          ///////////////////////////////////////////////////////////////////////////////
+ 311          // <DRV><Description>: Return true when flash type is GIGA DEVICE .
+ 312          ///////////////////////////////////////////////////////////////////////////////
+ 313          Bool FlashTypeIs_GigaDevice( void )
+ 314          {
+ 315   1          BYTE ucID = 0;
+ 316   1      
+ 317   1          // 1st
+ 318   1          SPI_SI_BUF[0] = GIGADEVICE_READ_ID;
+ 319   1          
+ 320   1          // 2nd
+ 321   1          SPI_SI_BUF[1] = RDSR;
+ 322   1      
+ 323   1          SPI_CTRL0       = SPI_CTRL_VALUE;
+ 324   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 325   1          SET_WBF_SIZE(1, 1, 0);
+ 326   1          SET_RBF_SIZE(3, 1, 0);
+ 327   1      
+ 328   1          SPI_TRIGGER  = 0x01;
+ 329   1          drvFlashWaitSPINotBusy();
+ 330   1          
+ 331   1          ucID = SPI_SO_BUF[0];
+ 332   1          
+ 333   1          if( ucID == FLASH_GIGADEVICE )
+ 334   1          {
+ 335   2              if( SPI_SO_BUF[2] == GD25M21B )
+ 336   2                  g_ucFlashDeviceID = GD25M21B;
+ 337   2              else if( SPI_SO_BUF[2] == GD25M41B )
+ 338   2                  g_ucFlashDeviceID = GD25M41B;
+ 339   2             
+ 340   2              return TRUE;
+ 341   2          }
+ 342   1          return FALSE;
+ 343   1      }
+ 344          
+ 345          ///////////////////////////////////////////////////////////////////////////////
+ 346          // <DRV><Description>: Return true when flash type is FMSH.
+ 347          ///////////////////////////////////////////////////////////////////////////////
+ 348          Bool FlashTypeIs_FMSH(void)
+ 349          {
+ 350   1          BYTE ucID = 0;
+ 351   1      
+ 352   1          // 1st
+ 353   1          SPI_SI_BUF[0] = FMSH_READ_ID;
+ 354   1          
+ 355   1          // 2nd
+ 356   1          SPI_SI_BUF[1] = RDSR;
+ 357   1      
+ 358   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 359   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 360   1          SET_WBF_SIZE(1, 1, 0);
+ 361   1          SET_RBF_SIZE(3, 1, 0);
+ 362   1      
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 7   
+
+ 363   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 364   1          drvFlashWaitSPINotBusy();
+ 365   1          
+ 366   1          ucID = SPI_SO_BUF[0];
+ 367   1      
+ 368   1          if( ucID == FLASH_FMSH)
+ 369   1          {
+ 370   2             if( SPI_SO_BUF[2] == FM25Q04)
+ 371   2                  g_ucFlashDeviceID = FM25Q04;
+ 372   2              else if( SPI_SO_BUF[2] == FM25Q02)
+ 373   2                  g_ucFlashDeviceID = FM25Q02;
+ 374   2      
+ 375   2              return TRUE;
+ 376   2          }
+ 377   1      
+ 378   1          return FALSE;
+ 379   1      }
+ 380          
+ 381          ///////////////////////////////////////////////////////////////////////////////
+ 382          // <DRV><Description>: Return true when flash type is BOYA.
+ 383          ///////////////////////////////////////////////////////////////////////////////
+ 384          Bool FlashTypeIs_BOYA(void)
+ 385          {
+ 386   1          BYTE ucID = 0;
+ 387   1      
+ 388   1          // 1st
+ 389   1          SPI_SI_BUF[0] = BOYA_READ_ID;
+ 390   1          
+ 391   1          // 2nd
+ 392   1          SPI_SI_BUF[1] = RDSR;
+ 393   1      
+ 394   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 395   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 396   1          SET_WBF_SIZE(1, 1, 0);
+ 397   1          SET_RBF_SIZE(3, 1, 0);
+ 398   1      
+ 399   1          SPI_TRIGGER  = 0x01; //start flash programming
+ 400   1          drvFlashWaitSPINotBusy();
+ 401   1          
+ 402   1          ucID = SPI_SO_BUF[0];
+ 403   1      
+ 404   1          if( ucID == FLASH_BOYA)
+ 405   1          {
+ 406   2              if( SPI_SO_BUF[2] == BY25D40)
+ 407   2                  g_ucFlashDeviceID = BY25D40;
+ 408   2              else if( SPI_SO_BUF[2] == BY25D20)
+ 409   2                  g_ucFlashDeviceID = BY25D20;
+ 410   2      
+ 411   2              return TRUE;
+ 412   2          }
+ 413   1      
+ 414   1          return FALSE;
+ 415   1      }
+ 416          
+ 417          Bool FlashTypeIs_ZB( void )
+ 418          {
+ 419   1          BYTE ucID = 0;
+ 420   1        BYTE ucIDSize = 0;
+ 421   1      
+ 422   1          // 1st
+ 423   1          SPI_SI_BUF[0] = ZB_READ_ID;
+ 424   1      
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 8   
+
+ 425   1          // 2nd
+ 426   1          SPI_SI_BUF[1] = RDSR;
+ 427   1      
+ 428   1          SPI_CTRL0       = SPI_CTRL_VALUE;
+ 429   1          SPI_CTRL1       = (EN_2ND_CMD|EN_AUTO_CHECK|RDSR_IN_2ND);
+ 430   1          SET_WBF_SIZE(1, 1, 0);
+ 431   1          SET_RBF_SIZE(3, 1, 0);
+ 432   1      
+ 433   1          SPI_TRIGGER  = 0x01;
+ 434   1          drvFlashWaitSPINotBusy();
+ 435   1      
+ 436   1          ucID = SPI_SO_BUF[0];
+ 437   1        ucIDSize = SPI_SO_BUF[2];
+ 438   1          if( ucID == FLASH_ZB )
+ 439   1          {
+ 440   2          return TRUE;
+ 441   2          }
+ 442   1          return FALSE;
+ 443   1      }
+ 444          
+ 445          
+ 446          #define FLASH_IS_MXIC(id)     (id == FLASH_MXIC)
+ 447          #define FLASH_IS_WINBOND(id)    (id == FLASH_WINBOND)
+ 448          #define FLASH_IS_GIGADEVICE(id)     (id == FLASH_GIGADEVICE)
+ 449          #define FLASH_IS_FMSH(id)     (id == FLASH_FMSH)
+ 450          #define FLASH_IS_BOYA(id)     (id == FLASH_BOYA)
+ 451          #define MXIC_FLASH_4M()   (g_ucFlashDeviceID == MX_4026 || g_ucFlashDeviceID == MX_4025)
+ 452          #define WINBOND_FLASH_4M()  (g_ucFlashDeviceID == W25X40BV || g_ucFlashDeviceID == W25X41CL)
+ 453          #define GIGADEVICE_FLASH_4M()   (g_ucFlashDeviceID == GD25M41B)
+ 454          #define FMSH_FLASH_4M()   (g_ucFlashDeviceID == FM25Q04)
+ 455          #define BOYA_FLASH_4M()   (g_ucFlashDeviceID == BY25D40)
+ 456          
+ 457          void CheckFlashSize(FlashID)
+ 458          {
+ 459   1          if(FLASH_IS_MXIC(FlashID) && MXIC_FLASH_4M())
+ 460   1              g_FlashSize = FLASH_SIZE_4M;
+ 461   1          else if(FLASH_IS_WINBOND(FlashID) && WINBOND_FLASH_4M())
+ 462   1              g_FlashSize = FLASH_SIZE_4M;
+ 463   1          else if(FLASH_IS_GIGADEVICE(FlashID) && GIGADEVICE_FLASH_4M())
+ 464   1              g_FlashSize = FLASH_SIZE_4M;
+ 465   1          else if(FLASH_IS_FMSH(FlashID) && FMSH_FLASH_4M())
+ 466   1              g_FlashSize = FLASH_SIZE_4M;
+ 467   1          else if(FLASH_IS_BOYA(FlashID) && BOYA_FLASH_4M())
+ 468   1              g_FlashSize = FLASH_SIZE_4M;
+ 469   1          else
+ 470   1              g_FlashSize = FLASH_SIZE_2M;
+ 471   1      }
+ 472          
+ 473          ///////////////////////////////////////////////////////////////////////////////
+ 474          // <DRV><Description>: Read flash Manufacturer ID include PMC, MXIC, EON, and SST.
+ 475          //                Return FLASH_UNKNOW if not found
+ 476          // <Returns> : Manufacturer ID.
+ 477          ///////////////////////////////////////////////////////////////////////////////
+ 478          BYTE ReadFlashID( void )
+ 479          {
+ 480   1          BYTE ucID;
+ 481   1      
+ 482   1          FlashVersionCheck();
+ 483   1      
+ 484   1          if( FlashTypeIs_PMC() )
+ 485   1              ucID = FLASH_PMC;
+ 486   1          else if( FlashTypeIs_MXIC() )
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 9   
+
+ 487   1          {
+ 488   2              ucID = ReadFlashDeviceID_MXIC();
+ 489   2              if( ucID == MX_2026 )
+ 490   2                  g_ucFlashDeviceID = MX_2026;
+ 491   2              else if( ucID == MX_4026 )
+ 492   2                  g_ucFlashDeviceID = MX_4026;
+ 493   2              else if( ucID == MX_4025 )
+ 494   2                  g_ucFlashDeviceID = MX_4025;
+ 495   2              else //if( ucID == MX_2025 )
+ 496   2                  g_ucFlashDeviceID = MX_2025;
+ 497   2              ucID = FLASH_MXIC;
+ 498   2          }
+ 499   1          else if( FlashTypeIs_EON() )
+ 500   1              ucID = FLASH_EON;
+ 501   1          else if( FlashTypeIs_SST() )
+ 502   1              ucID = FLASH_SST;
+ 503   1          else if( FlashTypeIs_AMIC() )
+ 504   1              ucID = FLASH_AMIC;
+ 505   1          else if( FlashTypeIs_WINBOND() )
+ 506   1          {
+ 507   2              ucID = FLASH_WINBOND;
+ 508   2              if(g_ucFlashDeviceID == W25X20CL)
+ 509   2              {
+ 510   3                  if(W25X21CL == ReadFlashUniqueID_Winbond())
+ 511   3                      g_ucFlashDeviceID = W25X21CL;
+ 512   3              }
+ 513   2              else if(g_ucFlashDeviceID == W25X40BV)
+ 514   2              {
+ 515   3                  if(W25X41CL == ReadFlashUniqueID_Winbond())
+ 516   3                      g_ucFlashDeviceID = W25X41CL;
+ 517   3              }
+ 518   2          }
+ 519   1          else if(FlashTypeIs_GigaDevice())
+ 520   1              ucID = FLASH_GIGADEVICE;
+ 521   1          else if(FlashTypeIs_FMSH())
+ 522   1              ucID = FLASH_FMSH;
+ 523   1          else if(FlashTypeIs_BOYA())
+ 524   1              ucID = FLASH_BOYA;
+ 525   1        else if(FlashTypeIs_ZB())
+ 526   1          ucID = FLASH_ZB;
+ 527   1          else
+ 528   1              ucID = FLASH_UNKNOW;
+ 529   1      
+ 530   1          CheckFlashSize(ucID);
+ 531   1      
+ 532   1          return ucID;
+ 533   1      }
+ 534          
+ 535          #if 1//USEFLASH //------------------------------------------------------------------------------
+ 536          ///////////////////////////////////////////////////////////////////////////////
+ 537          // <DRV><Description>: Read flash status register.
+ 538          //
+ 539          // <Returns> : Flash status register.
+ 540          ///////////////////////////////////////////////////////////////////////////////
+ 541          BYTE FlashReadSR( void )
+ 542          {
+ 543   1          SPI_SI_BUF[0]   = RDSR;
+ 544   1      
+ 545   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 546   1          SPI_CTRL1       = (RDSR_IN_1ST|EN_AUTO_CHECK);
+ 547   1          SET_WBF_SIZE(1, 0, 0);
+ 548   1          SET_RBF_SIZE(1, 0, 0);
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 10  
+
+ 549   1          SPI_TRIGGER     = 0x01; //start flash programming
+ 550   1          drvFlashWaitSPINotBusy();
+ 551   1      
+ 552   1          return SPI_SO_BUF[0];
+ 553   1      }
+ 554          
+ 555          ///////////////////////////////////////////////////////////////////////////////
+ 556          // <Description>: Read 2Byte flash status register.
+ 557          //
+ 558          // <Returns> : 2Byte Flash status register.
+ 559          ///////////////////////////////////////////////////////////////////////////////
+ 560          WORD FlashRead2ByteSR( void )
+ 561          {
+ 562   1          WORD u16TempSR = 0;
+ 563   1          
+ 564   1         if( g_ucFlashID == FLASH_FMSH && ((g_ucFlashDeviceID == FM25Q04)||(g_ucFlashDeviceID == FM25Q02)) )
+ 565   1          {
+ 566   2              SPI_SI_BUF[0]   = FMSH_RDSR1;
+ 567   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 568   2              SPI_CTRL1       = (RDSR_IN_1ST|EN_AUTO_CHECK);
+ 569   2              SET_WBF_SIZE(1, 0, 0);
+ 570   2              SET_RBF_SIZE(1, 0, 0);
+ 571   2              SPI_TRIGGER     = 0x01; //start flash programming
+ 572   2              drvFlashWaitSPINotBusy();
+ 573   2      
+ 574   2              u16TempSR=SPI_SO_BUF[0];
+ 575   2      
+ 576   2              SPI_SI_BUF[0]   = FMSH_RDSR;
+ 577   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 578   2              SPI_CTRL1       = (RDSR_IN_1ST|EN_AUTO_CHECK);
+ 579   2              SET_WBF_SIZE(1, 0, 0);
+ 580   2              SET_RBF_SIZE(1, 0, 0);
+ 581   2              SPI_TRIGGER     = 0x01; //start flash programming
+ 582   2              drvFlashWaitSPINotBusy();
+ 583   2      
+ 584   2              u16TempSR=(u16TempSR<<8)|SPI_SO_BUF[0];
+ 585   2          }
+ 586   1          
+ 587   1          return u16TempSR;
+ 588   1      }
+ 589          
+ 590          
+ 591          ///////////////////////////////////////////////////////////////////////////////
+ 592          // <DRV><Description>: Flash Write enable
+ 593          //Prior to any Byte-Program, AAI-Program, Sector-Erase, Block-Erase, or Chip-Erase operation, the Write-En
+             -able (WREN)
+ 594          //instruction must be executed.
+ 595          //Wait WIP(SR[0]) clear then send WREN command
+ 596          ///////////////////////////////////////////////////////////////////////////////
+ 597          //void FlashWriteEnable( void )
+ 598          //{}
+ 599          
+ 600          ///////////////////////////////////////////////////////////////////////////////
+ 601          // <DRV><Description>: Write value to flash status register
+ 602          // <Parameter>:  -  <Flow>  -  <Description>
+ 603          //-----------------------------------------------------------------------------
+ 604          //  value  -    In    -   which value write to flash status register
+ 605          ///////////////////////////////////////////////////////////////////////////////
+ 606          void FlashWriteSR( BYTE value )
+ 607          {
+ 608   1          if( g_ucFlashID == FLASH_SST )
+ 609   1          {
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 11  
+
+ 610   2              // 1st
+ 611   2              SPI_SI_BUF[0]   = EWSR;
+ 612   2              // 2nd
+ 613   2              SPI_SI_BUF[1]   = WRSR;
+ 614   2              SPI_SI_BUF[2]   = value;
+ 615   2              // 3rd
+ 616   2              SPI_SI_BUF[3]   = RDSR;
+ 617   2      
+ 618   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 619   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 620   2              SET_WBF_SIZE(1, 2, 1);
+ 621   2              SET_RBF_SIZE(0, 0, 1);
+ 622   2          }
+ 623   1          else if( g_ucFlashID == FLASH_AMIC )
+ 624   1          {
+ 625   2              BYTE SSR = FlashReadSR();
+ 626   2              if( SSR & 0x40 ) //_BIT6)
+ 627   2              {
+ 628   3                  // 1st
+ 629   3                  SPI_SI_BUF[0]   = WREN;
+ 630   3                  // 2nd
+ 631   3                  SPI_SI_BUF[1] = 0x90;
+ 632   3                  SPI_SI_BUF[2] = 0x00;
+ 633   3                  SPI_SI_BUF[3] = 0x28;
+ 634   3                  SPI_SI_BUF[4] = 0x00;
+ 635   3                  SPI_SI_BUF[5] = 0x3B;
+ 636   3                  SPI_SI_BUF[6] = 0x00;
+ 637   3                  SPI_SI_BUF[7] = 0x28;
+ 638   3                  SPI_SI_BUF[8] = 0xFF;
+ 639   3                  // 3rd
+ 640   3                  SPI_SI_BUF[9]   = RDSR;
+ 641   3      
+ 642   3                  SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 643   3                  SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 644   3                  SET_WBF_SIZE(1, 8, 1);
+ 645   3                  SET_RBF_SIZE(0, 0, 1);
+ 646   3                  
+ 647   3                  SPI_TRIGGER     = 0x01; //start flash programming
+ 648   3                  drvFlashWaitSPINotBusy();
+ 649   3                  
+ 650   3                  // 1st
+ 651   3                  SPI_SI_BUF[0]   = WRSR;
+ 652   3                  SPI_SI_BUF[1]   = value;
+ 653   3                  // 2nd
+ 654   3                  SPI_SI_BUF[2]   = RDSR;
+ 655   3                  
+ 656   3                  SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 657   3                  SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
+ 658   3                  SET_WBF_SIZE(2, 1, 0);
+ 659   3                  SET_RBF_SIZE(0, 1, 0);
+ 660   3              }
+ 661   2              else
+ 662   2              {
+ 663   3                  // 1st
+ 664   3                  SPI_SI_BUF[0]   = WREN;
+ 665   3                  // 2nd
+ 666   3                  SPI_SI_BUF[1]   = WRSR;
+ 667   3                  SPI_SI_BUF[2]   = value;
+ 668   3                  // 3rd
+ 669   3                  SPI_SI_BUF[3]   = RDSR;
+ 670   3      
+ 671   3                  SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 12  
+
+ 672   3                  SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 673   3                  SET_WBF_SIZE(1, 2, 1);
+ 674   3                  SET_RBF_SIZE(0, 0, 1);
+ 675   3              }
+ 676   2          }
+ 677   1          else if( g_ucFlashID == FLASH_GIGADEVICE && (g_ucFlashDeviceID == GD25M21B || g_ucFlashDeviceID == GD2
+             -5M41B))
+ 678   1          {
+ 679   2              BYTE SR15_8;
+ 680   2      
+ 681   2              SPI_SI_BUF[0]   = RDSR;
+ 682   2      
+ 683   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 684   2              SPI_CTRL1       = (RDSR_IN_1ST|EN_AUTO_CHECK);
+ 685   2              SET_WBF_SIZE(1, 0, 0);
+ 686   2              SET_RBF_SIZE(2, 0, 0);
+ 687   2              SPI_TRIGGER     = 0x01; //start flash programming
+ 688   2              drvFlashWaitSPINotBusy();
+ 689   2      
+ 690   2              // recover status register S15~S8
+ 691   2              SR15_8 = SPI_SO_BUF[1];
+ 692   2      
+ 693   2              // 1st
+ 694   2              SPI_SI_BUF[0]   = WREN;
+ 695   2              // 2nd
+ 696   2              SPI_SI_BUF[1]   = WRSR;
+ 697   2              SPI_SI_BUF[2]   = value;
+ 698   2              SPI_SI_BUF[3]   = SR15_8;
+ 699   2              // 3rd
+ 700   2              SPI_SI_BUF[4]   = RDSR;
+ 701   2      
+ 702   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 703   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 704   2              SET_WBF_SIZE(1, 3, 1);
+ 705   2              SET_RBF_SIZE(0, 0, 1);
+ 706   2          }
+ 707   1          else
+ 708   1          {
+ 709   2              // 1st
+ 710   2              SPI_SI_BUF[0]   = WREN;
+ 711   2              // 2nd
+ 712   2              SPI_SI_BUF[1]   = WRSR;
+ 713   2              SPI_SI_BUF[2]   = value;
+ 714   2              // 3rd
+ 715   2              SPI_SI_BUF[3]   = RDSR;
+ 716   2      
+ 717   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 718   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 719   2              SET_WBF_SIZE(1, 2, 1);
+ 720   2              SET_RBF_SIZE(0, 0, 1);
+ 721   2          }
+ 722   1          
+ 723   1          SPI_TRIGGER     = 0x01; //start flash programming
+ 724   1          drvFlashWaitSPINotBusy();
+ 725   1          
+ 726   1      }
+ 727          
+ 728          ///////////////////////////////////////////////////////////////////////////////
+ 729          // <DRV><Description>: Write 2Byte value to flash status register
+ 730          // <Parameter>:  -  <Flow>  -  <Description>
+ 731          //-----------------------------------------------------------------------------
+ 732          //  value  -    In    -   which value write to flash status register
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 13  
+
+ 733          ///////////////////////////////////////////////////////////////////////////////
+ 734          void FlashWrite2ByteSR(WORD u16SRValue)
+ 735          {
+ 736   1      
+ 737   1         if( g_ucFlashID == FLASH_FMSH && ((g_ucFlashDeviceID == FM25Q04)||(g_ucFlashDeviceID == FM25Q02)) )
+ 738   1          {
+ 739   2              // 1st
+ 740   2              SPI_SI_BUF[0]   = WREN;
+ 741   2              // 2nd
+ 742   2              SPI_SI_BUF[1]   = WRSR;
+ 743   2              SPI_SI_BUF[2]   = u16SRValue;
+ 744   2              SPI_SI_BUF[3]   = u16SRValue>>8;
+ 745   2              // 3rd
+ 746   2              SPI_SI_BUF[4]   = RDSR;
+ 747   2      
+ 748   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 749   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 750   2              SET_WBF_SIZE(1, 3, 1);
+ 751   2              SET_RBF_SIZE(0, 0, 1);
+ 752   2          }
+ 753   1          SPI_TRIGGER     = 0x01; //start flash programming
+ 754   1          drvFlashWaitSPINotBusy();
+ 755   1          
+ 756   1      }
+ 757          
+ 758          ///////////////////////////////////////////////////////////////////////////////
+ 759          // <DRV><Description>: Only used in PMC type flash. To disable protect of specific sector.
+ 760          //                     if wAddr < FDATA_FACTORY_ADDR will not unprotect
+ 761          // <Parameter>:  <Description>
+ 762          //  wAddr : Which sector address will be unportect
+ 763          ///////////////////////////////////////////////////////////////////////////////
+ 764          void FlashPMCUnprotectEnable( WORD wAddr )
+ 765          {
+ 766   1          if( g_ucFlashDeviceID == PM25_LD020 || g_ucFlashDeviceID == PM25_LQ020)
+ 767   1          {
+ 768   2              // 1st
+ 769   2              SPI_SI_BUF[0]   = WREN;
+ 770   2              // 2nd
+ 771   2              SPI_SI_BUF[1]   = PMC_UNPROTECT;
+ 772   2              SPI_SI_BUF[2]   = TOTAL_BANK_NUM - 1;
+ 773   2              SPI_SI_BUF[3]   = ( wAddr >> 8 ) & 0x0f0;
+ 774   2              SPI_SI_BUF[4]   = 0x00;
+ 775   2              // 3rd
+ 776   2              SPI_SI_BUF[5]   = RDSR;
+ 777   2      
+ 778   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 779   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 780   2              SET_WBF_SIZE(1, 4, 1);
+ 781   2              SET_RBF_SIZE(0, 0, 1);
+ 782   2      
+ 783   2              /*
+ 784   2              SPI_SI_BUF[0] = WREN;
+ 785   2              SPI_CTRL = 0xF8;
+ 786   2              SPI_SI_BUF[0] = PMC_UNPROTECT;
+ 787   2              SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+ 788   2              SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0f0;
+ 789   2              SPI_SI_BUF[3] = 0x00; //wAddr&0x0ff;
+ 790   2              SPI_CTRL = 0xFB;
+ 791   2              */
+ 792   2          }
+ 793   1          else
+ 794   1          {
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 14  
+
+ 795   2              hw_ClrFlashWP();
+ 796   2              Delay1ms( 1 );
+ 797   2          
+ 798   2              // 1st
+ 799   2              SPI_SI_BUF[0] = PMC_UNPROTECT;
+ 800   2              SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+ 801   2              SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+ 802   2              SPI_SI_BUF[3] = wAddr & 0x0ff;
+ 803   2              // 2nd
+ 804   2              SPI_SI_BUF[4]   = RDSR;
+ 805   2      
+ 806   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 807   2              SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
+ 808   2              SET_WBF_SIZE(4, 1, 0);
+ 809   2              SET_RBF_SIZE(0, 1, 0);
+ 810   2      
+ 811   2              /*
+ 812   2              SPI_SI_BUF[0] = PMC_UNPROTECT;
+ 813   2              SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+ 814   2              SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+ 815   2              SPI_SI_BUF[3] = wAddr & 0x0ff;
+ 816   2              SPI_CTRL = 0xBB;
+ 817   2              */
+ 818   2          }
+ 819   1          
+ 820   1          SPI_TRIGGER     = 0x01; //start flash programming
+ 821   1          drvFlashWaitSPINotBusy();
+ 822   1          
+ 823   1      }
+ 824          ///////////////////////////////////////////////////////////////////////////////
+ 825          // <DRV><Description>: Only used in PMC type flash. To disable un-protect of specific sector.
+ 826          ///////////////////////////////////////////////////////////////////////////////
+ 827          void FlashPMCUnprotectDisable( void )
+ 828          {
+ 829   1          // 1st
+ 830   1          SPI_SI_BUF[0] = PMC_PROTECT;
+ 831   1          // 2nd
+ 832   1          SPI_SI_BUF[1] = RDSR;
+ 833   1          
+ 834   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+ 835   1          SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
+ 836   1          SET_WBF_SIZE(1, 1, 0);
+ 837   1          SET_RBF_SIZE(0, 1, 0);
+ 838   1          SPI_TRIGGER     = 0x01; //start flash programming
+ 839   1          drvFlashWaitSPINotBusy();
+ 840   1          /*
+ 841   1          SPI_SI_BUF[0] = PMC_PROTECT;
+ 842   1          SPI_CTRL = 0xF8;
+ 843   1          */
+ 844   1      }
+ 845          
+ 846          void FlashDisableStausProtect_MXIC2026( void )
+ 847          {
+ 848   1          if( g_ucFlashID == FLASH_MXIC && (g_ucFlashDeviceID == MX_2026 || g_ucFlashDeviceID == MX_4026) )
+ 849   1          {
+ 850   2              hw_ClrFlashWP();
+ 851   2              Delay1ms( 1 );
+ 852   2              
+ 853   2              FlashWriteSR( 0x7F );
+ 854   2              if( bFlashWriteFactory )
+ 855   2                  FlashWriteSR( UNPROTECT_MXIC2026_3A_3F );
+ 856   2              else
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 15  
+
+ 857   2                  FlashWriteSR( FLASH_MXIC2026_USER_AREA );
+ 858   2          }
+ 859   1      }
+ 860          
+ 861          void FlashWriteIndividualSectorUnlock_FMSH(DWORD address )
+ 862          {
+ 863   1          BYTE retry=10;
+ 864   1          bit bcachestatus;
+ 865   1      
+ 866   1          if( address < FDATA_START_ADDR )
+ 867   1              return;
+ 868   1      
+ 869   1          bcachestatus = CACHE_STATUS();
+ 870   1          
+ 871   1          if( bcachestatus )
+ 872   1              CACHE_DISABLE();
+ 873   1        
+ 874   1          // 1st
+ 875   1          SPI_SI_BUF[0]   = WREN;
+ 876   1          // 2nd
+ 877   1          SPI_SI_BUF[1] = FMSH_INDIVIDUAL_SECTOR_UNLOCK;
+ 878   1          SPI_SI_BUF[2] = TOTAL_BANK_NUM - 1;
+ 879   1          SPI_SI_BUF[3] = ( address >> 8 ) & 0x0ff;
+ 880   1          SPI_SI_BUF[4] = address & 0x0ff;
+ 881   1          // 3rd
+ 882   1          SPI_SI_BUF[5]   = RDSR;
+ 883   1      
+ 884   1          SPI_CTRL0       = SPI_CTRL_VALUE;
+ 885   1          SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+ 886   1          SET_WBF_SIZE(1, 4, 1);
+ 887   1          SET_RBF_SIZE(0, 0, 1);
+ 888   1          SPI_TRIGGER     = 0x01; //start flash programming
+ 889   1          drvFlashWaitSPINotBusy();
+ 890   1      
+ 891   1          if( bcachestatus )
+ 892   1              CACHE_ENABLE();//EnableCache();
+ 893   1              
+ 894   1      }
+ 895          
+ 896          #define FlashEnableWP_PMC     FlashPMCUnprotectDisable
+ 897          
+ 898          void FlashEnableWP_EON(BYTE SRValue)
+ 899          {
+ 900   1          if(( SRValue & 0x94 ) != 0x94 )
+ 901   1          {
+ 902   2              //FLASH_printData("  EnableWP_EON_SR[%x] W_94",SSR);
+ 903   2              hw_ClrFlashWP();
+ 904   2              Delay1ms( 1 );
+ 905   2              FlashWriteSR( 0x94 );
+ 906   2          }
+ 907   1      }
+ 908          
+ 909          void FlashEnableWP_AMIC(BYTE SRValue)
+ 910          {
+ 911   1          if(( SRValue & 0xFC ) != 0xE8 )
+ 912   1          {
+ 913   2              //FLASH_printData("  EnableWP_AMIC_SR[%x] E8_0",SSR);
+ 914   2              hw_ClrFlashWP();
+ 915   2              Delay1ms( 1 );
+ 916   2              FlashWriteSR( 0xE8 );
+ 917   2              //FLASH_printData("  EnableWP_AMIC_SR[%x] E8_1",SSR);
+ 918   2          }
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 16  
+
+ 919   1      }
+ 920          
+ 921          void FlashEnableWP_ZB(BYTE SRValue)
+ 922          {
+ 923   1          if(( SRValue & 0x80 ) != 0x80 )
+ 924   1          {
+ 925   2              //FLASH_printData("  EnableWP_ZB_SR[%x] W_80",SSR);
+ 926   2              hw_ClrFlashWP();
+ 927   2              Delay1ms( 1 );
+ 928   2              FlashWriteSR( 0x80 );
+ 929   2          }
+ 930   1      }
+ 931          
+ 932          void FlashEnableWP_WINBOND(BYTE SRValue)
+ 933          {
+ 934   1          if(g_ucFlashDeviceID == W25X21CL || g_ucFlashDeviceID == W25X41CL)       
+ 935   1          {
+ 936   2              if((SRValue&FLASH_WINBOND_X21_X41_USER_AREA) != FLASH_WINBOND_X21_X41_USER_AREA)
+ 937   2              {
+ 938   3                  hw_ClrFlashWP();
+ 939   3                  Delay1ms( 1 );
+ 940   3                  FlashWriteSR( FLASH_WINBOND_X21_X41_USER_AREA );
+ 941   3              }
+ 942   2          }
+ 943   1          else if(g_ucFlashDeviceID == W25X40BV)
+ 944   1          {
+ 945   2              if((SRValue&0xAC) != 0xAC)
+ 946   2              {
+ 947   3                  hw_ClrFlashWP();
+ 948   3                  Delay1ms( 1 );
+ 949   3                  FlashWriteSR( 0xAC ); // protect lower 256K(0~0x3FFFF)
+ 950   3              }
+ 951   2          }
+ 952   1          else if(g_ucFlashDeviceID == W25X20BV)   
+ 953   1          {
+ 954   2              if((SRValue&0xA8) != 0xA8)      
+ 955   2              {
+ 956   3                  hw_ClrFlashWP();
+ 957   3                  Delay1ms( 1 );
+ 958   3                  FlashWriteSR( 0xA8 ); // protect lower 128K(0~0x1FFFF)
+ 959   3              }
+ 960   2          }
+ 961   1          else if(g_ucFlashDeviceID == W25X10BV)   
+ 962   1          {
+ 963   2              if((SRValue&0xA4) != 0xA4)
+ 964   2              {
+ 965   3                  hw_ClrFlashWP();
+ 966   3                  Delay1ms( 1 );
+ 967   3                  FlashWriteSR( 0xA4 ); // protect lower 64K(0~0x0FFFF)
+ 968   3              }
+ 969   2          }
+ 970   1          else
+ 971   1          {
+ 972   2              if((SRValue&0x8C) != 0x8C)
+ 973   2              {
+ 974   3                  hw_ClrFlashWP();
+ 975   3                  Delay1ms( 1 );
+ 976   3                  FlashWriteSR( 0x8C ); // protect all
+ 977   3              }
+ 978   2          }
+ 979   1      }
+ 980          
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 17  
+
+ 981          void FlashEnableWP_FMSH_FM25Q40_FM25Q20(WORD u16SRValue)
+ 982          {
+ 983   1          // all block set to protect
+ 984   1          if(u16SRValue != 0x0090)
+ 985   1          {
+ 986   2              hw_ClrFlashWP();
+ 987   2              Delay1ms( 1 );
+ 988   2              FlashWrite2ByteSR( 0x0090 );
+ 989   2          }
+ 990   1      }
+ 991          
+ 992          void FlashEnableWP_BOYA_BY25D40_BY25D20(BYTE SRValue)
+ 993          {
+ 994   1              if(( SRValue & 0xFC ) != 0xFC )
+ 995   1              {
+ 996   2                  hw_ClrFlashWP();
+ 997   2                  Delay1ms( 1 );
+ 998   2                  FlashWriteSR( 0x7C );       //SRP status need individual set to 0 before write the protected b
+             -it(BP0~BP3)
+ 999   2                  Delay1ms( 1 );
+1000   2                  FlashWriteSR( 0xFC );            
+1001   2              }
+1002   1      }
+1003          
+1004          #define FLASH_SR_PROTECT_WHOLE_AREA     ((g_FlashSize == FLASH_SIZE_2M)?(0x8C):(0x9C))
+1005          void FlashEnableWP_OTHERS(BYTE SRValue)
+1006          {
+1007   1          if(( SRValue & FLASH_SR_PROTECT_WHOLE_AREA ) != FLASH_SR_PROTECT_WHOLE_AREA )
+1008   1          {
+1009   2              //FLASH_printData("  EnableWP__SR[%x] W_8C",SSR);
+1010   2              hw_ClrFlashWP();
+1011   2              Delay1ms( 1 );
+1012   2              FlashWriteSR( FLASH_SR_PROTECT_WHOLE_AREA );
+1013   2          }
+1014   1      }
+1015          
+1016          void FlashEnableWP_GigaDevice_GD25M21B_GD25M41B(BYTE SRValue)
+1017          {
+1018   1          // all block set to protect
+1019   1          if((SRValue&0xFC) != 0xFC)
+1020   1          {
+1021   2              hw_ClrFlashWP();
+1022   2              Delay1ms( 1 );
+1023   2              FlashWriteSR( 0xFC );
+1024   2          }
+1025   1      
+1026   1          // setor lock
+1027   1          // 1st
+1028   1          SPI_SI_BUF[0] = GIGADEVICE_PROTECT;
+1029   1          // 2nd
+1030   1          SPI_SI_BUF[1] = RDSR;
+1031   1          
+1032   1          SPI_CTRL0       = SPI_CTRL_VALUE;
+1033   1          SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
+1034   1          SET_WBF_SIZE(1, 1, 0);
+1035   1          SET_RBF_SIZE(0, 1, 0);
+1036   1          SPI_TRIGGER     = 0x01; //start flash programming
+1037   1          drvFlashWaitSPINotBusy();
+1038   1      }
+1039          
+1040          #define FlashDisableWP_PMC      FlashPMCUnprotectEnable
+1041          #define FlashDisableWP_MXIC_MX2026      FlashDisableStausProtect_MXIC2026
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 18  
+
+1042          void FlashDisableWP_EON(BYTE SRValue)
+1043          {
+1044   1          hw_ClrFlashWP();
+1045   1          Delay1ms( 1 );
+1046   1          if( bFlashWriteFactory )
+1047   1          {
+1048   2              //FLASH_printData("  _EON_SR[%x] W_00",SSR);
+1049   2              FlashWriteSR( 0x00 );
+1050   2          }
+1051   1          else
+1052   1          {
+1053   2              if(( SRValue & 0x94 ) != 0x94 )
+1054   2              {
+1055   3                  //FLASH_printData("  _EON_SR[%x] W_94",SSR);
+1056   3                  FlashWriteSR( 0x94 );
+1057   3              }
+1058   2          }
+1059   1      }
+1060          void FlashDisableWP_WINBOND_W25X21CL(void)
+1061          {
+1062   1          // X21CL: // 0xC0: protect range 0~0x39FFF; 0xE0: 0~0x3BFFF
+1063   1          // X41CL: // 0xC0: protect range 0~0x79FFF; 0xE0: 0~0x7BFFF
+1064   1      
+1065   1          hw_ClrFlashWP();
+1066   1          Delay1ms( 1 );
+1067   1          if( bFlashWriteFactory )
+1068   1          {
+1069   2              FlashWriteSR( UNPROTECT_WINBOND_X21_3A_3F );
+1070   2          }
+1071   1          else
+1072   1          {
+1073   2              FlashWriteSR( FLASH_WINBOND_X21_X41_USER_AREA );
+1074   2          }
+1075   1      }
+1076          
+1077          void FlashDisableWP_ZB(BYTE SRValue)
+1078          {
+1079   1          hw_ClrFlashWP();
+1080   1          Delay1ms( 1 );
+1081   1          if( bFlashWriteFactory )
+1082   1          {
+1083   2              //FLASH_printData("  ZB_SR[%x] W_00",SSR);
+1084   2              FlashWriteSR( 0x00 );
+1085   2          }
+1086   1          else
+1087   1          {
+1088   2              if(( SRValue & 0x80 ) != 0x80 )
+1089   2              {
+1090   3                  //FLASH_printData("  ZB_SR[%x] W_80",SSR);
+1091   3                  FlashWriteSR( 0x80 );
+1092   3              }
+1093   2          }
+1094   1      }
+1095          
+1096          void FlashDisableWP_OTHERS(BYTE SRValue)
+1097          {
+1098   1          hw_ClrFlashWP();
+1099   1          Delay1ms( 1 );
+1100   1          if( SRValue != 0x00 )
+1101   1          {
+1102   2              FlashWriteSR( 0x00 );
+1103   2          }
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 19  
+
+1104   1      }
+1105          
+1106          // use sector unlock to disable write protection
+1107          void FlashDisableWP_GigaDevice_GD25M21B_GD25M41B(WORD wAddr)
+1108          {
+1109   1          // 1st
+1110   1          SPI_SI_BUF[0]   = WREN;
+1111   1          // 2nd
+1112   1          SPI_SI_BUF[1]   = GIGADEVICE_UNPROTECT;
+1113   1          SPI_SI_BUF[2]   = TOTAL_BANK_NUM - 1;
+1114   1          SPI_SI_BUF[3]   = ( wAddr >> 8 ) & 0x0f0;
+1115   1          SPI_SI_BUF[4]   = 0x00;
+1116   1          // 3rd
+1117   1          SPI_SI_BUF[5]   = RDSR;
+1118   1      
+1119   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1120   1          SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+1121   1          SET_WBF_SIZE(1, 4, 1);
+1122   1          SET_RBF_SIZE(0, 0, 1);
+1123   1      
+1124   1          SPI_TRIGGER     = 0x01; //start flash programming
+1125   1          drvFlashWaitSPINotBusy();
+1126   1      }
+1127          
+1128          //BOYA Flash will protect after write/erase command excuted, so disable SR value should writen before ever
+             -y wirte/erase command.
+1129          void FlashDisableWP_BOYA_BY25D40_BY25D20(WORD wAddr)
+1130          {
+1131   1          BYTE u8SRValue=0;
+1132   1      
+1133   1          if( g_ucFlashID == FLASH_BOYA && (g_ucFlashDeviceID == BY25D20 || g_ucFlashDeviceID == BY25D40) )
+1134   1          {
+1135   2             hw_ClrFlashWP();
+1136   2             Delay1ms( 1 );
+1137   2             
+1138   2             if (wAddr >= 0xF000)
+1139   2                 u8SRValue = 0xF8;    //Protect Area: 0x000000H-0x03EFFFH/0x07EFFFH
+1140   2             else if (wAddr >= 0xE000)
+1141   2                 u8SRValue = 0xF0;    //Protect Area: 0x000000H-0x03DFFFH/0x07DFFFH
+1142   2             else if (wAddr >= 0xC000)
+1143   2                 u8SRValue = 0xE0;    //Protect Area: 0x000000H-0x03BFFFH/0x07BFFFH
+1144   2             else// if (wAddr >= 0xA000)
+1145   2                 u8SRValue = 0xC0;
+1146   2             
+1147   2             FlashWriteSR( 0x7C );       //SRP status need individual set to 0 before set the protected bit(BP0~
+             -BP3)
+1148   2             Delay1ms( 1 );
+1149   2             FlashWriteSR( u8SRValue );            
+1150   2          }
+1151   1      }
+1152          
+1153          void FlashDisableWP_FMSH_FM25Q40_FM25Q20(WORD wAddr)
+1154          {
+1155   1          DWORD u32UnlockAddr=0;
+1156   1          //Protect Area: 0x000000H-FDATA_START_ADDR-1
+1157   1          hw_ClrFlashWP();
+1158   1          Delay1ms( 1 );
+1159   1          
+1160   1          FlashWrite2ByteSR ( 0x2080 );
+1161   1          for (u32UnlockAddr=wAddr; u32UnlockAddr<=0x0FFFF; u32UnlockAddr+=0x1000)
+1162   1          {
+1163   2              Delay1ms(1);
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 20  
+
+1164   2              FlashWriteIndividualSectorUnlock_FMSH(u32UnlockAddr);
+1165   2          }
+1166   1      }
+1167          
+1168          ///////////////////////////////////////////////////////////////////////////////
+1169          // <DRV><Description>: Enable flash write protect
+1170          ///////////////////////////////////////////////////////////////////////////////
+1171          void FlashEnableWP( void )
+1172          {
+1173   1          BYTE SSR;
+1174   1      
+1175   1          SSR = FlashReadSR();
+1176   1      
+1177   1          if( g_ucFlashID == FLASH_PMC )
+1178   1          {
+1179   2              FlashEnableWP_PMC();//FlashPMCUnprotectDisable();
+1180   2          }
+1181   1          else if( g_ucFlashID == FLASH_EON )
+1182   1          {
+1183   2              FlashEnableWP_EON(SSR);        
+1184   2          }
+1185   1          else if( g_ucFlashID == FLASH_AMIC )
+1186   1          {
+1187   2              FlashEnableWP_AMIC(SSR);
+1188   2          }
+1189   1          else if( g_ucFlashID == FLASH_MXIC && (g_ucFlashDeviceID == MX_2026 || g_ucFlashDeviceID == MX_4026) )
+1190   1          {
+1191   2              //SRAM type auto protect when write finish
+1192   2          }
+1193   1          else if( g_ucFlashID == FLASH_WINBOND )
+1194   1          {
+1195   2              FlashEnableWP_WINBOND(SSR);
+1196   2          }
+1197   1          else if( g_ucFlashID == FLASH_GIGADEVICE && (g_ucFlashDeviceID == GD25M21B || g_ucFlashDeviceID == GD2
+             -5M41B) )
+1198   1          {
+1199   2              FlashEnableWP_GigaDevice_GD25M21B_GD25M41B(SSR);
+1200   2          }
+1201   1          else if( g_ucFlashID == FLASH_FMSH && ((g_ucFlashDeviceID == FM25Q04)||(g_ucFlashDeviceID == FM25Q02))
+             - )
+1202   1          {
+1203   2              WORD u16SSR;
+1204   2              
+1205   2              u16SSR = FlashRead2ByteSR();
+1206   2              FlashEnableWP_FMSH_FM25Q40_FM25Q20(u16SSR);
+1207   2          }
+1208   1          else if( g_ucFlashID == FLASH_BOYA && ((g_ucFlashDeviceID == BY25D20)||(g_ucFlashDeviceID == BY25D40))
+             - )
+1209   1          {
+1210   2              FlashEnableWP_BOYA_BY25D40_BY25D20(SSR);
+1211   2          }
+1212   1        else if( g_ucFlashID == FLASH_ZB )
+1213   1          {
+1214   2              FlashEnableWP_ZB(SSR);
+1215   2          }
+1216   1          else
+1217   1          {
+1218   2              FlashEnableWP_OTHERS(SSR);
+1219   2          }
+1220   1          
+1221   1          hw_SetFlashWP();
+1222   1      
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 21  
+
+1223   1      }
+1224          
+1225          ///////////////////////////////////////////////////////////////////////////////
+1226          // <DRV><Description>: Disable flash write protect
+1227          ///////////////////////////////////////////////////////////////////////////////
+1228          void FlashDisableWP( WORD wAddr )
+1229          {
+1230   1          BYTE SSR;
+1231   1      
+1232   1          if( wAddr < FDATA_START_ADDR )
+1233   1              return;
+1234   1      
+1235   1          SSR = FlashReadSR();
+1236   1      
+1237   1          if( g_ucFlashID == FLASH_PMC )
+1238   1          {
+1239   2              FlashDisableWP_PMC(wAddr);//FlashPMCUnprotectEnable( wAddr );
+1240   2          }
+1241   1          else if( g_ucFlashID == FLASH_EON )
+1242   1          {
+1243   2              FlashDisableWP_EON(SSR);
+1244   2          }
+1245   1          else if( g_ucFlashID == FLASH_AMIC )
+1246   1          {
+1247   2              ;
+1248   2          }
+1249   1          else if( g_ucFlashID == FLASH_MXIC && (g_ucFlashDeviceID == MX_2026 || g_ucFlashDeviceID == MX_4026) )
+1250   1          {
+1251   2              FlashDisableWP_MXIC_MX2026();//FlashDisableStausProtect_MXIC2026();
+1252   2          }
+1253   1          else if( g_ucFlashID == FLASH_WINBOND && (g_ucFlashDeviceID == W25X21CL || g_ucFlashDeviceID == W25X41
+             -CL)) // just 21CL needs to change SR
+1254   1          {
+1255   2              FlashDisableWP_WINBOND_W25X21CL();
+1256   2          }
+1257   1          else if( g_ucFlashID == FLASH_GIGADEVICE && (g_ucFlashDeviceID == GD25M21B || g_ucFlashDeviceID == GD2
+             -5M41B) )
+1258   1          {
+1259   2              FlashDisableWP_GigaDevice_GD25M21B_GD25M41B(wAddr);
+1260   2          }
+1261   1          else if( g_ucFlashID == FLASH_FMSH  && ((g_ucFlashDeviceID == FM25Q04)||(g_ucFlashDeviceID == FM25Q02)
+             -) )
+1262   1          {
+1263   2              FlashDisableWP_FMSH_FM25Q40_FM25Q20(wAddr);
+1264   2          }
+1265   1          else if( g_ucFlashID == FLASH_BOYA && ((g_ucFlashDeviceID == BY25D20)||(g_ucFlashDeviceID == BY25D40))
+             - )
+1266   1          {
+1267   2              FlashDisableWP_BOYA_BY25D40_BY25D20(wAddr);
+1268   2          }
+1269   1        else if( g_ucFlashID == FLASH_ZB )
+1270   1          {
+1271   2              FlashDisableWP_ZB(SSR);
+1272   2          }
+1273   1          else
+1274   1          {
+1275   2              FlashDisableWP_OTHERS(SSR);
+1276   2          }
+1277   1      
+1278   1      }
+1279          
+1280          ///////////////////////////////////////////////////////////////////////////////
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 22  
+
+1281          // <DRV><Description>: Flash erase function
+1282          // <Parameter>:  -  <Flow>  -  <Description>
+1283          //-----------------------------------------------------------------------------
+1284          //  bDoWP   -   In  -   Doing FlashDisableWP at start and FlashEnableWP at end
+1285          //  wAddr   -   In  -   Erase 4K BYTE sector address
+1286          ///////////////////////////////////////////////////////////////////////////////
+1287          void FlashSectorErase( Bool bDoWP, WORD wAddr )
+1288          {
+1289   1      
+1290   1          if( wAddr < FDATA_START_ADDR )
+1291   1              return;
+1292   1      
+1293   1          if( bDoWP )
+1294   1              FlashDisableWP( wAddr );
+1295   1      
+1296   1          // 1st
+1297   1          SPI_SI_BUF[0]   = WREN;
+1298   1          // 2nd
+1299   1          if( g_ucFlashID == FLASH_SST )
+1300   1              SPI_SI_BUF[1] = SST_ERASE_SECTOR;
+1301   1          else if( g_ucFlashID == FLASH_PMC )
+1302   1              SPI_SI_BUF[1] = PMC_ERASE_SECTOR;
+1303   1          else if( g_ucFlashID == FLASH_MXIC )
+1304   1              SPI_SI_BUF[1] = MXIC_ERASE_SECTOR;
+1305   1          else if( g_ucFlashID == FLASH_EON )
+1306   1              SPI_SI_BUF[1] = EON_ERASE_SECTOR;
+1307   1          else if( g_ucFlashID == FLASH_AMIC )
+1308   1              SPI_SI_BUF[1] = AMIC_ERASE_SECTOR;
+1309   1          else if( g_ucFlashID == FLASH_WINBOND )
+1310   1              SPI_SI_BUF[1] = WINBOND_ERASE_SECTOR;
+1311   1          else if( g_ucFlashID == FLASH_BOYA)
+1312   1              SPI_SI_BUF[1] = BOYA_ERASE_SECTOR;
+1313   1        else if( g_ucFlashID == FLASH_ZB )
+1314   1              SPI_SI_BUF[1] = ZB_ERASE_SECTOR;
+1315   1          else
+1316   1              SPI_SI_BUF[1] = SST_ERASE_SECTOR;
+1317   1      
+1318   1          SPI_SI_BUF[2] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1319   1          SPI_SI_BUF[3] = ( wAddr >> 8 ) & 0x0ff;
+1320   1          SPI_SI_BUF[4] = wAddr & 0x0ff;
+1321   1          // 3rd
+1322   1          SPI_SI_BUF[5]   = RDSR;
+1323   1      
+1324   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1325   1          SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+1326   1          SET_WBF_SIZE(1, 4, 1);
+1327   1          SET_RBF_SIZE(0, 0, 1);
+1328   1          SPI_TRIGGER     = 0x01; //start flash programming
+1329   1          drvFlashWaitSPINotBusy();
+1330   1      
+1331   1          /*
+1332   1          FlashWriteEnable();
+1333   1          if( g_ucFlashID == FLASH_SST )
+1334   1              SPI_SI_BUF[0] = SST_ERASE_SECTOR;
+1335   1          else if( g_ucFlashID == FLASH_PMC )
+1336   1              SPI_SI_BUF[0] = PMC_ERASE_SECTOR;
+1337   1          else if( g_ucFlashID == FLASH_MXIC )
+1338   1              SPI_SI_BUF[0] = MXIC_ERASE_SECTOR;
+1339   1          else if( g_ucFlashID == FLASH_EON )
+1340   1              SPI_SI_BUF[0] = EON_ERASE_SECTOR;
+1341   1          else if( g_ucFlashID == FLASH_AMIC )
+1342   1              SPI_SI_BUF[0] = AMIC_ERASE_SECTOR;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 23  
+
+1343   1          else
+1344   1              SPI_SI_BUF[0] = SST_ERASE_SECTOR;
+1345   1      
+1346   1          SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1347   1          SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+1348   1          SPI_SI_BUF[3] = wAddr & 0x0ff;
+1349   1      
+1350   1          SPI_CTRL = 0xFB; //0xFC;
+1351   1          */
+1352   1      
+1353   1          if( bDoWP )
+1354   1              FlashEnableWP();
+1355   1      
+1356   1      }
+1357          
+1358          ///////////////////////////////////////////////////////////////////////////////
+1359          // <DRV><Description>: Write one byte to flash
+1360          // <Parameter>: -  <Flow>   -   <Description>
+1361          //-----------------------------------------------------------------------------
+1362          //  bDoWP   -   In  -   Doing FlashDisableWP at start and FlashEnableWP at end
+1363          //  wAddr   -   In  -   Flash Address to be write, high byte address will be (TOTAL_BANK_NUM-1)
+1364          //                      wAddr < FDATA_FACTORY_ADDR will be limit, so address < 0x3B000 will be limit
+1365          //  value   -   In  -   The value write to flash
+1366          ///////////////////////////////////////////////////////////////////////////////
+1367          void FlashWriteByte( Bool bDoWP, WORD wAddr, BYTE value )
+1368          {
+1369   1      
+1370   1          if( wAddr < FDATA_START_ADDR )
+1371   1              return;
+1372   1      
+1373   1          if( bDoWP )
+1374   1              FlashDisableWP( wAddr );
+1375   1          else if( g_ucFlashID == FLASH_BOYA && (g_ucFlashDeviceID == BY25D20 || g_ucFlashDeviceID == BY25D40) )
+1376   1              FlashDisableWP_BOYA_BY25D40_BY25D20(wAddr);
+1377   1          else
+1378   1              FlashDisableStausProtect_MXIC2026();
+1379   1      
+1380   1          // 1st
+1381   1          SPI_SI_BUF[0]   = WREN;
+1382   1          // 2nd
+1383   1          SPI_SI_BUF[1] = BYTE_WRITE;
+1384   1          SPI_SI_BUF[2] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1385   1          SPI_SI_BUF[3] = ( wAddr >> 8 ) & 0x0ff;
+1386   1          SPI_SI_BUF[4] = wAddr & 0x0ff;
+1387   1          SPI_SI_BUF[5] = value;
+1388   1          // 3rd
+1389   1          SPI_SI_BUF[6]   = RDSR;
+1390   1      
+1391   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1392   1          SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+1393   1          SET_WBF_SIZE(1, 5, 1);
+1394   1          SET_RBF_SIZE(0, 0, 1);
+1395   1          SPI_TRIGGER     = 0x01; //start flash programming
+1396   1          drvFlashWaitSPINotBusy();
+1397   1          
+1398   1          /*
+1399   1          FlashWriteEnable();
+1400   1          //CleanSPI_SI_BUF();
+1401   1          //MCU_CACHE_CTL = 0x00;
+1402   1          SPI_SI_BUF[0] = BYTE_WRITE;
+1403   1          SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1404   1          SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 24  
+
+1405   1          SPI_SI_BUF[3] = wAddr & 0x0ff;
+1406   1          SPI_SI_BUF[4] = value;
+1407   1          SPI_CTRL = 0xFC;
+1408   1          //MCU_CACHE_CTL = 0x20;
+1409   1          //retry=10;
+1410   1          //while((SPI_CTRL&BIT7)&&retry--)
+1411   1          //  ForceDelay1ms(1);
+1412   1          */
+1413   1      
+1414   1          if( bDoWP )
+1415   1              FlashEnableWP();
+1416   1          //FLASH_printData("value=%x\n",value);
+1417   1          //FLASH_printData("S4=%x",SPI_SI_BUF[4]);
+1418   1      
+1419   1      }
+1420          void FlashWriteAnyByte( Bool bDoWP, DWORD dwAddr, BYTE value )
+1421          {
+1422   1          if( bDoWP )
+1423   1              FlashDisableWP( dwAddr );
+1424   1          else if( g_ucFlashID == FLASH_BOYA && (g_ucFlashDeviceID == BY25D20 || g_ucFlashDeviceID == BY25D40) )
+1425   1              FlashDisableWP_BOYA_BY25D40_BY25D20(dwAddr);
+1426   1          else
+1427   1              FlashDisableStausProtect_MXIC2026();
+1428   1      
+1429   1          // 1st
+1430   1          SPI_SI_BUF[0]   = WREN;
+1431   1          // 2nd
+1432   1          SPI_SI_BUF[1] = BYTE_WRITE;
+1433   1          SPI_SI_BUF[2] = (dwAddr>>16)&0x0ff; //USER_DATA_BANK; //TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1434   1          SPI_SI_BUF[3] = ( dwAddr >> 8 ) & 0x0ff;
+1435   1          SPI_SI_BUF[4] = dwAddr & 0x0ff;
+1436   1          SPI_SI_BUF[5] = value;
+1437   1          // 3rd
+1438   1          SPI_SI_BUF[6]   = RDSR;
+1439   1      
+1440   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1441   1          SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+1442   1          SET_WBF_SIZE(1, 5, 1);
+1443   1          SET_RBF_SIZE(0, 0, 1);
+1444   1          SPI_TRIGGER     = 0x01; //start flash programming
+1445   1          drvFlashWaitSPINotBusy();
+1446   1      
+1447   1          /*
+1448   1          FlashWriteEnable();
+1449   1          //CleanSPI_SI_BUF();
+1450   1          //MCU_CACHE_CTL = 0x00;
+1451   1          SPI_SI_BUF[0] = BYTE_WRITE;
+1452   1          SPI_SI_BUF[1] = USER_DATA_BANK; //TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1453   1          SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+1454   1          SPI_SI_BUF[3] = wAddr & 0x0ff;
+1455   1          SPI_SI_BUF[4] = value;
+1456   1          SPI_CTRL = 0xFC;
+1457   1          //MCU_CACHE_CTL = 0x20;
+1458   1          //retry=10;
+1459   1          //while((SPI_CTRL&BIT7)&&retry--)
+1460   1          //  ForceDelay1ms(1);
+1461   1          */
+1462   1      
+1463   1          if( bDoWP )
+1464   1              FlashEnableWP();
+1465   1          //FLASH_printData("value=%x\n",value);
+1466   1          //FLASH_printData("S4=%x",SPI_SI_BUF[4]);
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 25  
+
+1467   1      }
+1468          
+1469          #if 0//HDCPKEY_IN_Flash
+              void FlashHDCPWriteByte( WORD wAddr, BYTE value )
+              {
+              
+                  if( wAddr < FDATA_START_ADDR )
+                      return;
+              
+                  FlashDisableStausProtect_MXIC2026();//For MXIC 2026
+              
+                  // 1st
+                  SPI_SI_BUF[0]   = WREN;
+                  // 2nd
+                  SPI_SI_BUF[1] = BYTE_WRITE;
+                  SPI_SI_BUF[2] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+                  SPI_SI_BUF[3] = ( wAddr >> 8 ) & 0x0ff;
+                  SPI_SI_BUF[4] = wAddr & 0x0ff;
+                  SPI_SI_BUF[5] = value;
+                  // 3rd
+                  SPI_SI_BUF[6]   = RDSR;
+              
+                  SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+                  SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+                  SET_WBF_SIZE(1, 5, 1);
+                  SET_RBF_SIZE(0, 0, 1);
+                  SPI_TRIGGER     = 0x01; //start flash programming
+                  drvFlashWaitSPINotBusy();
+                  
+                  /*
+                  FlashWriteEnable();
+                  SPI_SI_BUF[0] = BYTE_WRITE;
+                  SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+                  SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+                  SPI_SI_BUF[3] = wAddr & 0x0ff;
+                  SPI_SI_BUF[4] = value;
+                  SPI_CTRL = 0xFC;
+                  */
+              
+              }
+              #endif
+1508          ///////////////////////////////////////////////////////////////////////////////
+1509          // <DRV><Description>: Read one byte from flash.
+1510          // <Returns> : Data value in the address
+1511          // <Parameter>:  -  <Flow>  -  <Description>
+1512          //-----------------------------------------------------------------------------
+1513          //  wAddr   -   In  -   Only in the same bank ot MsFlash.c
+1514          ///////////////////////////////////////////////////////////////////////////////
+1515          #if FLASH_READ_BYTE_BY_CODE_POINTER
+1516          #define xfr_FlashCode ((BYTE code*)0x0000)
+1517          BYTE FlashReadByte( WORD wAddr )
+1518          {
+1519   1          return xfr_FlashCode[wAddr];
+1520   1      }
+1521          #else
+              BYTE FlashReadByte( WORD wAddr )
+              {
+                  //1st
+                  SPI_SI_BUF[0]   = (SPI_MODE == SPI_MODE_FR) ? H_READ:READ;
+                  SPI_SI_BUF[1]   = TOTAL_BANK_NUM - 1;
+                  SPI_SI_BUF[2]   = (wAddr>>8)&0xff;
+                  SPI_SI_BUF[3]   = wAddr&0xff;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 26  
+
+                  //2nd
+                  SPI_SI_BUF[4]   = RDSR;
+                  if(SPI_MODE == SPI_MODE_FR)
+                      SPI_SI_BUF[5]   = RDSR;
+                  SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+                  SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
+                  SET_WBF_SIZE( (SPI_MODE == SPI_MODE_FR) ? 5:4, 1, 0);
+                  SET_WBF_SIZE( 5, 1, 0);
+                  SET_RBF_SIZE(1, 1, 0);
+                  SPI_TRIGGER     = 0x01; //start flash programming
+                  
+                  drvFlashWaitSPINotBusy();
+                  
+                  return SPI_SO_BUF[0];
+              }
+              #endif
+1545          
+1546          // dwAddr : Bank + 4B address
+1547          BYTE FlashReadAnyByte( DWORD dwAddr )
+1548          {
+1549   1          //1st
+1550   1          SPI_SI_BUF[0]   = (SPI_MODE == SPI_MODE_FR) ? H_READ:READ;
+1551   1          SPI_SI_BUF[1]   = (dwAddr>>16)&0xff; //USER_DATA_BANK; //TOTAL_BANK_NUM - 1;
+1552   1          SPI_SI_BUF[2]   = (dwAddr>>8)&0xff;
+1553   1          SPI_SI_BUF[3]   = dwAddr&0xff;
+1554   1          //2nd
+1555   1          SPI_SI_BUF[4]   = RDSR;
+1556   1          if(SPI_MODE == SPI_MODE_FR)
+1557   1              SPI_SI_BUF[5]   = RDSR;
+1558   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1559   1          SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
+1560   1          SET_WBF_SIZE( (SPI_MODE == SPI_MODE_FR) ? 5:4, 1, 0);
+1561   1          SET_WBF_SIZE( 5, 1, 0);
+1562   1          SET_RBF_SIZE(1, 1, 0);
+1563   1          SPI_TRIGGER     = 0x01; //start flash programming
+1564   1      
+1565   1          drvFlashWaitSPINotBusy();
+1566   1      
+1567   1          return SPI_SO_BUF[0];
+1568   1      }
+1569          
+1570          //////////////////////////////////////////////////////////////////////////////
+1571          // <DRV><Description>: Write a table to flash
+1572          // <Parameter>:     -   <Flow>  -   <Description>
+1573          // ---------------------------------------------------------------------------
+1574          //  bDoWP   -   In  -   Doing FlashDisableWP at start and FlashEnableWP at end
+1575          //  wAddr   -   In  -   Flash Address to be write, high byte address will be (TOTAL_BANK_NUM-1)
+1576          //                      wAddr < FDATA_FACTORY_ADDR will be limit, so address < 0x3B000 will be limit
+1577          //  buffer  -   In  -   Data pointer of the table
+1578          //  count   -   In  -   Number of data
+1579          //////////////////////////////////////////////////////////////////////////////
+1580          void Flash_WriteTbl( Bool bDoWP, WORD wAddr, BYTE *buffer, WORD count )
+1581          {
+1582   1          BYTE i = 0;
+1583   1      
+1584   1          if( wAddr < FDATA_START_ADDR )
+1585   1              return;
+1586   1      
+1587   1          if( bDoWP )
+1588   1              FlashDisableWP( wAddr ); // 2005/5/11 上午 10:19:39 by keng
+1589   1          //MCU_CACHE_CTL = 0x00;
+1590   1          while( count > 0 )
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 27  
+
+1591   1          {
+1592   2              if( g_ucFlashID == FLASH_BOYA && (g_ucFlashDeviceID == BY25D20 || g_ucFlashDeviceID == BY25D40) )
+1593   2                  FlashDisableWP_BOYA_BY25D40_BY25D20(wAddr);
+1594   2              else
+1595   2                  FlashDisableStausProtect_MXIC2026();
+1596   2      
+1597   2              // 1st
+1598   2              SPI_SI_BUF[0]   = WREN;
+1599   2              // 2nd
+1600   2              SPI_SI_BUF[1] = BYTE_WRITE;
+1601   2              SPI_SI_BUF[2] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1602   2              SPI_SI_BUF[3] = ( wAddr >> 8 ) & 0x0ff;
+1603   2              SPI_SI_BUF[4] = wAddr & 0x0ff;
+1604   2              SPI_SI_BUF[5] = *( buffer + ( i++ ) );
+1605   2              // 3rd
+1606   2              SPI_SI_BUF[6]   = RDSR;
+1607   2      
+1608   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1609   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+1610   2              SET_WBF_SIZE(1, 5, 1);
+1611   2              SET_RBF_SIZE(0, 0, 1);
+1612   2              SPI_TRIGGER     = 0x01; //start flash programming
+1613   2              drvFlashWaitSPINotBusy();
+1614   2              
+1615   2              /*
+1616   2              FlashWriteEnable();
+1617   2              SPI_SI_BUF[0] = BYTE_WRITE;
+1618   2              SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1619   2              SPI_SI_BUF[2] = ( wAddr >> 8 ) & 0x0ff;
+1620   2              SPI_SI_BUF[3] = wAddr & 0x0ff;
+1621   2              SPI_SI_BUF[4] = *( buffer + ( i++ ) );
+1622   2              SPI_CTRL = 0xFC;
+1623   2              */
+1624   2              
+1625   2              wAddr += 1;
+1626   2              count -= 1;
+1627   2      
+1628   2          }
+1629   1          //MCU_CACHE_CTL = 0x20;
+1630   1      
+1631   1      
+1632   1          if( bDoWP )
+1633   1              FlashEnableWP();// 2005/5/11 上午 10:19:43 by keng
+1634   1      }
+1635          void Flash_MoveTbl( Bool bDoWP, WORD wSrcAddr, WORD wDestAddr, WORD count )
+1636          {
+1637   1          BYTE ucTemp;
+1638   1      
+1639   1          if( wDestAddr < FDATA_START_ADDR )
+1640   1              return;
+1641   1      
+1642   1          if( bDoWP )
+1643   1              FlashDisableWP( wDestAddr ); // 2005/5/11 上午 10:19:39 by keng
+1644   1          while( count > 0 )
+1645   1          {
+1646   2              ucTemp = FlashReadByte( wSrcAddr );
+1647   2              if( g_ucFlashID == FLASH_BOYA && (g_ucFlashDeviceID == BY25D20 || g_ucFlashDeviceID == BY25D40) )
+1648   2                  FlashDisableWP_BOYA_BY25D40_BY25D20(wSrcAddr);
+1649   2              else
+1650   2                  FlashDisableStausProtect_MXIC2026();
+1651   2      
+1652   2              // 1st
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 28  
+
+1653   2              SPI_SI_BUF[0]   = WREN;
+1654   2              // 2nd
+1655   2              SPI_SI_BUF[1] = BYTE_WRITE;
+1656   2              SPI_SI_BUF[2] = TOTAL_BANK_NUM - 1; //(wAddr>>16)&0x0ff;
+1657   2              SPI_SI_BUF[3] = ( wDestAddr >> 8 ) & 0x0ff;
+1658   2              SPI_SI_BUF[4] = wDestAddr & 0x0ff;
+1659   2              SPI_SI_BUF[5] = ucTemp;
+1660   2              // 3rd
+1661   2              SPI_SI_BUF[6]   = RDSR;
+1662   2      
+1663   2              SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
+1664   2              SPI_CTRL1       = (EN_2ND_CMD|EN_3RD_CMD|RDSR_IN_3RD|EN_AUTO_CHECK);
+1665   2              SET_WBF_SIZE(1, 5, 1);
+1666   2              SET_RBF_SIZE(0, 0, 1);
+1667   2              SPI_TRIGGER     = 0x01; //start flash programming
+1668   2              drvFlashWaitSPINotBusy();
+1669   2      
+1670   2              /*
+1671   2              FlashWriteEnable();
+1672   2              SPI_SI_BUF[0] = BYTE_WRITE;
+1673   2              SPI_SI_BUF[1] = TOTAL_BANK_NUM - 1; //(wDestAddr>>16)&0x0ff; // bank 3
+1674   2              SPI_SI_BUF[2] = ( wDestAddr >> 8 ) & 0x0ff;
+1675   2              SPI_SI_BUF[3] = wDestAddr & 0x0ff;
+1676   2              SPI_SI_BUF[4] = ucTemp;
+1677   2              SPI_CTRL = 0xFC;
+1678   2              */
+1679   2              
+1680   2              wSrcAddr += 1;
+1681   2              wDestAddr += 1;
+1682   2              count -= 1;
+1683   2          }
+1684   1          if( bDoWP )
+1685   1              FlashEnableWP();// 2005/5/11 上午 10:19:43 by keng
+1686   1      }
+1687          //////////////////////////////////////////////////////////////////////////////
+1688          // <DRV><Description>: Read a table from flash
+1689          // <Parameter>:     -   <Flow>  -   <Description>
+1690          // ---------------------------------------------------------------------------
+1691          //  wAddr   -   In  -   Flash Address
+1692          //  buffer  -   Out -   Data point of the table
+1693          //  count   -   In  -   Number of BYTE data
+1694          //////////////////////////////////////////////////////////////////////////////
+1695          void Flash_ReadTbl( WORD wAddr, BYTE *buffer, WORD count )
+1696          {
+1697   1          WORD i;
+1698   1          for(i = 0; i < count; i++)
+1699   1      #if FLASH_READ_BYTE_BY_CODE_POINTER
+1700   1              *( buffer + i ) = xfr_FlashCode[wAddr+i];
+1701   1      #else
+                      *(buffer+i) = FlashReadByte(wAddr+i);
+              #endif
+1704   1      }
+1705          
+1706          
+1707          //////////////////////////////////////////////////////////////////////////////
+1708          // <API><Description>: Search specific FLASH_BUFFTER_TYPE form FDATA_BUF_ADDR(x)
+1709          // <Returns> : Specific buffer address when found; 0 when not found
+1710          // <Parameter>:     -   <Flow>  -   <Description>
+1711          // ---------------------------------------------------------------------------
+1712          //  ucType  -   In  -   buffer type, such as FBufType_MonitorSetting, FBufType_TimingMode ..
+1713          //////////////////////////////////////////////////////////////////////////////
+1714          WORD Flash_SearchBufferAddr( FLASH_BUFFTER_TYPE ucType )
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 29  
+
+1715          {
+1716   1          BYTE ucTemp;
+1717   1      
+1718   1          for( ucTemp = 0; ucTemp < FDATA_DYNAMIC_SECTOR_NUM; ucTemp++ )
+1719   1          {
+1720   2              if( FlashReadByte( FDATA_BUF_ADDR( ucTemp ) ) == ucType )
+1721   2                  return FDATA_BUF_ADDR( ucTemp );
+1722   2          }
+1723   1          return 0;
+1724   1      }
+1725          //////////////////////////////////////////////////////////////////////////////
+1726          // <API><Description>: Compare the FlashReadByte(wAddr + i*wRange)==ucIdent
+1727          //                                 FlashReadByte(wAddr + i*wRange + wRange - 1) == ucChecksum
+1728          //                     return i if equal ,else return IDENT_NOT_FOUND
+1729          // Search index from wStartIdx to wEndIdx to replace i. Can from 0 search to 255(include)
+1730          // Also can from 255 to 0(include)
+1731          // <Returns> : Specific buffer address when found; IDENT_NOT_FOUND when not found
+1732          // <Parameter>:     -   <Flow>  -   <Description>
+1733          // ---------------------------------------------------------------------------
+1734          //  wAddr       -   In  -   Flash start Address
+1735          //  wStartIdx   -   In  -   wAddr + wStartIdx*wRange
+1736          //  wEndIdx     -   In  -   wAddr + wEndIdx*wRange
+1737          //  wRange      -   In  -   Each search range
+1738          //  ucIdent     -   In  -   Data of want to compare
+1739          //  ucChecksum  -   In  -   Data of want to compare
+1740          //////////////////////////////////////////////////////////////////////////////
+1741          WORD Flash_SearchIdentChecksum( WORD wAddr, WORD wStartIdx, WORD wEndIdx, WORD wRange, BYTE ucIdent, BYTE 
+             -ucChecksum )
+1742          {
+1743   1          WORD i;
+1744   1      
+1745   1          if( wStartIdx < wEndIdx )
+1746   1          {
+1747   2              i = wStartIdx;
+1748   2              while( i >= wStartIdx && i <= wEndIdx )
+1749   2              {
+1750   3                  if( FlashReadByte( wAddr + i * wRange ) == ucIdent && FlashReadByte( wAddr + i * wRange + wRan
+             -ge - 1 ) == ucChecksum )
+1751   3                      return i;
+1752   3                  i++;
+1753   3              }
+1754   2          }
+1755   1          else
+1756   1          {
+1757   2              i = wStartIdx;
+1758   2              while( i >= wEndIdx && i <= wStartIdx )
+1759   2              {
+1760   3                  if( FlashReadByte( wAddr + i * wRange ) == ucIdent && FlashReadByte( wAddr + i * wRange + wRan
+             -ge - 1 ) == ucChecksum )
+1761   3                      return i;
+1762   3                  i--;
+1763   3              }
+1764   2      
+1765   2          }
+1766   1          //FLASH_printMsg("------- IDENT_CHECKSUM_NOT_FOUND -------");
+1767   1          return IDENT_NOT_FOUND;
+1768   1      }
+1769          
+1770          //////////////////////////////////////////////////////////////////////////////
+1771          //  <API><Description>: Get each buffer address and assign to variable
+1772          //  FLASH_MonitorSettingAddr
+1773          //  FLASH_MonitorSetting2Addr
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 30  
+
+1774          //  FLASH_TimingModeAddr
+1775          //  FLASH_FactorySettingAddr
+1776          //  FLASH_FreeBufferAddr
+1777          //////////////////////////////////////////////////////////////////////////////
+1778          void Flash_GetBufferAddr( void )
+1779          {
+1780   1          WORD wAddr;
+1781   1          FLASH_HDCP_EDIDAddr = FDATA_HDCPKEY_START_ADDR;
+1782   1          FLASH_FactorySettingAddr = FDATA_FACTORY_ADDR;
+1783   1          FLASH_MonitorSettingAddr = 0;
+1784   1          FLASH_MonitorSetting2Addr = 0;
+1785   1          FLASH_TimingModeAddr = 0;
+1786   1          FLASH_FreeBufferAddr = 0;
+1787   1      
+1788   1          FLASH_printData( "_FGBA_ FLASH_FactorySettingAddr %x ", ( WORD )( FLASH_FactorySettingAddr ) );
+1789   1      
+1790   1          wAddr = Flash_SearchBufferAddr( FBufType_MonitorSetting );
+1791   1          if( wAddr )
+1792   1          {
+1793   2              FLASH_MonitorSettingAddr = wAddr;
+1794   2      
+1795   2              FLASH_printData( "_FGBA_ FLASH_MonitorSettingAddr %x ", ( WORD )( FLASH_MonitorSettingAddr ) );
+1796   2      
+1797   2          }
+1798   1      
+1799   1          wAddr = Flash_SearchBufferAddr( FBufType_MonitorSetting2 );
+1800   1          if( wAddr )
+1801   1          {
+1802   2              FLASH_MonitorSetting2Addr = wAddr;
+1803   2      
+1804   2              FLASH_printData( "_FGBA_ FLASH_MonitorSetting2Addr %x ", ( WORD )( FLASH_MonitorSetting2Addr ) );
+1805   2      
+1806   2          }
+1807   1      
+1808   1          wAddr = Flash_SearchBufferAddr( FBufType_TimingMode );
+1809   1          if( wAddr )
+1810   1          {
+1811   2              FLASH_TimingModeAddr = wAddr;
+1812   2      
+1813   2              FLASH_printData( "_FGBA_ FLASH_TimingModeAddr %x ", ( WORD )( FLASH_TimingModeAddr ) );
+1814   2      
+1815   2          }
+1816   1      
+1817   1          wAddr = Flash_SearchBufferAddr( FBufType_EmptyBuffer );
+1818   1          if( wAddr )
+1819   1          {
+1820   2              FLASH_FreeBufferAddr = wAddr;
+1821   2      
+1822   2              FLASH_printData( "FLASH_FreeBufferAddr %x ", ( WORD )( FLASH_FreeBufferAddr ) );
+1823   2      
+1824   2          }
+1825   1          // 091022 coding, free buffer type should be 0xff or 0x00
+1826   1          else
+1827   1          {
+1828   2              if(( wAddr = Flash_SearchBufferAddr( FBufType_FullBuffer ) ) >= FDATA_DYNAMIC_ADDR )
+1829   2                  FLASH_FreeBufferAddr = wAddr;
+1830   2          }
+1831   1      
+1832   1          return;
+1833   1      }
+1834          
+1835          //////////////////////////////////////////////////////////////////////////////
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 31  
+
+1836          // <API><Description>: After execute Flash_GetBufferAddr, makesure each address reasonable
+1837          //////////////////////////////////////////////////////////////////////////////
+1838          void Flash_AllocateBufferAddr( void )
+1839          {
+1840   1          BYTE ucTemp;
+1841   1      
+1842   1          if( FLASH_MonitorSettingAddr == 0 )
+1843   1          {
+1844   2              for( ucTemp = 0; ucTemp < FDATA_DYNAMIC_SECTOR_NUM; ucTemp++ )
+1845   2              {
+1846   3      #if 0
+                          FLASH_printData( "Flash_Allocate 01 %x ", ( WORD )( FLASH_TimingModeAddr >> 8 ) );
+                          FLASH_printData( "Flash_Allocate 02 %x ", ( WORD )( FLASH_FreeBufferAddr >> 8 ) );
+                          FLASH_printData( "Flash_Allocate 03 %x ", ( WORD )( FDATA_BUF_ADDR( ucTemp ) >> 8 ) );
+              #endif
+1851   3                  if( FDATA_BUF_ADDR( ucTemp ) != FLASH_TimingModeAddr
+1852   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_FreeBufferAddr
+1853   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_MonitorSetting2Addr )
+1854   3                  {
+1855   4                      FLASH_MonitorSettingAddr = FDATA_BUF_ADDR( ucTemp );
+1856   4                      break;
+1857   4                  }
+1858   3              }
+1859   2      
+1860   2              FLASH_printData( "_FABA_ FLASH_MonitorSettingAddr %x ", ( WORD )( FLASH_MonitorSettingAddr ) );
+1861   2      
+1862   2          }
+1863   1          if( FLASH_MonitorSetting2Addr == 0 )
+1864   1          {
+1865   2              for( ucTemp = 0; ucTemp < FDATA_DYNAMIC_SECTOR_NUM; ucTemp++ )
+1866   2              {
+1867   3                  if( FDATA_BUF_ADDR( ucTemp ) != FLASH_MonitorSettingAddr
+1868   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_TimingModeAddr
+1869   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_FreeBufferAddr )
+1870   3                  {
+1871   4                      FLASH_MonitorSetting2Addr = FDATA_BUF_ADDR( ucTemp );
+1872   4                      break;
+1873   4                  }
+1874   3              }
+1875   2      
+1876   2              FLASH_printData( "_FABA_ FLASH_MonitorSetting2Addr %x ", ( WORD )( FLASH_MonitorSetting2Addr ) );
+1877   2      
+1878   2          }
+1879   1          if( FLASH_TimingModeAddr == 0 )
+1880   1          {
+1881   2              for( ucTemp = 0; ucTemp < FDATA_DYNAMIC_SECTOR_NUM; ucTemp++ )
+1882   2              {
+1883   3                  if( FDATA_BUF_ADDR( ucTemp ) != FLASH_MonitorSettingAddr
+1884   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_FreeBufferAddr
+1885   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_MonitorSetting2Addr )
+1886   3                  {
+1887   4                      FLASH_TimingModeAddr = FDATA_BUF_ADDR( ucTemp );
+1888   4                      break;
+1889   4                  }
+1890   3              }
+1891   2      
+1892   2              FLASH_printData( "_FABA_ FLASH_TimingModeAddr %x ", ( WORD )( FLASH_TimingModeAddr ) );
+1893   2      
+1894   2          }
+1895   1          if( FLASH_FreeBufferAddr == 0 )
+1896   1          {
+1897   2              for( ucTemp = 0; ucTemp < FDATA_DYNAMIC_SECTOR_NUM; ucTemp++ )
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 32  
+
+1898   2              {
+1899   3                  if( FDATA_BUF_ADDR( ucTemp ) != FLASH_MonitorSettingAddr
+1900   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_TimingModeAddr
+1901   3                          && FDATA_BUF_ADDR( ucTemp ) != FLASH_MonitorSetting2Addr )
+1902   3                  {
+1903   4                      FLASH_FreeBufferAddr = FDATA_BUF_ADDR( ucTemp );
+1904   4                      break;
+1905   4                  }
+1906   3              }
+1907   2      
+1908   2              FLASH_printData( "_FABA_ FLASH_FreeBufferAddr %x ", ( WORD )( FLASH_FreeBufferAddr ) );
+1909   2      
+1910   2          }
+1911   1      
+1912   1          if( FLASH_MonitorSettingAddr == 0 || FLASH_MonitorSetting2Addr == 0 || FLASH_TimingModeAddr == 0 || FL
+             -ASH_FreeBufferAddr == 0 )
+1913   1          {
+1914   2              FLASH_MonitorSettingAddr = FDATA_BUF_ADDR( 0 );
+1915   2              FLASH_MonitorSetting2Addr = FDATA_BUF_ADDR( 1 );
+1916   2              FLASH_TimingModeAddr = FDATA_BUF_ADDR( 2 );
+1917   2              FLASH_FreeBufferAddr = FDATA_BUF_ADDR( 3 );
+1918   2      
+1919   2              FLASH_printMsg( "_FABA_ Addr NEW" );
+1920   2              FLASH_printData( "_FABA_ FLASH_MonitorSettingAddr %x ", ( WORD )( FLASH_MonitorSettingAddr ) );
+1921   2              FLASH_printData( "_FABA_ FLASH_MonitorSetting2Addr %x ", ( WORD )( FLASH_MonitorSetting2Addr ) );
+1922   2              FLASH_printData( "_FABA_ FLASH_TimingModeAddr %x ", ( WORD )( FLASH_TimingModeAddr ) );
+1923   2              FLASH_printData( "_FABA_ FLASH_FactorySettingAddr %x ", ( WORD )( FLASH_FactorySettingAddr ) );
+1924   2              FLASH_printData( "_FABA_ FLASH_FreeBufferAddr %x ", ( WORD )( FLASH_FreeBufferAddr ) );
+1925   2              FLASH_printData( "_FABA_ FLASH_HDCP_EDIDAddr %x ", ( WORD )( FLASH_HDCP_EDIDAddr) );
+1926   2          }
+1927   1      
+1928   1      }
+1929          #if 0
+              Bool HDCP_BKSVIsValid(WORD addr)
+              {
+                  BYTE i, j, Count_1=0, Count_0=0, ReadValue;
+                  for(i = 0; i < 5; i++)
+                  {
+                      ReadValue = FlashReadByte(addr+i);
+                      for(j = 0; j < 8; j++)
+                      {
+                          if(_bit7_(ReadValue<<j))
+                              Count_1++;
+                          else
+                              Count_0++;
+                      }
+                  }
+                              
+                  if(Count_0 == 20 && Count_1 == 20)
+                      return TRUE;
+                  else
+                      return FALSE;
+                  
+              }
+              
+              Bool EDID_HeaderIsValid(WORD addr)
+              {
+                  if((FlashReadByte(addr) == 0x00) &&
+                      (FlashReadByte(addr+1) == 0xFF) &&
+                      (FlashReadByte(addr+2) == 0xFF) &&
+                      (FlashReadByte(addr+3) == 0xFF) &&
+                      (FlashReadByte(addr+4) == 0xFF) &&
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 33  
+
+                      (FlashReadByte(addr+5) == 0xFF) &&
+                      (FlashReadByte(addr+6) == 0xFF) &&
+                      (FlashReadByte(addr+7) == 0x00))
+                      return TRUE;
+                  else
+                      return FALSE;
+              }
+              #endif
+1967          //////////////////////////////////////////////////////////////////////////////
+1968          // <API><Description>: Check each buffer type correct or not,
+1969          //                Erase the sector when type wrong
+1970          //////////////////////////////////////////////////////////////////////////////
+1971          void Flash_CheckBufferType( void )
+1972          {
+1973   1          if( FBufType_HDCP_EDID!= FlashReadByte( FLASH_HDCP_EDIDAddr) )
+1974   1          {
+1975   2      #if 1
+1976   2              bFlashWriteFactory= TRUE;
+1977   2              FlashSectorErase( TRUE, FLASH_HDCP_EDIDAddr );
+1978   2              FlashWriteByte( TRUE, FLASH_HDCP_EDIDAddr, FBufType_HDCP_EDID);
+1979   2              bFlashWriteFactory = FALSE;
+1980   2              FLASH_printMsg( "Flash_CheckBufferType SetHDCPType" );
+1981   2      #else
+                      bFlashWriteFactory= TRUE;
+                      if(HDCP_BKSVIsValid(HDCPKEYSET_START))
+                      {
+                          FlashWriteByte( TRUE, HDCPKEY_STATUS_ADDR, FLASH_KEY_VALID );
+                      }
+              
+                      if(EDID_HeaderIsValid(DDCDPKEYSET_START))
+                      {
+                          FlashWriteByte( TRUE, DDCDPKEY_STATUS_ADDR, FLASH_KEY_VALID );
+                      }
+                      FlashWriteByte( TRUE, FLASH_HDCP_EDIDAddr, FBufType_HDCP_EDID);
+                      bFlashWriteFactory = FALSE;
+                      FLASH_printMsg( "Flash_CheckBufferType SetHDCPType" );
+              #endif
+1996   2      
+1997   2          }
+1998   1          if( FBufType_FactorySetting != FlashReadByte( FLASH_FactorySettingAddr ) )
+1999   1          {
+2000   2              bFlashWriteFactory = TRUE;
+2001   2              FlashSectorErase( TRUE, FLASH_FactorySettingAddr );
+2002   2              FlashWriteByte( TRUE, FLASH_FactorySettingAddr, FBufType_FactorySetting );
+2003   2              bFlashWriteFactory = FALSE;
+2004   2              FLASH_printMsg( "Flash_CheckBufferType SetFactoryType" );
+2005   2          }
+2006   1          if( FBufType_MonitorSetting != FlashReadByte( FLASH_MonitorSettingAddr ) )
+2007   1          {
+2008   2              FlashSectorErase( TRUE, FLASH_MonitorSettingAddr );
+2009   2              FlashWriteByte( TRUE, FLASH_MonitorSettingAddr, FBufType_MonitorSetting );
+2010   2              FLASH_printMsg( "Flash_CheckBufferType SetMonitorType" );
+2011   2          }
+2012   1          if( FBufType_MonitorSetting2 != FlashReadByte( FLASH_MonitorSetting2Addr ) )
+2013   1          {
+2014   2              FlashSectorErase( TRUE, FLASH_MonitorSetting2Addr );
+2015   2              FlashWriteByte( TRUE, FLASH_MonitorSetting2Addr, FBufType_MonitorSetting2 );
+2016   2              FLASH_printMsg( "Flash_CheckBufferType SetMonitorSetting2Type" );
+2017   2          }
+2018   1          if( FBufType_TimingMode != FlashReadByte( FLASH_TimingModeAddr ) )
+2019   1          {
+2020   2              FlashSectorErase( TRUE, FLASH_TimingModeAddr );
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 34  
+
+2021   2              FlashWriteByte( TRUE, FLASH_TimingModeAddr, FBufType_TimingMode );
+2022   2              FLASH_printMsg( "Flash_CheckBufferType SetTimingModeAddrType" );
+2023   2          }
+2024   1      
+2025   1      }
+2026          
+2027          //////////////////////////////////////////////////////////////////////////////
+2028          // <API><Description>: Clear all timing mode save in flash
+2029          //////////////////////////////////////////////////////////////////////////////
+2030          void Flash_ClearModeSet( void )
+2031          {
+2032   1          FLASH_printMsg( "_FCMS_ Flash_ClearModeSet" );
+2033   1          FlashSectorErase( TRUE, FLASH_TimingModeAddr );
+2034   1          FlashWriteByte( TRUE, FLASH_TimingModeAddr, FBufType_TimingMode );
+2035   1      }
+2036          
+2037          //////////////////////////////////////////////////////////////////////////////
+2038          // <API><Description>:  Write Factory setting, HDCP Key, DDCA, DDCD key to free buffer,
+2039          //                  Exchange buffer address FLASH_FreeBufferAddr and FLASH_FactorySettingAddr
+2040          //////////////////////////////////////////////////////////////////////////////
+2041          BYTE Flash_GetKeyIndex(FLASH_KEY_TYPE ucType, Bool bWrite)
+2042          {
+2043   1          BYTE ucIndex, ucStatus, ucSize=0;
+2044   1          WORD wAddr;
+2045   1      
+2046   1          if(ucType == FLASH_KEY_FACTORY)
+2047   1          {
+2048   2              ucSize = FACTORY_SECTOR_SIZE/FACTORY_SIZE;
+2049   2              wAddr  = FACTORY_STATUS_ADDR;
+2050   2          }
+2051   1          else if(ucType == FLASH_KEY_PANEL)
+2052   1          {
+2053   2              ucSize = PANEL_SECTOR_SIZE/PANEL_SIZE;
+2054   2              wAddr  = PANEL_STATUS_ADDR;
+2055   2          }
+2056   1      #if 1    
+2057   1          else if(ucType == FLASH_KEY_GAMMA)
+2058   1          {
+2059   2              ucSize = GAMMA_SECTOR_SIZE/GAMMA_SIZE;
+2060   2              wAddr  = GAMMA_STATUS_ADDR;
+2061   2          }
+2062   1          
+2063   1          else if(ucType == FLASH_KEY_HDCP)
+2064   1          {
+2065   2              ucSize = HDCPKEY_SECTOR_SIZE/HDCPKEY_SIZE;
+2066   2              wAddr  = HDCPKEY_STATUS_ADDR;
+2067   2          }
+2068   1          
+2069   1          else if(ucType == FLASH_KEY_DDCA)
+2070   1          {
+2071   2              ucSize = DDCAKEY_SECTOR_SIZE/DDCAKEY_SIZE;
+2072   2              wAddr  = DDCAKEY_STATUS_ADDR;
+2073   2          }
+2074   1          else if(ucType == FLASH_KEY_DDCD)
+2075   1          {
+2076   2              ucSize = DDCDKEY_SECTOR_SIZE/DDCDKEY_SIZE;
+2077   2              wAddr  = DDCDKEY_STATUS_ADDR;
+2078   2          }
+2079   1      #endif    
+2080   1          else if(ucType == FLASH_KEY_DDCDP)
+2081   1          {
+2082   2              ucSize = DDCDPKEY_SECTOR_SIZE/DDCDPKEY_SIZE;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 35  
+
+2083   2              wAddr  = DDCDPKEY_STATUS_ADDR;
+2084   2          }
+2085   1      
+2086   1          for(ucIndex=0;ucIndex<ucSize;ucIndex++)
+2087   1          {
+2088   2              ucStatus = FlashReadByte(wAddr+ucIndex);
+2089   2              if(bWrite)
+2090   2              {
+2091   3                  if( ucStatus == FLASH_KEY_EMPTY || ucStatus == FLASH_KEY_WRITE)
+2092   3                      break;
+2093   3              }
+2094   2              else
+2095   2              {
+2096   3                  if( ucStatus == FLASH_KEY_VALID)
+2097   3                      break;
+2098   3              }
+2099   2          }
+2100   1      
+2101   1          if( ucIndex >= ucSize )
+2102   1          {
+2103   2              if(bWrite)
+2104   2                  ucIndex = ucSize - 1;
+2105   2              else
+2106   2                  ucIndex = 0;
+2107   2          }
+2108   1      
+2109   1          return ucIndex;
+2110   1      }
+2111          //////////////////////////////////////////////////////////////////////////////
+2112          // <API><Description>:  Write Factory setting, HDCP Key, DDCA, DDCD key to free buffer,
+2113          //                  Exchange buffer address FLASH_FreeBufferAddr and FLASH_FactorySettingAddr
+2114          //////////////////////////////////////////////////////////////////////////////
+2115          void Flash_BackupFactorySetToBuffer( void )
+2116          {
+2117   1          BYTE xdata ucKeyIndex;
+2118   1          WORD wAddr;
+2119   1      
+2120   1          FLASH_printMsg( "  Flash_BackupFactorySetToBuffer " );
+2121   1      
+2122   1          FlashDisableWP( FLASH_FreeBufferAddr );
+2123   1          ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_FACTORY, FALSE);
+2124   1          if(FlashReadByte(FACTORY_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+2125   1              && FlashReadByte(FACTORY_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+2126   1          {
+2127   2              Flash_MoveTbl(FALSE, FACTORY_START+(WORD)ucKeyIndex*FACTORY_SIZE, FACTORY_BUF_START, FACTORY_SIZE)
+             -;
+2128   2              FlashWriteByte(FALSE, FACTORY_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+2129   2              FLASH_printMsg( "  _FACT_ " );
+2130   2          }
+2131   1      
+2132   1          ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_PANEL, FALSE);
+2133   1          if(FlashReadByte(PANEL_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+2134   1              && FlashReadByte(PANEL_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+2135   1          {
+2136   2              Flash_MoveTbl(FALSE, PANEL_START+(WORD)ucKeyIndex*PANEL_SIZE, PANEL_BUF_START, PANEL_SIZE);
+2137   2              FlashWriteByte(FALSE, PANEL_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+2138   2              FLASH_printMsg( "  _PANEL_ " );
+2139   2          }
+2140   1      
+2141   1      #if 0
+                  ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_GAMMA, FALSE);
+                  if(FlashReadByte(GAMMA_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 36  
+
+                      && FlashReadByte(GAMMA_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+                  {
+                      Flash_MoveTbl(FALSE, GAMMA_START+(WORD)ucKeyIndex*GAMMA_SIZE, GAMMA_BUF_START, GAMMA_SIZE);
+                      FlashWriteByte(FALSE, GAMMA_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+                      FLASH_printMsg("  _GAMMA_ ");
+                  }
+                  
+                  ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_HDCP, FALSE);
+                  if(FlashReadByte(HDCPKEY_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+                      && FlashReadByte(HDCPKEY_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+                  {
+                      Flash_MoveTbl(FALSE, HDCPKEYSET_START+(WORD)ucKeyIndex*HDCPKEY_SIZE, HDCPKEYSET_BUF_START, HDCPKEY
+             -_SIZE);
+                      FlashWriteByte(FALSE, HDCPKEY_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+                      FLASH_printMsg("  _HDCP_ ");
+                  }
+                  
+                  ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_DDCA, FALSE);
+                  if(FlashReadByte(DDCAKEY_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+                      && FlashReadByte(DDCAKEY_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+                  {
+                      Flash_MoveTbl(FALSE, DDCAKEYSET_START+(WORD)ucKeyIndex*DDCAKEY_SIZE, DDCAKEYSET_BUF_START, DDCAKEY
+             -_SIZE);
+                      FlashWriteByte(FALSE, DDCAKEY_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+                      FLASH_printMsg("  _DDCA_ ");
+                  }
+                  
+                  ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_DDCD, FALSE);
+                  if(FlashReadByte(DDCDKEY_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+                      && FlashReadByte(DDCDKEY_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+                  {
+                      Flash_MoveTbl(FALSE, DDCDKEYSET_START+(WORD)ucKeyIndex*DDCDKEY_SIZE, DDCDKEYSET_BUF_START, DDCDKEY
+             -_SIZE);
+                      FlashWriteByte(FALSE, DDCDKEY_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+                      FLASH_printMsg("  _DDCD_ ");
+                  }
+                  
+                  if( FlashReadByte( DDCHKEY_STATUS_ADDR ) == FLASH_KEY_VALID )
+                  {
+                      Flash_MoveTbl( FALSE, DDCHKEYSET_START, DDCHKEYSET_BUF_START, DDCHKEY_SIZE );
+                      FlashWriteByte( FALSE, DDCHKEY_BUF_STATUS_ADDR, FLASH_KEY_VALID );
+                      FLASH_printMsg( "  _DDCH_ " );
+                  }
+              #endif
+2185   1      
+2186   1          ucKeyIndex = Flash_GetKeyIndex(FLASH_KEY_DDCDP, FALSE);
+2187   1          if(FlashReadByte(DDCDPKEY_STATUS_ADDR+ucKeyIndex) == FLASH_KEY_VALID
+2188   1              && FlashReadByte(DDCDPKEY_BUF_STATUS_ADDR) == FLASH_KEY_EMPTY)
+2189   1          {
+2190   2              Flash_MoveTbl(FALSE, DDCDPKEYSET_START+(WORD)ucKeyIndex*DDCDPKEY_SIZE, DDCDPKEYSET_BUF_START, DDCD
+             -PKEY_SIZE);
+2191   2              FlashWriteByte(FALSE, DDCDPKEY_BUF_STATUS_ADDR, FLASH_KEY_VALID);
+2192   2              FLASH_printMsg("  _DDCDP_ ");
+2193   2          }
+2194   1      
+2195   1          FlashWriteByte( FALSE, FLASH_FreeBufferAddr, FBufType_FactorySetting );
+2196   1          FlashEnableWP();
+2197   1          FlashWriteByte( TRUE, FLASH_FactorySettingAddr, 0x00 );
+2198   1          wAddr = FLASH_FreeBufferAddr;
+2199   1          FLASH_FreeBufferAddr = FLASH_FactorySettingAddr;
+2200   1          FLASH_FactorySettingAddr = wAddr;
+2201   1      
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 37  
+
+2202   1      }
+2203          
+2204          //////////////////////////////////////////////////////////////////////////////
+2205          // <API><Description>:  Write HDCP ,DDCA or DDCD key to flash,
+2206          //                  Need set correct type of key.
+2207          //                  wIndex from 0 to (key size / ucBufSize) or (key size / ucBufSize+1)
+2208          //                  The last write wLen = (key size % ucBufSize)
+2209          //                  Will backup to free buffer if write to index = (MAX_HDCPKEYSET_NUM-1)
+2210          // <Parameter>:     -   <Flow>  -   <Description>
+2211          // ---------------------------------------------------------------------------
+2212          //  ucType          -    In     -   FLASH_KEY_HDCP, FLASH_KEY_DDCA or FLASH_KEY_DDCD
+2213          //  wIndex          -    In     -   From 0 ~ x
+2214          //  ucBufSize       -    In     -   Size of buf
+2215          //  *buf            -    In     -   point to the data of each set
+2216          //  wLen            -    In     -   Length of this time write buffer, wBufSize>=wLen
+2217          //////////////////////////////////////////////////////////////////////////////
+2218          void Flash_Write_Factory_KeySet( FLASH_KEY_TYPE ucType, WORD wIndex, WORD wBufSize, BYTE* buf, WORD wLen )
+2219          {
+2220   1          BYTE xdata ucKeyIndex;
+2221   1          WORD xdata wKEY_SIZE;
+2222   1          WORD xdata wKEYSET_START;
+2223   1          WORD xdata wKEYSET_BUF_START;
+2224   1          WORD xdata wKEYSET_STATUS_ADDR;
+2225   1          WORD xdata wKEYSET_BUF_STATUS_ADDR;
+2226   1      
+2227   1          ucKeyIndex = Flash_GetKeyIndex(ucType, TRUE);
+2228   1          
+2229   1          if(ucType == FLASH_KEY_FACTORY)
+2230   1          {
+2231   2              wKEY_SIZE               = FACTORY_SIZE;
+2232   2              wKEYSET_START           = FACTORY_START + (WORD)ucKeyIndex*FACTORY_SIZE;
+2233   2              wKEYSET_BUF_START       = FACTORY_BUF_START;
+2234   2              wKEYSET_STATUS_ADDR     = FACTORY_STATUS_ADDR + ucKeyIndex;
+2235   2              wKEYSET_BUF_STATUS_ADDR = FACTORY_BUF_STATUS_ADDR;
+2236   2          }
+2237   1          else if(ucType == FLASH_KEY_PANEL)
+2238   1          {
+2239   2              wKEY_SIZE               = PANEL_SIZE;
+2240   2              wKEYSET_START           = PANEL_START + (WORD)ucKeyIndex*PANEL_SIZE;
+2241   2              wKEYSET_BUF_START       = PANEL_BUF_START;
+2242   2              wKEYSET_STATUS_ADDR     = PANEL_STATUS_ADDR + ucKeyIndex;
+2243   2              wKEYSET_BUF_STATUS_ADDR = PANEL_BUF_STATUS_ADDR;
+2244   2          }
+2245   1      #if 1    
+2246   1          else if(ucType == FLASH_KEY_GAMMA)
+2247   1          {
+2248   2              wKEY_SIZE               = GAMMA_SIZE;
+2249   2              wKEYSET_START           = GAMMA_START + (WORD)ucKeyIndex*GAMMA_SIZE;
+2250   2              wKEYSET_BUF_START       = GAMMA_BUF_START;
+2251   2              wKEYSET_STATUS_ADDR     = GAMMA_STATUS_ADDR + ucKeyIndex;
+2252   2              wKEYSET_BUF_STATUS_ADDR = GAMMA_BUF_STATUS_ADDR;
+2253   2          }
+2254   1          else if(ucType == FLASH_KEY_HDCP)
+2255   1          {
+2256   2              wKEY_SIZE               = HDCPKEY_SIZE;
+2257   2              wKEYSET_START           = HDCPKEYSET_START + (WORD)ucKeyIndex*HDCPKEY_SIZE;
+2258   2              wKEYSET_BUF_START       = HDCPKEYSET_BUF_START;
+2259   2              wKEYSET_STATUS_ADDR     = HDCPKEY_STATUS_ADDR + ucKeyIndex;
+2260   2              wKEYSET_BUF_STATUS_ADDR = HDCPKEY_BUF_STATUS_ADDR;
+2261   2          }
+2262   1          else if(ucType == FLASH_KEY_DDCA)
+2263   1          {
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 38  
+
+2264   2              wKEY_SIZE               = DDCAKEY_SIZE;
+2265   2              wKEYSET_START           = DDCAKEYSET_START + (WORD)ucKeyIndex*DDCAKEY_SIZE;
+2266   2              wKEYSET_BUF_START       = DDCAKEYSET_BUF_START;
+2267   2              wKEYSET_STATUS_ADDR     = DDCAKEY_STATUS_ADDR + ucKeyIndex;;
+2268   2              wKEYSET_BUF_STATUS_ADDR = DDCAKEY_BUF_STATUS_ADDR;
+2269   2          }
+2270   1          else if(ucType == FLASH_KEY_DDCD)
+2271   1          {
+2272   2              wKEY_SIZE               = DDCDKEY_SIZE;
+2273   2              wKEYSET_START           = DDCDKEYSET_START + (WORD)ucKeyIndex*DDCDKEY_SIZE;
+2274   2              wKEYSET_BUF_START       = DDCDKEYSET_BUF_START;
+2275   2              wKEYSET_STATUS_ADDR     = DDCDKEY_STATUS_ADDR + ucKeyIndex;;
+2276   2              wKEYSET_BUF_STATUS_ADDR = DDCDKEY_BUF_STATUS_ADDR;
+2277   2          }
+2278   1      #endif    
+2279   1          else if(ucType == FLASH_KEY_DDCDP)
+2280   1          {
+2281   2              wKEY_SIZE               = DDCDPKEY_SIZE;
+2282   2              wKEYSET_START           = DDCDPKEYSET_START + (WORD)ucKeyIndex*DDCDPKEY_SIZE;
+2283   2              wKEYSET_BUF_START       = DDCDPKEYSET_BUF_START;
+2284   2              wKEYSET_STATUS_ADDR     = DDCDPKEY_STATUS_ADDR + ucKeyIndex;;
+2285   2              wKEYSET_BUF_STATUS_ADDR = DDCDPKEY_BUF_STATUS_ADDR;
+2286   2          }
+2287   1          else
+2288   1              return;
+2289   1      
+2290   1          bFlashWriteFactory = TRUE;
+2291   1      
+2292   1          if( FlashReadByte( wKEYSET_STATUS_ADDR ) == FLASH_KEY_EMPTY || FlashReadByte( wKEYSET_STATUS_ADDR ) ==
+             - FLASH_KEY_WRITE )
+2293   1          {
+2294   2              if( wIndex == 0x00 )
+2295   2              {
+2296   3                  // FLASH_printData("  _FWFK_StatusAddr [%x] ",wKEYSET_STATUS_ADDR);
+2297   3                   FlashWriteByte(TRUE, wKEYSET_STATUS_ADDR, FLASH_KEY_WRITE);
+2298   3              }
+2299   2              Flash_WriteTbl( TRUE, wKEYSET_START + wIndex * wBufSize, buf, wLen );
+2300   2              if(( wIndex * wBufSize + wLen ) >= wKEY_SIZE ) // check write end
+2301   2              {
+2302   3                  FlashWriteByte( TRUE, wKEYSET_STATUS_ADDR, FLASH_KEY_VALID );
+2303   3                  if(ucKeyIndex>0)
+2304   3                      FlashWriteByte(TRUE, wKEYSET_STATUS_ADDR-1, FLASH_KEY_INVALID);
+2305   3              }
+2306   2          }
+2307   1          else
+2308   1          {
+2309   2              if( wIndex == 0x00 )
+2310   2              {
+2311   3                  FlashSectorErase(TRUE, FLASH_FreeBufferAddr);
+2312   3                  FlashWriteByte(TRUE, wKEYSET_BUF_STATUS_ADDR, FLASH_KEY_WRITE);
+2313   3              }
+2314   2      
+2315   2              Flash_WriteTbl( TRUE, wKEYSET_BUF_START + wIndex * wBufSize, buf, wLen );
+2316   2              if(( wIndex * wBufSize + wLen ) >= wKEY_SIZE ) // check write end
+2317   2              {
+2318   3                  FlashWriteByte( TRUE, wKEYSET_BUF_STATUS_ADDR, FLASH_KEY_VALID );
+2319   3                  //FLASH_printData("  _FWFK_buffer write End [%x] ",ucType);
+2320   3                  Flash_BackupFactorySetToBuffer();
+2321   3                  FlashSectorErase( TRUE, FLASH_FreeBufferAddr );
+2322   3                  Flash_BackupFactorySetToBuffer();
+2323   3                  FlashSectorErase( TRUE, FLASH_FreeBufferAddr );    //charles test
+2324   3              }
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 39  
+
+2325   2      
+2326   2          }
+2327   1          bFlashWriteFactory = FALSE;
+2328   1      }
+2329          
+2330          //////////////////////////////////////////////////////////////////////////////
+2331          // <API><Description>:  Read HDCP ,DDCA or DDCD key each wLen from flash,
+2332          //                  Need set correct ucType.
+2333          //                  wIndex from 0 to (key size / wBufSize) or (key size / wBufSize+1)
+2334          //                  The last read wLen = (key size % wBufSize)
+2335          // <Returns> : return TRUE when found key ident and CheckSum
+2336          // <Parameter>:     -   <Flow>  -   <Description>
+2337          // ---------------------------------------------------------------------------
+2338          //  ucType          -    In     -   FLASH_KEY_HDCP, FLASH_KEY_DDCA or FLASH_KEY_DDCD
+2339          //  wIndex          -    In     -   From 0 ~ x
+2340          //  wBufSize        -    In     -   Size of buf
+2341          //  *buf            -    In     -   point to the data of each set
+2342          //  wLen            -    In     -   Length of this time write buffer, wBufSize>=wLen
+2343          //////////////////////////////////////////////////////////////////////////////
+2344          Bool Flash_Read_Factory_KeySet( FLASH_KEY_TYPE ucType, Bool bReadVaild, WORD wIndex, WORD wBufSize, BYTE* 
+             -buf, WORD wLen )
+2345          {
+2346   1          BYTE xdata ucKeyIndex;
+2347   1          WORD xdata wKEY_SIZE;
+2348   1          WORD xdata wKEYSET_START;
+2349   1          WORD xdata wKEYSET_STATUS_ADDR;
+2350   1      
+2351   1          if(bReadVaild)
+2352   1              ucKeyIndex = Flash_GetKeyIndex(ucType, FALSE);
+2353   1          else
+2354   1              ucKeyIndex = Flash_GetKeyIndex(ucType, TRUE);
+2355   1      
+2356   1          if( ucType == FLASH_KEY_FACTORY )
+2357   1          {
+2358   2              wKEY_SIZE           = FACTORY_SIZE;
+2359   2              wKEYSET_START       = FACTORY_START + (WORD)ucKeyIndex*FACTORY_SIZE;
+2360   2              wKEYSET_STATUS_ADDR = FACTORY_STATUS_ADDR + ucKeyIndex;
+2361   2          }
+2362   1          else if( ucType == FLASH_KEY_PANEL )
+2363   1          {
+2364   2              wKEY_SIZE           = PANEL_SIZE;
+2365   2              wKEYSET_START       = PANEL_START + (WORD)ucKeyIndex*PANEL_SIZE;
+2366   2              wKEYSET_STATUS_ADDR = PANEL_STATUS_ADDR + ucKeyIndex;
+2367   2          }
+2368   1      #if 1    
+2369   1          else if( ucType == FLASH_KEY_GAMMA )
+2370   1          {
+2371   2              wKEY_SIZE           = GAMMA_SIZE;
+2372   2              wKEYSET_START       = GAMMA_START + (WORD)ucKeyIndex*GAMMA_SIZE;
+2373   2              wKEYSET_STATUS_ADDR = GAMMA_STATUS_ADDR + ucKeyIndex;
+2374   2          }
+2375   1          else if(ucType == FLASH_KEY_HDCP)
+2376   1          {
+2377   2              wKEY_SIZE           = HDCPKEY_SIZE;
+2378   2              wKEYSET_START       = HDCPKEYSET_START + (WORD)ucKeyIndex*HDCPKEY_SIZE;
+2379   2              wKEYSET_STATUS_ADDR = HDCPKEY_STATUS_ADDR + ucKeyIndex;
+2380   2          }
+2381   1          else if( ucType == FLASH_KEY_DDCA )
+2382   1          {
+2383   2              wKEY_SIZE           = DDCAKEY_SIZE;
+2384   2              wKEYSET_START       = DDCAKEYSET_START + (WORD)ucKeyIndex*DDCAKEY_SIZE;;
+2385   2              wKEYSET_STATUS_ADDR = DDCAKEY_STATUS_ADDR + ucKeyIndex;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 40  
+
+2386   2          }
+2387   1          else if( ucType == FLASH_KEY_DDCD )
+2388   1          {
+2389   2              wKEY_SIZE       = DDCDKEY_SIZE;
+2390   2              wKEYSET_START       = DDCDKEYSET_START + (WORD)ucKeyIndex*DDCDKEY_SIZE;;
+2391   2              wKEYSET_STATUS_ADDR = DDCDKEY_STATUS_ADDR + ucKeyIndex;
+2392   2          }
+2393   1      #endif    
+2394   1          else if( ucType == FLASH_KEY_DDCDP )
+2395   1          {
+2396   2              wKEY_SIZE       = DDCDPKEY_SIZE;
+2397   2              wKEYSET_START       = DDCDPKEYSET_START + (WORD)ucKeyIndex*DDCDPKEY_SIZE;;
+2398   2              wKEYSET_STATUS_ADDR = DDCDPKEY_STATUS_ADDR + ucKeyIndex;
+2399   2          }
+2400   1          else
+2401   1              return FALSE;
+2402   1      
+2403   1          if( FlashReadByte( wKEYSET_STATUS_ADDR ) == FLASH_KEY_WRITE || FlashReadByte( wKEYSET_STATUS_ADDR ) ==
+             - FLASH_KEY_VALID )
+2404   1          {
+2405   2              //FLASH_printData("  Flash_ReadDDCAKeySet Succ [%x]",wKEYSET_START+i*wKEY_SIZE+1+wIndex*wBufSize);
+2406   2              if(bReadVaild && FlashReadByte(wKEYSET_STATUS_ADDR) != FLASH_KEY_VALID)
+2407   2                  return FALSE;
+2408   2              else
+2409   2                  Flash_ReadTbl(wKEYSET_START+wIndex*wBufSize, buf, wLen);
+2410   2              
+2411   2              return TRUE;
+2412   2          }
+2413   1          else
+2414   1          {
+2415   2              // FLASH_printData("  Flash_ReadKeySet Fail ucType[%x h]",ucType);
+2416   2              return FALSE;
+2417   2          }
+2418   1      }
+2419          
+2420          //////////////////////////////////////////////////////////////////////////////
+2421          // <API><Description>:  Write Factory setting to flash,
+2422          //                  It will exchange buffer when not found empty space
+2423          //////////////////////////////////////////////////////////////////////////////
+2424          void Flash_WriteFactorySet( BYTE* pbuf, BYTE ucLen )
+2425          {
+2426   1          Flash_Write_Factory_KeySet( FLASH_KEY_FACTORY, 0, FACTORY_SIZE, pbuf, ucLen );
+2427   1      }
+2428          //////////////////////////////////////////////////////////////////////////////
+2429          // <API><Description>:  Read latest factory setting struct from flash.
+2430          // <Returns> : return TRUE when found factory setting
+2431          //////////////////////////////////////////////////////////////////////////////
+2432          Bool Flash_ReadFactorySet( BYTE* pbuf, BYTE ucLen )
+2433          {
+2434   1          return Flash_Read_Factory_KeySet( FLASH_KEY_FACTORY, TRUE, 0, FACTORY_SIZE, pbuf, ucLen );
+2435   1      }
+2436          //////////////////////////////////////////////////////////////////////////////
+2437          // <API><Description>:  Write Monitor setting struct to flash,
+2438          //                  It will exchange buffer when buffer full
+2439          //////////////////////////////////////////////////////////////////////////////
+2440          void Flash_WriteMonitorSet( BYTE* buf, BYTE len )
+2441          {
+2442   1          WORD wAddr;
+2443   1          WORD i;
+2444   1      
+2445   1          i = Flash_SearchIdentChecksum( MONITORSET_START, 0, MAX_MONITORSET_NUM - 1, MONITORSET_SIZE, FLASH_EMP
+             -TYDATA, FLASH_EMPTYDATA );
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 41  
+
+2446   1          if( i != IDENT_NOT_FOUND ) // Found the empty index
+2447   1          {
+2448   2              //MonitorSetting.Ident= FLASH_IDENTDATA;
+2449   2              //MonitorSetting.CheckSum   = FLASH_CHECKSUM;
+2450   2              wAddr = MONITORSET_START + i * MONITORSET_SIZE;
+2451   2              Flash_WriteTbl( TRUE, wAddr, ( BYTE* )buf, len );
+2452   2              FLASH_printData( "_FWMS_ wAddr %x", wAddr );
+2453   2              if( i > 0 )
+2454   2              {
+2455   3                  wAddr = MONITORSET_START + ( i - 1 ) * MONITORSET_SIZE;
+2456   3                  FlashWriteByte( TRUE, wAddr, FLASH_IDENTDATA_CLEAR );
+2457   3              }
+2458   2          }
+2459   1          else
+2460   1          {
+2461   2              FlashSectorErase( TRUE, FLASH_FreeBufferAddr );
+2462   2              Flash_WriteTbl( TRUE, MONITORSET_BUF_START, ( BYTE* )buf, len );
+2463   2              FLASH_printData( "Exchange_FWMS_ wAddr %x", MONITORSET_BUF_START );
+2464   2              FlashWriteByte( TRUE, FLASH_FreeBufferAddr, FBufType_MonitorSetting );
+2465   2              FlashWriteByte( TRUE, FLASH_MonitorSettingAddr, 0x00 );
+2466   2      
+2467   2              wAddr = FLASH_FreeBufferAddr;
+2468   2              FLASH_FreeBufferAddr = FLASH_MonitorSettingAddr;
+2469   2              FLASH_MonitorSettingAddr = wAddr;
+2470   2      
+2471   2          }
+2472   1      }
+2473          //////////////////////////////////////////////////////////////////////////////
+2474          // <API><Description>:  Read latest Monitor setting struct from flash.
+2475          //                  1.Got monitor setting index by check flash identity
+2476          //                  2.If not found read CheckSum to got correct one
+2477          //                  3.read the Monitor setting struct
+2478          // <Returns> : return TRUE when found MonitorSetting
+2479          //////////////////////////////////////////////////////////////////////////////
+2480          Bool Flash_ReadMonitorSet( BYTE* buf, BYTE len )
+2481          {
+2482   1          WORD i;
+2483   1      
+2484   1          i = Flash_SearchIdentChecksum( MONITORSET_START, ( MAX_MONITORSET_NUM - 1 ), 0, MONITORSET_SIZE, FLASH
+             -_IDENTDATA, FLASH_CHECKSUM );
+2485   1          if( i != IDENT_NOT_FOUND )
+2486   1          {
+2487   2              Flash_ReadTbl( MONITORSET_START + i * MONITORSET_SIZE, buf, len );
+2488   2              FLASH_printData( "_FRMS_ wAddr %x", MONITORSET_START + i * MONITORSET_SIZE );
+2489   2              return TRUE;
+2490   2          }
+2491   1          else
+2492   1          {
+2493   2              i = Flash_SearchIdentChecksum( MONITORSET_START, ( MAX_MONITORSET_NUM - 1 ), 0, MONITORSET_SIZE, F
+             -LASH_IDENTDATA_CLEAR, FLASH_CHECKSUM );
+2494   2              if( i != IDENT_NOT_FOUND )
+2495   2              {
+2496   3                  Flash_ReadTbl( MONITORSET_START + i * MONITORSET_SIZE, buf, len );
+2497   3                  //   FLASH_printMsg("_FRMS_ Only Checksum Correct! ");
+2498   3                  //  FLASH_printData("_FRMS_ wAddr %x",MONITORSET_START + i*MONITORSET_SIZE);
+2499   3                  return TRUE;
+2500   3              }
+2501   2              else
+2502   2                  return FALSE;
+2503   2          }
+2504   1      }
+2505          
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 42  
+
+2506          
+2507          //////////////////////////////////////////////////////////////////////////////
+2508          // <API><Description>:  Flash_WriteMonitorSet2 isues to save MonitorSetting2
+2509          //                  It will exchange buffer when buffer full
+2510          //////////////////////////////////////////////////////////////////////////////
+2511          void Flash_WriteMonitorSet2( BYTE* buf, BYTE len )
+2512          {
+2513   1          WORD wAddr;
+2514   1          WORD i;
+2515   1      
+2516   1          i = Flash_SearchIdentChecksum( MONITORSET2_START, 0, MAX_MONITORSET2_NUM - 1, MONITORSET2_SIZE, FLASH_
+             -EMPTYDATA, FLASH_EMPTYDATA );
+2517   1          if( i != IDENT_NOT_FOUND )
+2518   1          {
+2519   2              wAddr = MONITORSET2_START + i * MONITORSET2_SIZE;
+2520   2              Flash_WriteTbl( TRUE, wAddr, ( BYTE* )buf, len );
+2521   2              //FLASH_printData("_FWMS2_ wAddr %x",wAddr);
+2522   2          }
+2523   1          else
+2524   1          {
+2525   2              FlashSectorErase( TRUE, FLASH_FreeBufferAddr );
+2526   2              Flash_WriteTbl( TRUE, MONITORSET2_BUF_START, ( BYTE* )buf, len );
+2527   2              //FLASH_printData("_FWMS2_ wAddr %x",MONITORSET2_BUF_START);
+2528   2              FlashWriteByte( TRUE, FLASH_FreeBufferAddr, FBufType_MonitorSetting2 );
+2529   2              FlashWriteByte( TRUE, FLASH_MonitorSetting2Addr, 0x00 );
+2530   2              wAddr = FLASH_FreeBufferAddr;
+2531   2              FLASH_FreeBufferAddr = FLASH_MonitorSetting2Addr;
+2532   2              FLASH_MonitorSetting2Addr = wAddr;
+2533   2          }
+2534   1      }
+2535          
+2536          //////////////////////////////////////////////////////////////////////////////
+2537          // <API><Description>:  Read MonitorSetting2 struct from flash.
+2538          //                  1.Got monitor setting index by check flash identity
+2539          // <Returns> : return TRUE when found MonitorSetting2
+2540          //////////////////////////////////////////////////////////////////////////////
+2541          Bool Flash_ReadMonitorSet2( BYTE* buf, BYTE len )
+2542          {
+2543   1          Bool bFound = FALSE;
+2544   1          WORD i;
+2545   1      
+2546   1          i = Flash_SearchIdentChecksum( MONITORSET2_START, ( MAX_MONITORSET2_NUM - 1 ), 0, MONITORSET2_SIZE, FL
+             -ASH_IDENTDATA, FLASH_CHECKSUM );
+2547   1          if( i != IDENT_NOT_FOUND )
+2548   1          {
+2549   2              Flash_ReadTbl( MONITORSET2_START + i * MONITORSET2_SIZE, buf, len );
+2550   2              //FLASH_printData("_FRMS2_ wAddr %x",MONITORSET2_START + i*MONITORSET2_SIZE);
+2551   2              return TRUE;
+2552   2          }
+2553   1          else
+2554   1          {
+2555   2              FLASH_printMsg( "  Flash_ReadMonitorSet2 Fail" );
+2556   2              return FALSE;
+2557   2          }
+2558   1      }
+2559          
+2560          
+2561          //////////////////////////////////////////////////////////////////////////////
+2562          // <API><Description>:  Check exit timing mode number and compare to MAX_MODESET_NUM.
+2563          // <Returns> : return TRUE when saved timing mode size equal to MAX_MODESET_NUM
+2564          //////////////////////////////////////////////////////////////////////////////
+2565          Bool Flash_CheckModeFull( void )
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 43  
+
+2566          {
+2567   1          BYTE i, wExitModeCount = 0;
+2568   1          //check buffer full
+2569   1          for( i = 0; i < MAX_MODESET_NUM; i++ )
+2570   1          {
+2571   2              if( FlashReadByte( MODESET_START + i * MODESET_SIZE ) == FLASH_IDENTDATA && FlashReadByte( MODESET
+             -_START + i * MODESET_SIZE + MODESET_SIZE - 1 ) == FLASH_CHECKSUM )
+2572   2                  wExitModeCount++;
+2573   2          }
+2574   1          if( wExitModeCount == MAX_MODESET_NUM )
+2575   1              return TRUE;
+2576   1          else
+2577   1              return FALSE;
+2578   1      }
+2579          //////////////////////////////////////////////////////////////////////////////
+2580          // <API><Description>:  Clear all user mode ident.
+2581          //
+2582          //////////////////////////////////////////////////////////////////////////////
+2583          void Flash_ClearUserModeSpace( void )
+2584          {
+2585   1          BYTE i, ucIdent = 0;
+2586   1          //check buffer full
+2587   1          for( i = 0; i < MAX_MODESET_NUM; i++ )
+2588   1          {
+2589   2              ucIdent = FlashReadByte( MODESET_START + i * MODESET_SIZE );
+2590   2              if( ucIdent == FLASH_IDENTDATA )
+2591   2              {
+2592   3                  if(( FlashReadByte( MODESET_START + i * MODESET_SIZE + 1 ) & 0x80 ) == 0x80 )
+2593   3                      FlashWriteByte( TRUE, MODESET_START + i * MODESET_SIZE, 0x00 ); // Clear Identdata.
+2594   3              }
+2595   2          }
+2596   1          FLASH_printMsg( "Flash_ClearUserModeSpace" );
+2597   1      }
+2598          
+2599          //////////////////////////////////////////////////////////////////////////////
+2600          // <API><Description>:  Write timing mode with index to flash
+2601          //                  1.Search the timing mode from timing buffer
+2602          //                  2.Clear the timing ident
+2603          //                  3.Find empty timing mode bufer
+2604          //                  4.Exchange buffer if FLASH_TimingModeAddr buffer full
+2605          //                  5.Write timing struct to empty buffer
+2606          // <Parameter>:     -   <Flow>  -   <Description>
+2607          // ---------------------------------------------------------------------------
+2608          //  index           -    In     -   timing index, UserMode need |_BIT7 in index
+2609          //  *buf            -    In     -   point to the address of timing struct
+2610          //////////////////////////////////////////////////////////////////////////////
+2611          void Flash_WriteModeSet( BYTE index, BYTE *buf )
+2612          {
+2613   1          WORD i = 0, j = 0;
+2614   1          WORD wAddr;
+2615   1          xdata ModeSettingType modeSetting;
+2616   1      
+2617   1          //FLASH_printData("_FWMS_ Target index 0x%x",index);
+2618   1          // find orginal mode index in flash
+2619   1          for( i = 0; i < MAX_MODESET_NUM; i++ )
+2620   1          {
+2621   2              if( FlashReadByte( MODESET_START + i * MODESET_SIZE ) == FLASH_IDENTDATA && FlashReadByte( MODESET
+             -_START + i * MODESET_SIZE + MODESET_SIZE - 1 ) == FLASH_CHECKSUM )
+2622   2              {
+2623   3                  if( FlashReadByte( MODESET_START + i * MODESET_SIZE + 1 ) == index )
+2624   3                  {
+2625   4                      FlashWriteByte( TRUE, MODESET_START + i * MODESET_SIZE, 0x00 ); // Clear Identdata.
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 44  
+
+2626   4                      FLASH_printData( "_FWMS_ Clear index %x", i );
+2627   4                  }
+2628   3              }
+2629   2          }
+2630   1      
+2631   1          // find empty position
+2632   1          i = Flash_SearchIdentChecksum( MODESET_START, 0, ( MAX_MODESET_NUM - 1 ), MODESET_SIZE, FLASH_EMPTYDAT
+             -A, FLASH_EMPTYDATA );
+2633   1          if( i != IDENT_NOT_FOUND )
+2634   1          {
+2635   2              FLASH_printData( "_FWMS_ write to empty Addr %x", MODESET_START + i * MODESET_SIZE );
+2636   2              Flash_WriteTbl( TRUE, MODESET_START + i * MODESET_SIZE, buf, MODESET_SIZE );
+2637   2          }
+2638   1          else
+2639   1          {
+2640   2              if( Flash_CheckModeFull() )
+2641   2                  Flash_ClearUserModeSpace();
+2642   2      
+2643   2              FlashSectorErase( TRUE, FLASH_FreeBufferAddr );
+2644   2              for( i = 0; i < MAX_MODESET_NUM; i++ )
+2645   2              {
+2646   3                  if( FlashReadByte( MODESET_START + i * MODESET_SIZE ) == FLASH_IDENTDATA  && FlashReadByte( MO
+             -DESET_START + i * MODESET_SIZE + MODESET_SIZE - 1 ) == FLASH_CHECKSUM )
+2647   3                  {
+2648   4                      Flash_ReadTbl( MODESET_START + i * MODESET_SIZE, ( BYTE* )&modeSetting, MODESET_SIZE );
+2649   4                      Flash_WriteTbl( TRUE, MODESET_BUF_START + j * MODESET_SIZE, ( BYTE* )&modeSetting, MODESET
+             -_SIZE );
+2650   4                      j++;
+2651   4                  }
+2652   3              }
+2653   2              if( j < ( MAX_MODESET_NUM - 1 ) )
+2654   2              {
+2655   3                  FLASH_printData( "_FWMS_ write to empty Addr %x", MODESET_BUF_START + j * MODESET_SIZE );
+2656   3                  Flash_WriteTbl( TRUE, MODESET_BUF_START + j * MODESET_SIZE, buf, MODESET_SIZE );
+2657   3              }
+2658   2      
+2659   2              //  Exchange Buffer
+2660   2              FlashWriteByte( TRUE, FLASH_FreeBufferAddr, FBufType_TimingMode );
+2661   2              FlashWriteByte( TRUE, FLASH_TimingModeAddr, 0x00 );
+2662   2              wAddr = FLASH_FreeBufferAddr;
+2663   2              FLASH_FreeBufferAddr = FLASH_TimingModeAddr;
+2664   2              FLASH_TimingModeAddr = wAddr;
+2665   2              //i=j;//Write empty one index
+2666   2      
+2667   2              FLASH_printData( "_FWMS_ Buffer exchange TimingAddr %x ", ( WORD )( FLASH_TimingModeAddr >> 8 ) );
+2668   2              FLASH_printData( "_FWMS_ Buffer exchange FreeAddr %x ", ( WORD )( FLASH_FreeBufferAddr >> 8 ) );
+2669   2          }
+2670   1      }
+2671          
+2672          
+2673          //////////////////////////////////////////////////////////////////////////////
+2674          // <API><Description>:  Read timing mode with index from flash
+2675          //                  1.Search the timing mode from timing buffer by compare FLASH_IDENTDATA&TimingIndex
+2676          //                  2.No update & return when not found
+2677          //                  3.Read timing mode from buffer
+2678          //                  4.upper level function check timing mode FLASH_IDENTDATA to makesure
+2679          // <Returns> : return TRUE when found the timing mode index
+2680          // <Parameter>:     -   <Flow>  -   <Description>
+2681          // ---------------------------------------------------------------------------
+2682          //  index           -    In     -   timing index, UserMode need |_BIT7 in index
+2683          //  *buf            -    In     -   point to the address of timing mode struct
+2684          //////////////////////////////////////////////////////////////////////////////
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 45  
+
+2685          Bool Flash_ReadModeSet( BYTE index, BYTE *buf )
+2686          {
+2687   1          WORD i;
+2688   1      
+2689   1          for( i = 0; i < MAX_MODESET_NUM; i++ )
+2690   1          {
+2691   2              if( FlashReadByte( MODESET_START + i * MODESET_SIZE ) == FLASH_IDENTDATA
+2692   2                      && FlashReadByte( MODESET_START + i * MODESET_SIZE + MODESET_SIZE - 1 ) == FLASH_CHECKSUM
+2693   2                      && FlashReadByte( MODESET_START + i * MODESET_SIZE + 1 ) == index )
+2694   2              {
+2695   3                  break;
+2696   3              }
+2697   2          }
+2698   1      
+2699   1          if( i >= MAX_MODESET_NUM )
+2700   1          {
+2701   2              FLASH_printMsg( "_FRMS_ RModeSet Not Found" );
+2702   2              return FALSE;
+2703   2          }
+2704   1      
+2705   1          FLASH_printData( "_FRMS_ RModeSet=%x", i );
+2706   1          FLASH_printData( "_FRMS_ ModeR=%x", ( MODESET_START + i * MODESET_SIZE ) & 0xFFFF );
+2707   1          Flash_ReadTbl( MODESET_START + i * MODESET_SIZE, buf, MODESET_SIZE );
+2708   1          return TRUE;
+2709   1      }
+2710          
+2711          #if USEFLASH_REDUCE_STACK_WRITE_FDATA
+              Bool FlashFData_GetWriteKeyAddress(FLASH_KEY_TYPE ucType, Bool bWrite)
+              {
+                  Bool bresult = TRUE;
+                  BYTE ucStatus, ucSize;
+                  WORD wdatasize;
+              
+                  switch (ucType)
+                  {
+                      case FLASH_KEY_FACTORY:
+                      {
+                          ucSize = FACTORY_STATUS_SIZE;
+                          wdatasize = FACTORY_SIZE;
+                          FlashFData_wKEYSET_STATUS_ADDR  = FACTORY_STATUS_ADDR;
+                          FlashFData_wKEYSET_START = FACTORY_START;
+                          break;
+                      }
+              #if INPUT_TYPE != INPUT_1A
+                      case FLASH_KEY_HDCP:
+                      {
+                          ucSize = HDCPKEY_STATUS_SIZE;
+                          wdatasize = HDCPKEY_SIZE;
+                          FlashFData_wKEYSET_STATUS_ADDR  = HDCPKEY_STATUS_ADDR;
+                          FlashFData_wKEYSET_START = HDCPKEYSET_START;
+                          break;
+                      }
+              #endif        
+              #if ENABLE_DP_INPUT        
+                      case FLASH_KEY_DDCDP:
+                      {
+                          ucSize = DDCDPKEY_STATUS_SIZE;
+                          wdatasize = DDCDPKEY_SIZE;
+                          FlashFData_wKEYSET_STATUS_ADDR  = DDCDPKEY_STATUS_ADDR;
+                          FlashFData_wKEYSET_START = DDCDPKEYSET_START;
+                          break;
+                      }
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 46  
+
+              #endif        
+              
+                      default:
+                          break;
+                      
+                  }
+              
+                  for(FlashFData_ucKeyIndex=0; FlashFData_ucKeyIndex<ucSize; FlashFData_ucKeyIndex++)
+                  {
+                      ucStatus = FlashReadByte(FlashFData_wKEYSET_STATUS_ADDR+FlashFData_ucKeyIndex);
+                      if(bWrite)
+                      {
+                          if( ucStatus == FLASH_KEY_EMPTY)
+                              break;
+                      }
+                      else
+                      {
+                          if( ucStatus == FLASH_KEY_VALID)
+                              break;
+                      }
+                  }
+              
+                  if( FlashFData_ucKeyIndex >= ucSize )
+                  {
+                      bresult = FALSE;
+                  }
+              
+                  FlashFData_wKEYSET_START += ((WORD)FlashFData_ucKeyIndex*wdatasize);
+                  FlashFData_wKEYSET_STATUS_ADDR += FlashFData_ucKeyIndex;
+              
+                  if(bresult == TRUE)
+                  {
+                      bFlashWriteFactory = TRUE;
+                      FlashDisableWP(FlashFData_wKEYSET_START);        
+                  }
+              
+                  return bresult;
+              }
+              
+              Bool FlashFData_BackupToFreeBuffer(FLASH_KEY_TYPE ucKeyType)
+              {
+                  BYTE ucKeyIndex; 
+                  WORD wStartAddr, wStatusAddr, wKeySize;
+                  WORD wBufStatusAddr = ucKeyType;
+              
+                  ucKeyIndex = Flash_GetKeyIndex(ucKeyType, FALSE);
+              
+                  switch (ucKeyType)
+                  {
+                      case FLASH_KEY_FACTORY:
+                      {
+                          wStatusAddr = FACTORY_STATUS_ADDR + ucKeyIndex;
+                          wStartAddr = FACTORY_START + (WORD)ucKeyIndex*FACTORY_SIZE;
+                          wKeySize = FACTORY_SIZE;
+                          break;
+                      }
+              #if INPUT_TYPE != INPUT_1A
+                      case FLASH_KEY_HDCP:
+                      {
+                          wStatusAddr = HDCPKEY_STATUS_ADDR + ucKeyIndex;
+                          wStartAddr = HDCPKEYSET_START + (WORD)ucKeyIndex*HDCPKEY_SIZE;
+                          wKeySize = HDCPKEY_SIZE;
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 47  
+
+                          break;
+                      }
+              #endif        
+              #if ENABLE_DP_INPUT        
+                      case FLASH_KEY_DDCDP:
+                      {
+                          wStatusAddr = DDCDPKEY_STATUS_ADDR + ucKeyIndex;
+                          wStartAddr = DDCDPKEYSET_START + (WORD)ucKeyIndex*DDCDPKEY_SIZE;
+                          wKeySize = DDCDPKEY_SIZE;
+                          break;
+                      }
+              #endif        
+              
+                      default:
+                          break;
+                      
+                  } 
+                  
+                  // prevent different sector data move to current sector
+                  if((wStartAddr&0xF000) != (FlashFData_wKEYSET_START&0xF000))
+                      return FALSE;
+              
+                  wBufStatusAddr = FLASH_FreeBufferAddr+wBufStatusAddr*0x200;
+              
+                  if (FlashReadByte(wStatusAddr) == FLASH_KEY_VALID)
+                  {
+                      Flash_MoveTbl(TRUE, wStartAddr, wBufStatusAddr+0x10, wKeySize);
+                      FlashWriteByte(TRUE, wBufStatusAddr, FLASH_KEY_VALID);
+                      return TRUE;
+                  }
+                  
+                  return FALSE;
+              
+              }
+              
+              Bool FlashFData_BackupFromFreeBuffer(FLASH_KEY_TYPE ucKeyType)
+              {
+                  WORD wStartAddr, wStatusAddr, wKeySize;
+                  WORD wBufStatusAddr = ucKeyType;
+              
+                  wBufStatusAddr = FLASH_FreeBufferAddr+wBufStatusAddr*0x200;
+              
+                  switch (ucKeyType)
+                  {
+                      case FLASH_KEY_FACTORY:
+                      {
+                          wStatusAddr = FACTORY_STATUS_ADDR;
+                          wStartAddr = FACTORY_START;
+                          wKeySize = FACTORY_SIZE;
+                          break;
+                      }
+              #if INPUT_TYPE != INPUT_1A
+                      case FLASH_KEY_HDCP:
+                      {
+                          wStatusAddr = HDCPKEY_STATUS_ADDR;
+                          wStartAddr = HDCPKEYSET_START;
+                          wKeySize = HDCPKEY_SIZE;
+                          break;
+                      }
+              #endif        
+              #if ENABLE_DP_INPUT        
+                      case FLASH_KEY_DDCDP:
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 48  
+
+                      {
+                          wStatusAddr = DDCDPKEY_STATUS_ADDR;
+                          wStartAddr = DDCDPKEYSET_START;
+                          wKeySize = DDCDPKEY_SIZE;
+                          break;
+                      }
+              #endif        
+              
+                      default:
+                          break;
+                      
+                  } 
+                  
+                  if (FlashReadByte(wBufStatusAddr) == FLASH_KEY_VALID)
+                  {
+                      bFlashWriteFactory = TRUE;
+                      Flash_MoveTbl(TRUE, wBufStatusAddr+0x10, wStartAddr, wKeySize);
+                      FlashWriteByte(TRUE, wStatusAddr, FLASH_KEY_VALID);
+                      bFlashWriteFactory = FALSE;
+                      return TRUE;
+                  }    
+              
+                  return FALSE;
+              }
+              
+              void FlashFData_WriteBufferType(WORD addr)
+              {
+                  BYTE ucBufferType;
+              
+                  if(addr < FDATA_KEY_ADDR)
+                      return;
+              
+                  ucBufferType = FlashReadByte(addr);
+                  bFlashWriteFactory = TRUE;
+                  FlashSectorErase(TRUE, FlashFData_wKEYSET_START);
+                  FlashWriteByte(TRUE, addr, ucBufferType);
+                  bFlashWriteFactory = FALSE;
+              }
+              
+              void FlashFData_WriteKeyValidByte(void)
+              {
+                  bFlashWriteFactory = TRUE;
+                  FlashWriteByte(TRUE, FlashFData_wKEYSET_STATUS_ADDR, FLASH_KEY_VALID);
+                  if(FlashFData_ucKeyIndex)
+                      FlashWriteByte(TRUE, FlashFData_wKEYSET_STATUS_ADDR-1, FLASH_KEY_INVALID);
+                  FlashEnableWP();
+                  bFlashWriteFactory = FALSE;
+              }
+              
+              //////////////////////////////////////////////////////
+              /*                              how to use
+              
+              step 1: get start address of factory area data (0x3A000~0x3B000)
+                         for FlashFData_wKEYSET_START, 
+                         FlashFData_wKEYSET_STATUS_ADDR, 
+                         FlashFData_ucKeyIndex
+              step 2: write HDCP-key data to flash
+              
+              if(FACTORY_SEND_HDCP_KEY_START) // step 1
+              {
+                  if(FlashFData_GetWriteKeyAddress(FLASH_KEY_HDCP, TRUE) == FALSE)
+                  {
+C51 COMPILER V9.60.0.0   MSFLASH                                                           12/22/2020 19:50:50 PAGE 49  
+
+                      FlashSectorErase(TRUE, FLASH_FreeBufferAddr);
+                      FlashFData_BackupToFreeBuffer(FLASH_KEY_DDCDP);
+                      FlashSectorErase(TRUE, FlashFData_wKEYSET_START);
+                      FlashFData_BackupFromFreeBuffer(FLASH_KEY_DDCDP);
+                      FlashFData_WriteBufferType(FLASH_HDCP_EDIDAddr);
+                  }
+              }
+              else if(FACTORY_SEND_HDCP_KEY_DATA) // step 2
+              {
+                  if(HDCP_KEY_LENGTH < 304)
+                  {
+                      
+                  }
+                  else if(HDCP_KEY_LENGTH >= 304)
+                  {
+                      FlashFData_WriteKeyValidByte();
+                  }
+              }
+              
+              
+              
+              */
+              /////////////////////////////////////////////////////
+              
+              #endif
+2958          
+2959          
+2960          
+2961          #endif//USEFLASH
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   7677    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =     19      40
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----     156
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----       1
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

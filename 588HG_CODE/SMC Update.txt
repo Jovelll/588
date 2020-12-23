@@ -1,0 +1,35 @@
+20180615
+1.解决部分型号因未定义的编译报错与WARNING。
+2.add 512KMerge CheckSumbin 64.BAT 可生成带CheckSum的bin
+
+20180426
+1.add ENABLE_HDMI_DRR_MCCS function
+2.update TSUMXXC_DEMO Freesync 开启 后DP 无法点亮add DPRxGetDRRFlag_ISR 解决
+3.DEBUG OFF 无法点亮， 编译WARNING 引起，清除解决
+
+20180126
+1. fixed DP2 DDC2BI 不通
+20171215
+add ENABLE_OSD_MASK0_VALUE for OSD transprent
+20170818
+add ENABLE_DAC_DEPOP for MST9570S EearPhone pop noise
+20160922
+add MainBoard_MST250B_D01A_S //TSUMU58UDT4-1 With eDP
+20160919
+1. add hotVolumeMenu
+2. add ddr initial to fix freesync abnormal when monitor wake up from sleep
+20160912
+1. fix freesync screen crash
+2. enable RTE , disable DPS
+
+20160906
+1. update FreeSync Mode
+
+20160818
+1.update chinese languge
+
+20160421
+1.update dp color space
+2.add auto color tool function
+20120920 
+all chips: remove the setting of double LVDS clock swing from panel.h to main board

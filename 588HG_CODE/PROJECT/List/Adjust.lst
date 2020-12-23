@@ -1,0 +1,785 @@
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ADJUST
+OBJECT MODULE PLACED IN .\Obj\Adjust.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\Adjust.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYST
+                    -EM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\
+                    -INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\Adjust.lst) TABS(2) OBJECT(.\Obj\Adjust.
+                    -obj)
+
+line level    source
+
+   1          #include <math.h>
+   2          #include "types.h"
+   3          #include "global.h"
+   4          #include "ms_reg.h"
+   5          #include "ms_rwreg.h"
+   6          #include "debug.h"
+   7          #include "Common.h"
+   8          #include "msosd.h"
+   9          #include "Board.h"
+  10          #include "menudef.h"
+  11          #include "msdlc.h"
+  12          #include "msace.h"
+  13          #if ENABLE_HDMI
+  14          #include "msHDMI.h"
+  15          #include "msHDMIACE.h"
+  16          #endif
+  17          #include "misc.h"
+  18          #include "drvosd.h"
+  19          #include "drvgpio.h"
+  20          #include "adjust.h"
+  21          #if ENABLE_LED_CONTROLLER
+              #include "LEDControl.h"
+              #endif
+  24          #if 1//USE_DAC_ADJ
+  25          #include "drvDAC.H"
+  26          #endif
+  27          //2020-12-16 add jove
+  28          #include "Customer_config.h"
+  29          #include "Customer_CEHUA.h"
+  30          ////////////////////////////////////////
+  31          //#include "drvAdjust.h"
+  32          //#include "halRwreg.h"
+  33          ///////////////////////////////////////
+  34          #if ENABLE_DPS
+  35          #include "msdps_setting.h"
+  36          #endif
+  37          //===================================================
+  38          // Local function declaration
+  39          #if UsesRGB
+              void mStar_AdjustRedColor( BYTE rColor, BYTE gColor, BYTE bColor );
+              void mStar_AdjustGreenColor( BYTE rColor, BYTE gColor, BYTE bColor );
+              void mStar_AdjustBlueColor( BYTE rColor, BYTE gColor, BYTE bColor );
+              #else
+  44          void mStar_AdjustRedColor( BYTE color, BYTE contrast );
+  45          void mStar_AdjustGreenColor( BYTE color, BYTE contrast );
+  46          void mStar_AdjustBlueColor( BYTE color, BYTE contrast );
+  47          #endif
+  48          
+  49          extern void GetColorTempRGB(ColorType *pstColor);
+  50          extern Bool IsColorspaceRGB(void);
+  51          #if ENABLE_POWER_PORTECT
+              extern void PowerProtectInit(void);
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 2   
+
+              #endif
+  54          
+  55          void mStar_AdjustBlackLevel( BYTE BlackLevel );
+  56          
+  57          #ifndef MinDutyValue
+              #define MinDutyValue        0x00
+              #endif
+  60          #ifndef MidDutyValue
+              #define MidDutyValue        0x60  
+              #endif
+  63          #ifndef MaxDutyValue
+              #define MaxDutyValue       0xFF 
+              #endif
+  66          
+  67          //For User Brightness
+  68          #ifndef RealMaxBrightnessValue
+  69          #define RealMaxBrightnessValue  MaxDutyValue
+  70          #endif
+  71          #ifndef RealMinBrightnessValue
+  72          #define RealMinBrightnessValue  MinDutyValue
+  73          #endif
+  74          
+  75          
+  76          #define RealAbsoluteMinBrightnessValue  0x10
+  77          
+  78          
+  79          #define LowBoundDCRRealBriRatio          20     // CCFL: 30%, LED:50%
+  80          #define RealMinDcrBrightnessValue    ((((RealMaxBrightnessValue - RealMinBrightnessValue) * LowBoundDCRRea
+             -lBriRatio) / 100) + RealMinBrightnessValue)
+  81          
+  82          //****************************************************
+  83          #define MaxBacklightNowValue    240  // HongYi suggest 100712 Rex
+  84          #define MinBacklightNowValue      20//17//29  //39  //19//17
+  85          
+  86          #if MainBoardType==MainBoard_3598 || MainBoardType == MainBoard_4432 || MainBoardType == MainBoard_4663
+              #define AbsMostDarkest1  ((CURRENT_INPUT_IS_VGA())?(19):(17))  // 16  //20081201
+              #define AbsNearDarkest1  ((CURRENT_INPUT_IS_VGA())?(24):(20))  // 18
+              #define AbsMostDarkest2  ((CURRENT_INPUT_IS_VGA())?(19):(17))  // 17
+              #define AbsNearDarkest2  ((CURRENT_INPUT_IS_VGA())?(25):(22))  // 20
+              #else
+  92          #define AbsMostDarkest1  ((CURRENT_INPUT_IS_VGA())?(16):(16))  // 16  //20081201
+  93          #define AbsNearDarkest1  ((CURRENT_INPUT_IS_VGA())?(19):(17))  // 18
+  94          #define AbsMostDarkest2  ((CURRENT_INPUT_IS_VGA())?(16):(16))  // 17
+  95          #define AbsNearDarkest2  ((CURRENT_INPUT_IS_VGA())?(21):(19))  // 20
+  96          #endif
+  97          
+  98          #define GET_MAP_VALUE(_X_,_Y_,_Z_)  ((DWORD)(_X_) * (_Y_) / (_Z_))
+  99          
+ 100          WORD UserAdjust_NonlinerSetCurve(WORD level, WORD code *p_curve, WORD num)
+ 101          {
+ 102   1          DWORD     value1=0,temp1=0,temp2=0;
+ 103   1          DWORD    i=0;
+ 104   1      //  printf("\r\n level  is %d",level);
+ 105   1          for(i=2;i<num;i+=2)
+ 106   1          {
+ 107   2              if(level==p_curve[i])
+ 108   2              {
+ 109   3                  value1=p_curve[i+1];
+ 110   3                  break;
+ 111   3              }
+ 112   2              if(level>=p_curve[i-2] && level<=p_curve[i])
+ 113   2              {
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 3   
+
+ 114   3      
+ 115   3                  temp1 = p_curve[i] - p_curve[i-2];
+ 116   3          if(p_curve[i+1]>p_curve[i-1])
+ 117   3            {
+ 118   4                  temp2 =p_curve[i+1]- p_curve[i-1];
+ 119   4            
+ 120   4            value1=p_curve[i-1]+(DWORD)GET_MAP_VALUE(((DWORD)level-p_curve[i-2]),temp2,temp1);
+ 121   4            }
+ 122   3          else
+ 123   3                   {
+ 124   4                    temp2 =p_curve[i-1]- p_curve[i+1];    
+ 125   4          value1= p_curve[i-1]-(DWORD)GET_MAP_VALUE(((DWORD)level-p_curve[i-2]),temp2,temp1);
+ 126   4            }  
+ 127   3                  break;
+ 128   3              }
+ 129   2          }
+ 130   1          return value1;
+ 131   1      }
+ 132          
+ 133          //****************************************************
+ 134          BYTE code msAdjustNullData[] = {0};
+ 135          void msAdjustDummy(void)
+ 136          {
+ 137   1          BYTE xdata i = msAdjustNullData[0];
+ 138   1      }
+ 139          void mStar_AdjustDcrBrightness( void )
+ 140          {
+ 141   1          static BYTE xdata brightness;
+ 142   1          static BYTE xdata DcrCutoffFlag = 0;    //DCR new rule 081128
+ 143   1      
+ 144   1      #if ENABLE_DEBUG
+ 145   1      static BYTE xdata PreValue;
+ 146   1      #endif
+ 147   1      
+ 148   1          if( BacklightNow < MinBacklightNowValue )
+ 149   1              BacklightNow = MinBacklightNowValue;
+ 150   1      
+ 151   1          if( BacklightNow > MaxBacklightNowValue )
+ 152   1          {
+ 153   2              brightness = RealMaxBrightnessValue;
+ 154   2              DcrCutoffFlag = 0;    //20081201
+ 155   2          }
+ 156   1          else if( BacklightNow <= MinBacklightNowValue )
+ 157   1          {
+ 158   2              if( SetDarkestFlag ) // the black pattern
+ 159   2              {
+ 160   3                  SetDarkestFlag = 0;
+ 161   3                  PreBrightData = 0; // to make sure if bright data exist, it will update brightness.
+ 162   3                  //brightness = RealAbsoluteMinBrightnessValue;  // set logical absolute dark value, // RealMin
+             -BrightnessValue;
+ 163   3                  if( DcrCutoffFlag == 0 ) // DcrCutoffFlag nitial value is 0
+ 164   3                  {
+ 165   4                      if(( DarkData <= AbsMostDarkest1 ) && ( BrightData <= AbsNearDarkest1 ) )   // >>>  logica
+             -l absolute dark condition  <<< 20081128
+ 166   4                          // set logical absolute dark value, // RealMinBrightnessValue;
+ 167   4                      {
+ 168   5                          //brightness = RealMinDcrBrightnessValue;  // set logical absolute dark value, // Real
+             -MinBrightnessValue;
+ 169   5                          DcrCutoffFlag = 1;
+ 170   5                      }
+ 171   4                      brightness = RealMinDcrBrightnessValue;  // set logical absolute dark value, // RealMinBri
+             -ghtnessValue;
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 4   
+
+ 172   4                  }
+ 173   3                  else
+ 174   3                  {
+ 175   4                      if(( DarkData <= AbsMostDarkest2 ) && ( BrightData <= AbsNearDarkest2 ) )   // set logical
+             - absolute dark value,
+ 176   4                      {
+ 177   5                          if( brightness > RealAbsoluteMinBrightnessValue )
+ 178   5                              brightness--;  // set logical absolute dark value, // RealMinBrightnessValue;
+ 179   5      #if defined(DCRClearBacklight)
+ 180   5                           if(OSD_MENU_EXIST() && ( brightness < RealMinBrightnessValue ) )
+ 181   5                              brightness = RealMinBrightnessValue;
+ 182   5                           ForceDelay1ms( 100 );
+ 183   5      #endif
+ 184   5                      }
+ 185   4                      else
+ 186   4                      {
+ 187   5                          DcrCutoffFlag = 0;
+ 188   5                          brightness = RealMinDcrBrightnessValue;
+ 189   5                      }
+ 190   4                  }
+ 191   3              }    // if(SetDarkestFlag)
+ 192   2              else // RealMinDcrBrightnessValue=98 -> brightness >=98 (min)
+ 193   2              {
+ 194   3                  DcrCutoffFlag = 0;
+ 195   3                  brightness = RealMinDcrBrightnessValue;
+ 196   3              }
+ 197   2          }
+ 198   1          else  // RealMinDcrBrightnessValue=98 -> brightness >=98 (min)
+ 199   1          {
+ 200   2              DcrCutoffFlag = 0;
+ 201   2              brightness = ((( DWORD )( BacklightNow - MinBacklightNowValue ) * ( RealMaxBrightnessValue - RealM
+             -inDcrBrightnessValue ) ) / ( MaxBacklightNowValue - MinBacklightNowValue ) ) + RealMinDcrBrightnessValue;
+ 202   2          }
+ 203   1      
+ 204   1          #if 0//DEBUG_PRINT_ENABLE
+                  printData( "---BacklightNow =%d", BacklightNow );
+                  printData( "---brightness =%d", brightness );
+                  #endif
+ 208   1      
+ 209   1          #if ENABLE_DEBUG
+ 210   1          if(abs(PreValue-BacklightNow) > 3)
+ 211   1          {
+ 212   2              PreValue = BacklightNow;
+ 213   2          printData( "---BacklightNow =%d", BacklightNow );
+ 214   2          }
+ 215   1          #endif
+ 216   1      
+ 217   1      #if ENABLE_LED_CONTROLLER
+                  msLED_DimmingPWMAdjust(brightness);
+                  drvGPIO_SetBacklightDuty(0,0); // wait for coding, prevent complier warning
+              #else
+ 221   1          #if BRIGHTNESS_INVERSE  //+Duty power
+                  drvGPIO_SetBacklightDuty(BrightnessPWM, 0xFF-brightness);
+                  #else                           //-Duty power
+ 224   1          drvGPIO_SetBacklightDuty(BrightnessPWM, brightness);
+ 225   1          #endif
+ 226   1      #endif
+ 227   1      
+ 228   1          #if defined(DCRClearBacklight)
+ 229   1          if( brightness == RealAbsoluteMinBrightnessValue )
+ 230   1          {
+ 231   2      
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 5   
+
+ 232   2              if( BackLightActiveFlag )
+ 233   2                  hw_ClrBlacklit();
+ 234   2          }
+ 235   1          else
+ 236   1          {
+ 237   2              if( !BackLightActiveFlag )
+ 238   2                  hw_SetBlacklit();
+ 239   2          }
+ 240   1          #endif
+ 241   1      }
+ 242          
+ 243          void mStar_AdjustBrightness( BYTE brightness )
+ 244          {
+ 245   1          if(brightness>=MaxBrightnessValue)
+ 246   1          brightness=MaxBrightnessValue;
+ 247   1          else if(brightness<=MinBrightnessValue)
+ 248   1          brightness=MinBrightnessValue;
+ 249   1        
+ 250   1        #if Enable_DIGITAL_DIMMING
+ 251   1          ICE_MAIN_BRI_CTRL(TRUE);
+ 252   1        #endif
+ 253   1        
+ 254   1        
+ 255   1           if(brightness>50) //DefBrightness
+ 256   1            {
+ 257   2               // brightness=((DWORD)(brightness-DefBrightness)*(MaxDutyValue-MidDutyValue))/(MaxBrightnessValue-De
+             -fBrightness)+MidDutyValue;
+ 258   2              
+ 259   2               brightness=((DWORD)(brightness-50)*(MaxDutyValue-MidDutyValue))/50+MidDutyValue;
+ 260   2          #if Enable_DIGITAL_DIMMING
+ 261   2               brightness=brightness-64;
+ 262   2              // ICE_BRIGHTNESS_RGBCMY(0x00);
+ 263   2        
+ 264   2        
+ 265   2            ICE_BRIGHTNESS_RGBCMY(brightness);  
+ 266   2        
+ 267   2        #endif
+ 268   2        
+ 269   2            }
+ 270   1          else
+ 271   1            {
+ 272   2               // brightness=((DWORD)(brightness)*(MidDutyValue-MinDutyValue))/DefBrightness+MinDutyValue;
+ 273   2               
+ 274   2               brightness=((DWORD)(brightness)*(MidDutyValue-MinDutyValue))/50+MinDutyValue;
+ 275   2        #if Enable_DIGITAL_DIMMING
+ 276   2              //ICE_BRIGHTNESS_RGBCMY(0x40);
+ 277   2              brightness=64-brightness;
+ 278   2              brightness=brightness|0x40;
+ 279   2             ICE_BRIGHTNESS_RGBCMY(brightness); 
+ 280   2        
+ 281   2        #endif
+ 282   2        
+ 283   2            }
+ 284   1        
+ 285   1          BacklightNow = BacklightPrev = brightness;
+ 286   1        
+ 287   1      #if ENABLE_LED_CONTROLLER
+                  msLED_DimmingPWMAdjust(brightness);
+              #else
+ 290   1          #if BRIGHTNESS_INVERSE  //+Duty power
+                  drvGPIO_SetBacklightDuty(BrightnessPWM, 0xFF-brightness);
+                  //drvGPIO_SetBacklightDuty(BrightnessPWM, 0);
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 6   
+
+                  #else                           //-Duty power
+ 294   1          //drvGPIO_SetBacklightDuty(BrightnessPWM, 0xff);
+ 295   1          drvGPIO_SetBacklightDuty(BrightnessPWM, brightness);
+ 296   1          
+ 297   1          #endif
+ 298   1      #endif
+ 299   1      #if ENABLE_POWER_PORTECT
+                  PowerProtectInit();
+              #endif
+ 302   1      }
+ 303          
+ 304          //=================================================================================
+ 305          //volume=((DWORD)volume*63)/100+57;    //LM929 2W for Lai
+ 306          //volume=((DWORD)volume*84)/100+93;    //LM929 3W && Carrefour for Lai
+ 307          //volume=((DWORD)volume*92)/100+93;    //-0923-LM929 3W && Carrefour for Lai
+ 308          //volume=((DWORD)volume*170)/100+57;   //LM729 && Carrefour for Lu
+ 309          //volume = ( ( DWORD ) volume * 70) / 20 +90; //qx.long20061213
+ 310          //volume = ( ( DWORD ) volume * 34) / 100 +160; //qx.long20061213
+ 311          // volume=((DWORD)volume*146)/100+51;   //1127 for Lai TESTING 19" AUDIO
+ 312          //=================================================================================
+ 313          #if AudioFunc
+ 314          
+ 315          #ifndef DACMinVolumeValue
+ 316          #define DACMinVolumeValue       0
+ 317          #endif
+ 318          #ifndef DACMaxVolumeValue
+ 319          #define DACMaxVolumeValue       0xC0//255
+ 320          #endif
+ 321          #ifndef DACVolume50Value
+ 322          #define DACVolume50Value            ((DACMaxVolumeValue-DACMinVolumeValue)*50/100+DACMinVolumeValue)
+ 323          #endif
+ 324          
+ 325          
+ 326          #ifndef _CUSTOMER_VOLUME_TBL
+              #define _CUSTOMER_VOLUME_TBL           { 0,      0x390, \
+                                   1,     0x16c,\
+                                  66,    0x68,\
+                                 100,   0x3d,\
+                                  }
+              
+              #endif
+ 334          
+ 335          
+ 336          WORD code U32VolumeCurv[]= _CUSTOMER_VOLUME_TBL;
+ 337          
+ 338          //==============
+ 339          void mStar_AdjustVolume(BYTE volume)
+ 340          {
+ 341   1        int tempvolume;
+ 342   1        WORD u8Num=0;
+ 343   1          u8Num= sizeof(U32VolumeCurv)/sizeof(WORD);
+ 344   1      
+ 345   1      #if AudioIC_CS8003_Enable
+              
+              
+              #if EarphoneDet_Enable  
+                   BYTE tempearVolume;
+              #endif
+              
+                if (volume > MaxVolumeValue)
+                  volume = MaxVolumeValue;
+                else if (volume < MinVolumeValue)
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 7   
+
+                  volume = MinVolumeValue;
+              
+                       if(volume==0)
+                      {
+                          hw_SetMute();
+                          Delay1ms(2);
+                       }
+                   
+              //--------------------------------------------------------------------------------------------
+              #if EarphoneDet_Enable  
+                if (HarphoneDet_Pin)
+                {
+                  if ( volume )
+                  {
+                         tempearVolume=volume;
+              
+                            if(volume<50)
+                            tempearVolume=((DWORD)volume*(DACVolume50Value-DACMinVolumeValue))/50+DACMinVolumeValue;
+                            else
+                            tempearVolume=((DWORD)(volume-50)*(DACMaxVolumeValue-DACVolume50Value))/(100-50)+DACVolume50Va
+             -lue;
+                      
+                    UserPrefEarVolume=tempearVolume;
+                    //msAudioDPGA_SetVolume ( E_AUDIO_LEFT_RIGHT_CH, 0xFF-UserPrefEarVolume);
+                  }
+                  else
+                  {
+                    msAudioDPGA_Mute();
+                  }
+                }
+              #endif
+              //-------------------------------------------------------------------
+              tempvolume = 0; 
+                      if(volume)
+                      {   
+                              volume= UserAdjust_NonlinerSetCurve(volume,&U32VolumeCurv[0],u8Num);
+                      }
+                      else
+                      {
+                               volume = 0;
+                      }
+              
+                  #if VOLUME_INVERSE  //+Duty power
+                    drvGPIO_SetBacklightDuty(VolumePWM, 0xFF-volume);
+                  #else       //-Duty power
+                    drvGPIO_SetBacklightDuty(VolumePWM, volume);
+                  #endif
+              
+              #if EarphoneDet_Enable  
+                   if((volume!=0)&&(!UserOSDMuteOnFlag)&&(!HarphoneDet_Pin)&&bPanelOnFlag)
+                    {
+                  msWrite2ByteMask(  REG_2CA4, 0xFF76    , 0xFF7F);  //[15:8] DPGA_1_TIMEOUT_N; [6:4] DPGA_1_STEP=3'd7->N=
+             -1;  [2] DPGA_1_ZERO_DET_EN; [1] DPGA_1_FADING_EN;   [0] DPGA_1_DPGA_EN;
+                  hw_ClrMute();
+                    }
+                   else
+                    {
+                  msWrite2ByteMask(  REG_2CA4, 0xFF77    , 0xFF7F);  //[15:8] DPGA_1_TIMEOUT_N; [6:4] DPGA_1_STEP=3'd7->N=
+             -1;  [2] DPGA_1_ZERO_DET_EN; [1] DPGA_1_FADING_EN;   [0] DPGA_1_DPGA_EN;
+                  hw_SetMute(); 
+                    }
+              #else  
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 8   
+
+                      if ((volume!=0)&&(!UserOSDMuteOnFlag))
+                      {
+                            hw_ClrMute();
+                      }
+              #endif
+              
+              
+              
+              #else   //cs8563
+ 423   1      
+ 424   1        if (volume > MaxVolumeValue)
+ 425   1          volume = MaxVolumeValue;
+ 426   1        else if (volume < MinVolumeValue)
+ 427   1          volume = MinVolumeValue;
+ 428   1      
+ 429   1               if(volume==0)
+ 430   1              {
+ 431   2                  hw_SetMute();
+ 432   2                  Delay1ms(2);
+ 433   2               }
+ 434   1           
+ 435   1      //------------------------------------------------------------------- 
+ 436   1      //tempvolume=AudVolumeTab[100 - volume];  
+ 437   1        tempvolume= UserAdjust_NonlinerSetCurve(volume,&U32VolumeCurv[0],u8Num);
+ 438   1      #if  MainBoardType==MainBoard_TSUML88CMC2
+                msAudioDPGA_SetVolume( E_AUDIO_LEFT_RIGHT_CH, tempvolume );
+              #endif
+ 441   1         if ((volume!=0)&&(!UserOSDMuteOnFlag))
+ 442   1              {
+ 443   2          #if EarphoneDet_Enable
+                  if(!HarphoneDet_Pin)
+                  #endif
+ 446   2              hw_ClrMute();
+ 447   2              }
+ 448   1      #endif
+ 449   1      }
+ 450          //====================================================
+ 451          
+ 452          #if 0 //MS_DAC&&IIYAMASeries
+              #define DEFAULT_LINEOUT_GAIN            0x27
+              #define DEFAULT_HDMI_LINEOUT_GAIN     0x36
+              #define DEFAULT_DP_LINEOUT_GAIN       0x3D
+              
+              #define DEF_DP_DAC_GAIN         (0)
+              #define DEF_LINEIN_DAC_GAIN     (0)
+              #define DEF_HDMI_DAC_GAIN     (0)
+              
+              void ChangeAudioSourceToLineOut( void )
+              {
+                  msAudioLineout_SourceSel( E_LINEOUT_FROM_LINEIN0 );
+                  #if !USE_DAC_ADJ
+                  //msAudioDPGA_SetVolume( E_AUDIO_LEFT_RIGHT_CH, DEF_LINEIN_DAC_GAIN );  //111118 Modify
+                  msAudioLineOutGain( DEFAULT_LINEOUT_GAIN );
+                  #endif
+              }
+              
+              #if ENABLE_HDMI || ENABLE_DP_INPUT
+              void ChangeAudioSourceToDigital( void )
+              {
+              #if ENABLE_HDMI
+                  if( CURRENT_INPUT_IS_TMDS()
+                   && gScInfo.InputTmdsType == TMDS_HDMI 
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 9   
+
+                  )
+                  {
+                      msAudioLineout_SourceSel( E_LINEOUT_FROM_DAC );
+                #if !USE_DAC_ADJ
+                      //msAudioDPGA_SetVolume( E_AUDIO_LEFT_RIGHT_CH, DEF_HDMI_DAC_GAIN );  //111118 Modify
+                      msAudioLineOutGain( DEFAULT_HDMI_LINEOUT_GAIN );
+                  #endif
+                  }
+              #endif
+              #if ENABLE_DP_INPUT
+                  if(CURRENT_INPUT_IS_DISPLAYPORT())
+                  {
+                      msAudioLineout_SourceSel( E_LINEOUT_FROM_DAC );
+                #if !USE_DAC_ADJ
+                     // msAudioDPGA_SetVolume( E_AUDIO_LEFT_RIGHT_CH, DEF_DP_DAC_GAIN );  //111118 Modify
+                      msAudioLineOutGain( DEFAULT_DP_LINEOUT_GAIN );
+                  #endif
+                  }
+              #endif
+              }
+              #endif
+              #endif
+ 498          
+ 499          #endif 
+ 500          
+ 501          void mStar_AdjustRGBColor(BYTE u8Contrast, BYTE u8Red, BYTE u8Green, BYTE u8Blue)
+ 502          {
+ 503   1          if(IsColorspaceRGB()
+ 504   1      #if ENABLE_DISPLAY_UNDERSCAN||CHIP_ID == CHIP_TSUMD
+                      && !g_SetupPathInfo.bMRWR2Y
+              #endif
+ 507   1              && (UserPrefInputColorFormat == INPUTCOLOR_RGB) //20150121
+ 508   1              )
+ 509   1          {
+ 510   2      #if (CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID == CHIP_TSUM9)||(CHI
+             -P_ID == CHIP_TSUMF)
+ 511   2              msWriteByteMask(SC0_02, 0, _BIT3);
+ 512   2      #endif
+ 513   2              msAdjustPCContrastRGB(MAIN_WINDOW, u8Contrast, u8Red, u8Green, u8Blue);
+ 514   2          }
+ 515   1          else
+ 516   1          {
+ 517   2      #if (CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID == CHIP_TSUM9)||(CHI
+             -P_ID == CHIP_TSUMF)
+ 518   2              msWriteByteMask(SC0_02, _BIT3, _BIT3);
+ 519   2      #endif
+ 520   2              msAdjustVideoContrastRGB(MAIN_WINDOW,u8Contrast, u8Red, u8Green, u8Blue);
+ 521   2              //printMsg("\r\n YUV");
+ 522   2          }
+ 523   1      }
+ 524          
+ 525          #define CONTRAST_MIN     30
+ 526          //2020-12-16 add jove 
+ 527          #if ((Customer_Type_Sel    == Customer_CEHUA) &&  (PanelType == PanelCLAA170WA02))
+              #define CONTRAST_MID     136
+              #elif ((Customer_Type_Sel    == Customer_CEHUA) &&  (PanelType == PanelM190A1L02_1))
+              #define CONTRAST_MID     124
+              #else
+ 532          #define CONTRAST_MID     148  
+ 533          #endif
+ 534          
+ 535          #define CONTRAST_MAX     200 //178 
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 10  
+
+ 536          
+ 537          BYTE mStar_ChangeAdjContrastValue(BYTE contrast)
+ 538          {
+ 539   1        if (contrast > DefContrast)
+ 540   1          contrast = ((((WORD)(contrast-DefContrast) * (CONTRAST_MAX -CONTRAST_MID)/(100-DefContrast))) + CONTRAST
+             -_MID);//128~(Color+30)
+ 541   1        else
+ 542   1               contrast= ((((WORD)contrast * (CONTRAST_MID - CONTRAST_MIN)) / DefContrast)+CONTRAST_MIN);//88~128
+ 543   1      
+ 544   1             return contrast;
+ 545   1      
+ 546   1      }
+ 547          
+ 548          void mStar_AdjustContrast( BYTE contrast )
+ 549          {
+ 550   1          xdata ColorType CT;
+ 551   1      
+ 552   1          GetColorTempRGB(&CT);
+ 553   1          contrast = mStar_ChangeAdjContrastValue(contrast);
+ 554   1          mStar_AdjustRGBColor(contrast, CT.u8Red, CT.u8Green, CT.u8Blue);
+ 555   1      }
+ 556          
+ 557          void mStar_AdjustRedColor( BYTE color, BYTE contrast )
+ 558          {
+ 559   1          xdata ColorType CT;
+ 560   1      
+ 561   1          GetColorTempRGB(&CT);
+ 562   1          contrast = mStar_ChangeAdjContrastValue(contrast);  
+ 563   1          mStar_AdjustRGBColor(contrast, color, CT.u8Green, CT.u8Blue);
+ 564   1      }
+ 565          void mStar_AdjustGreenColor( BYTE color, BYTE contrast )
+ 566          {
+ 567   1          xdata ColorType CT;
+ 568   1      
+ 569   1          GetColorTempRGB(&CT);
+ 570   1          contrast = mStar_ChangeAdjContrastValue(contrast);
+ 571   1          mStar_AdjustRGBColor(contrast, CT.u8Red, color, CT.u8Blue);
+ 572   1      }
+ 573          void mStar_AdjustBlueColor( BYTE color, BYTE contrast )
+ 574          {
+ 575   1          xdata ColorType CT;
+ 576   1      
+ 577   1          GetColorTempRGB(&CT);
+ 578   1          contrast = mStar_ChangeAdjContrastValue(contrast);
+ 579   1          mStar_AdjustRGBColor(contrast, CT.u8Red, CT.u8Green, color);
+ 580   1      }
+ 581          
+ 582          void mStar_AdjustHPosition( WORD position )
+ 583          {
+ 584   1          SC0_SET_IMAGE_START_H(position);//msWrite2Byte(SC0_07, position);
+ 585   1      }
+ 586          
+ 587          void mStar_AdjustVPosition( WORD position )
+ 588          {
+ 589   1      #if 1
+ 590   1      #if DECREASE_V_SCALING
+ 591   1          position = (position>VSTART_OFFSET)?(position-VSTART_OFFSET):(0);
+ 592   1      #endif
+ 593   1          SC0_SET_IMAGE_START_V(position);//msWrite2Byte( SC0_05, position );
+ 594   1      #else
+                  if( DecVScaleFlag )
+                  {
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 11  
+
+                      if( position <= ( VScaleDecValue / 2 ) )
+                          position = VScaleDecValue / 2 + 1;
+                      msWrite2Byte( SC0_05, position - ( VScaleDecValue / 2 ) );
+                  }
+                  else
+                  {
+                      if( position == 0 )
+                          position = 1;
+                      msWrite2Byte( SC0_05, position );
+                  }
+              #endif
+ 608   1        #if CHIP_ID==CHIP_TSUMD
+                  if((g_SetupPathInfo.bFBMode)&& msRead2Byte(REG_3818)&BIT3)
+                  mStar_SetIVS();
+                #endif
+ 612   1      
+ 613   1      }
+ 614          
+ 615          // 100702 coding, modify to wait complete blanking
+ 616          void mStar_WaitForDataBlanking( void )
+ 617          {
+ 618   1          WORD retry = 0xffff;
+ 619   1      
+ 620   1          if( SyncLossState() || !bPanelOnFlag )
+ 621   1              return;
+ 622   1      
+ 623   1          while( retry-- && ( msReadByte(SC0_90)&BIT7 ) && !InputTimingChangeFlag );
+ 624   1      
+ 625   1          retry = 0xffff;
+ 626   1      
+ 627   1          while( retry-- && !( msReadByte(SC0_90)&BIT7 ) && !InputTimingChangeFlag );
+ 628   1      }
+ 629          
+ 630          void mStar_AdjustBackgoundColor( BYTE pattern )
+ 631          {
+ 632   1          BYTE rColor = 0;
+ 633   1          BYTE gColor = 0;
+ 634   1          BYTE bColor = 0;
+ 635   1      
+ 636   1      #if Customer_Type_Sel==Customer_GUANRONG 
+                   if(pattern == 6)
+                    {
+                   gColor = 0x78;
+                   bColor = 0xD7;
+                   mStar_WaitForDataBlanking();
+                   drvOSD_FrameColorRGB(rColor, gColor, bColor);
+                  // hw_ClrGreenLed();
+                  // ForceDelay1ms( 1000 );
+                  // hw_SetGreenLed();
+                  // ForceDelay1ms( 1000 );
+                  // hw_ClrGreenLed();
+                  // ForceDelay1ms( 1000 );
+                  // hw_SetGreenLed();
+                  // ForceDelay1ms( 1000 );
+                  // hw_ClrGreenLed();
+                  // ForceDelay1ms( 1000 );
+                   //hw_SetGreenLed();
+                   //ForceDelay1ms( 1000 );
+                  // hw_SetGreenLed();
+                  // ForceDelay1ms( 10000 );
+                    
+                    }  
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 12  
+
+                  else if( pattern == 1 )
+                 {
+                 
+                 rColor = 0xFF;
+                 gColor = 0xFF;
+                 bColor = 0xFF;
+                  
+                 }
+                  //else if( pattern == 2 ) //
+                  else if( pattern == 3 )
+                  {
+                      rColor = 0xFF;
+                  }
+                   else if( pattern ==4 )
+                  {
+                      gColor = 0xFF;
+                  }
+                   else if( pattern ==5 )
+                  {
+                      bColor = 0xFF;
+                  }         
+              #else
+ 681   1      #if Enable_LED
+                hw_ClrAmberLed();
+              #else
+ 684   1        hw_SetGreenLed();
+ 685   1      #endif  
+ 686   1          if( pattern == 0 )
+ 687   1          {
+ 688   2              rColor = 0xFF;
+ 689   2          hw_ClrGreenLed();
+ 690   2          
+ 691   2          }
+ 692   1          else if( pattern == 1 )
+ 693   1          {
+ 694   2              gColor = 0xFF;
+ 695   2      #if Enable_LED
+                hw_ClrAmberLed();
+              #else
+ 698   2        hw_SetGreenLed();
+ 699   2      #endif  
+ 700   2          }
+ 701   1          else if( pattern == 2 )
+ 702   1          {
+ 703   2              bColor = 0xFF;
+ 704   2          hw_ClrGreenLed();
+ 705   2          
+ 706   2          }
+ 707   1          else if( pattern == 4 )
+ 708   1          {
+ 709   2              rColor = 0xFF;
+ 710   2              gColor = 0xFF;
+ 711   2              bColor = 0xFF;
+ 712   2          hw_ClrGreenLed();
+ 713   2          }
+ 714   1      #endif
+ 715   1        
+ 716   1          mStar_WaitForDataBlanking();
+ 717   1          drvOSD_FrameColorRGB(rColor, gColor, bColor);
+ 718   1      #if Customer_Type_Sel==Customer_GUANRONG  
+                //ForceDelay1ms( 3000 );
+              #endif
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 13  
+
+ 721   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1700    ----
+   CONSTANT SIZE    =     37    ----
+   XDATA SIZE       =      3      13
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      44
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

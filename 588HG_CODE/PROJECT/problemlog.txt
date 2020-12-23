@@ -1,0 +1,6 @@
+
+
+// 2005/1/18  by wumaozhong 
+1. 17" T780KCDNDGCLN, SCALER MST17AK, no board, no sRGB, 6 language, no audio 
+and no dvi,reset chinese.
+2. version number is V0.02 and version date is 20050118 8:20

@@ -1,0 +1,182 @@
+#include "DDCColorHandler.h"
+#include "NVRam.h"
+#include "msflash.h"
+
+#if ENABLE_DeltaE
+XDATA BYTE BackupOutDE_L;
+XDATA BYTE BackupOutDE_H;
+XDATA BYTE g_CheckSumResult;
+XDATA BYTE xdata bToolWriteGamma=0;
+XDATA WORD xdata u16ChkSum_Addr=0;
+XDATA  BYTE PreStoreCheckSum = 0xff;
+XDATA  PreGmaChennel = 0xff;
+XDATA  PreAddr = 0xff;
+XDATA  BYTE StoreCheckSum = 0;
+
+XDATA CSTransferSettingType g_CS_Setting[2];
+XDATA BYTE* tAllFGamma3x3Matrix[2] =
+{
+     g_CS_Setting[0].CM,
+     g_CS_Setting[1].CM,
+};
+
+
+BYTE ColorCalibrationHandler(void)
+{
+    #if ENABLE_DeltaE
+
+    switch(DDCBuffer[2])
+    {
+            case MS_ColorEngine_OnOff :
+            {
+                if ( DDCBuffer[3] == 0x00 )
+                {
+                bToolWriteGamma=1;
+                //Color Engine Off
+                msWriteByteMask(SCE_02,  0, _BIT2|_BIT1 | _BIT0);	// fix-gamma/color-matrix/de-gamma disable.
+                msWriteByteMask(SC8_3F, 0, _BIT7);
+                }
+                else
+                {
+                bToolWriteGamma=0;
+                msWriteByteMask(SCE_02,  _BIT2|_BIT1 | _BIT0, _BIT2|_BIT1 | _BIT0);  // fix-gamma/color-matrix/de-gamma enable.
+                msWriteByteMask(SC8_3F, _BIT7, _BIT7);
+                }
+            }
+            break;
+
+            case MS_AutoGamma_OnOff :
+            {
+                if ( DDCBuffer[3] == 0x00 )
+                {
+                    //Off
+                    msWriteByte( SC0_32, 0x00);
+                    msWriteByte( SC0_1C, BackupOutDE_L);
+                    msWriteByte( SC0_1D, BackupOutDE_H );
+                }
+                else
+                {
+                    //On
+                    BackupOutDE_L = msReadByte(SC0_1C);
+                    BackupOutDE_H = msReadByte(SC0_1D);
+                    msWriteByte( SC0_32, 0x01);
+                    msWriteByte( SC0_1C,	msReadByte(SC0_18));
+                    msWriteByte( SC0_1D, 0x00 );
+                }
+            }break;
+
+            case MS_AutoGamma_SetBGColor :
+            {
+                msWriteByte( SC0_33, DDCBuffer[3] ); // Set Red frame color
+                msWriteByte( SC0_34, DDCBuffer[4] ); // Set Green frame color
+                msWriteByte( SC0_35, DDCBuffer[5] ); // Set Blue frame	 color
+            }
+            break;
+
+            case MS_GET_MODEL_NAME :
+            {
+            }
+            break;
+
+            case MS_WR_PostGamma :
+            {
+                XDATA WORD addr, j;
+                XDATA BYTE Sum, cnt, GmaMode, GmaChannel;
+                XDATA WORD CheckSum_addr=0,WordAddr;
+                Sum=0;
+                g_CheckSumResult =0 ;
+                GmaMode = DDCBuffer[3] ; // gamma mode
+                GmaChannel = DDCBuffer[4] ; // gamma channel
+                cnt = DDCBuffer[5] ; // data size
+                addr = (WORD)(DDCBuffer[6] << 8 );
+                addr += DDCBuffer[7]; // start addr-hi, lo
+
+                if((GmaChannel == PreGmaChennel) && (addr == PreAddr))
+                    StoreCheckSum = PreStoreCheckSum;
+                else
+                    PreStoreCheckSum = StoreCheckSum;
+
+                if((GmaChannel == 0) &&(addr  == 0))
+                {
+                    StoreCheckSum = 0;
+                    PreStoreCheckSum = 0xff;
+                    PreGmaChennel = 0xff;
+                    PreAddr = 0xf;;
+                }
+
+
+                if (GmaMode == 0)
+                {
+                    WordAddr = BGammaTblAddr + GmaChannel*GammaTblSize + addr;
+                }
+        		else if(GmaMode == 1)  //dicom
+    			{
+    				WordAddr = DicomGammaTblAddr + GmaChannel*DicomGammaTblSize + addr;
+    				//u16ChkSum_Addr = BGammaCheckSumStartAddr10+GmaChannel*2;
+    			}
+
+                for(j=0; j< cnt; j++)
+                    Sum ^=	DDCBuffer[8+j] ;
+
+                g_CheckSumResult = Sum;
+                #if USEFLASH
+                    Flash_WriteTbl(TRUE, WordAddr, &DDCBuffer[8], (WORD)cnt);
+                    FlashWriteByte(TRUE, CheckSum_addr, g_CheckSumResult);
+                #else
+                    NVRam_WriteTbl(WordAddr, &DDCBuffer[8], cnt);
+                    NVRam_WriteByte(CheckSum_addr, g_CheckSumResult);
+                #endif
+
+
+                PreGmaChennel = GmaChannel;
+                PreAddr = addr;
+
+                //if((GmaChannel == 2) && (addr == 40))
+                //{
+                //    NVRam_WriteByte(u16ChkSum_Addr, StoreCheckSum);
+                //}
+
+            }
+            break;
+
+            case MS_WR_ColorMatrix :
+            {
+                BYTE XDATA cnt, type,i;
+                cnt = DDCBuffer[4];
+                type = DDCBuffer[3];
+                g_CheckSumResult = 0;
+                for(i = 0 ; i < 18 ; i++)
+                {
+                    //tAllFGamma3x3Matrix[type][i] = DDCBuffer[5+i];
+                    g_CS_Setting[type].CM[i] = DDCBuffer[5+i];
+                    g_CheckSumResult ^= DDCBuffer[5+i];
+
+                    #if USEFLASH
+                        FlashWriteByte(TRUE, (RM_COLORSPACE_TRANS_BASEADDR + i) + (sizeof(CSTransferSettingType)*type), g_CS_Setting[type].CM[i]);
+                    #else
+                        NVRam_WriteByte( (RM_COLORSPACE_TRANS_BASEADDR + i) + (sizeof(CSTransferSettingType)*type), g_CS_Setting[type].CM[i]);
+                    #endif
+                }
+            }
+            break;
+
+            case MS_Read_ACK :
+            {
+                DDCBuffer[0] = 0x81;
+                DDCBuffer[1] =  g_CheckSumResult;
+                g_CheckSumResult = 0;
+                return 1;
+            }
+            break;
+
+            case MS_WR_BLOCK :
+            {
+                bToolWriteGamma = DDCBuffer[3] ;
+            }
+            break;
+        }
+    #endif
+    return 0;
+}
+
+#endif

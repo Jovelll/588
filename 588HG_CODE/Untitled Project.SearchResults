@@ -1,0 +1,24 @@
+---- WDT_CLEAR Matches (23 in 22 files) ----
+drvMcu_2.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_9.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_B.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_C.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_D.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_F.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_J.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_U.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_V.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+drvMcu_Y.c (d:\588\code\588hg_code\driver):    WDT_CLEAR();
+halRwreg_2.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_9.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_B.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_C.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_D.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_F.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_J.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_U.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_V.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+halRwreg_Y.h (d:\588\code\588hg_code\driver\inc):#define WDT_CLEAR()     (msWriteBit( REG_3C66, 1, _BIT1 ))
+Main.c (system):    WDT_CLEAR();
+Main.c (system):        WDT_CLEAR();
+Ms_PM.c (scaler):            WDT_CLEAR();

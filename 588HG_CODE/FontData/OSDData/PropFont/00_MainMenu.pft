@@ -1,0 +1,19 @@
+20 2 0 20 3a f 1 1
+0 01 NetAddr 'www\x010mstarsemi\x010com' x20x
+0 02 NetAddr 'www\x010mstarsemi\x010com' x20x
+0 01 BriteCont 'Brightness\x017Contrast' x20x
+0 02 BriteCont '\x101\x102\x017\x103\x104\x102' x20x
+0 01 AutoAdjust 'Auto\x00FAdjust' x20x
+0 02 AutoAdjust '\x105\x106\x107\x108' x20x
+0 01 InputSource 'Input\x00FSource' x20x
+0 02 InputSource '\x109\x10A\x10B' x20x
+0 01 ColorSettings 'Color\x00FSettings' x20x
+0 02 ColorSettings '\x10C\x10D\x10E\x10F' x20x
+0 01 3D '3D' x20x
+0 02 3D '3D' x20x
+0 01 DisplaySettings 'Display\x00FSettings' x20x
+0 02 DisplaySettings '\x110\x111\x10E\x10F' x20x
+0 01 OtherSettings 'Other\x00FSettings' x20x
+0 02 OtherSettings '\x112\x113\x10E\x10F' x20x
+0 01 Information 'Information' x20x
+0 02 Information '\x110\x111\x114\x115' x20x

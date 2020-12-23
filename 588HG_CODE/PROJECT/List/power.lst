@@ -1,0 +1,372 @@
+C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE POWER
+OBJECT MODULE PLACED IN .\Obj\power.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\power.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTE
+                    -M\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\I
+                    -NC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\power.lst) TABS(2) OBJECT(.\Obj\power.obj
+                    -)
+
+line level    source
+
+   1          #include "types.h"
+   2          #include "board.h"
+   3          #include "global.h"
+   4          #include "ms_reg.h"
+   5          //#include "panel.h"
+   6          #include "misc.h"
+   7          #include "ms_rwreg.h"
+   8          #include "mstar.h"
+   9          #include "debug.h"
+  10          #include "Common.h"
+  11          #include "msOsd.h"
+  12          #include "adjust.h"
+  13          //#include "msADC.h"
+  14          //#include "drvadc.h"
+  15          #include "MsHDCP.h"
+  16          #include "drvmsOVD.h"
+  17          #include "gpio_def.h"
+  18          //#if ENABLE_LED_CONTROLLER
+  19          //#include "LedControl.h"
+  20          //#endif
+  21          #include "Power.h"
+  22          
+  23          #if (MS_PM)
+  24          #include "ms_PM.h"
+  25          #endif
+  26          
+  27          ////////////////////////////////////////////////////
+  28          //#include "drvPower.h"
+  29          //#include "drvmStar.h"
+  30          ///////////////////////////////////////////////////
+  31          #if ENABLE_DPS
+  32          #include "msDPS_Setting.h"
+  33          #endif
+  34          
+  35          #define POWER_DEBUG    0
+  36          #if ENABLE_DEBUG&&POWER_DEBUG
+                  #define POWER_printData(str, value)   printData(str, value)
+                  #define POWER_printMsg(str)           printMsg(str)
+              #else
+  40              #define POWER_printData(str, value)
+  41              #define POWER_printMsg(str)
+  42          #endif
+  43          #define TurnOffOSD      1
+  44          
+  45          #if ENABLE_FACTORY_AUTOTEST
+  46          extern bit BFactoryAutoTest;
+  47          #endif
+  48          
+  49          extern BYTE xdata MenuPageIndex;
+  50          
+  51          
+  52          void Power_TurnOffLed( void );
+C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 2   
+
+  53          void Power_TurnOffPanel( void );
+  54          void Power_PowerOffSystem( void );
+  55          
+  56          void Power_TurnOnAmberLed( void );
+  57          extern Bool PowerOffSystem( void );
+  58          
+  59          
+  60          //=============================================
+  61          // Control system power status
+  62          // caller : main()
+  63          void Power_PowerHandler( void )
+  64          {
+  65   1          if( ForcePowerSavingFlag )
+  66   1          {
+  67   2              Clr_ForcePowerSavingFlag(); // clear force power saving flag
+  68   2              if( !PowerSavingFlag )
+  69   2              {
+  70   3                  if( PowerOnFlag )
+  71   3                  {
+  72   4                  
+  73   4                      #if ENABLE_DP_INPUT
+                        #if CHIP_ID==CHIP_TSUM9 || CHIP_ID == CHIP_TSUMF
+                        if(DPRXCheckDPMS()) // Do not into power saving when CTS
+                        {
+                                  Clr_ForcePowerSavingFlag();
+                                  return;
+                        } 
+                        #endif
+                              #endif
+  82   4                      
+  83   4                      Power_PowerOffSystem();
+  84   4      #if (MS_PM)
+  85   4                      msPM_SetFlag_Standby();
+  86   4      #endif
+  87   4                      Power_TurnOnAmberLed();//red
+  88   4                      printMsg("99999");
+  89   4                  }
+  90   3                  else
+  91   3                  {
+  92   4                      PowerOffSystem();
+  93   4                  }
+  94   3      
+  95   3              }
+  96   2          }
+  97   1      }
+  98          
+  99          extern void mStar_AdjustVolume( BYTE volume );
+ 100          void Power_PowerOnSystem( void )
+ 101          {
+ 102   1      #if ENABLE_USB_INPUT
+                  hw_USB_HI();
+              #endif
+ 105   1      #if FACTORY_CLEAR_EDID_WP_ENABLE
+                  if(FactoryModeFlag||BurninModeFlag||DoBurninModeFlag)
+                hw_ClrDDC_WP();
+                  else
+                hw_SetDDC_WP();
+              #endif
+ 111   1          Set_ShowInputInfoFlag();
+ 112   1          gBoolVisualKey = 0;
+ 113   1          gByteVisualKey = 0xff;
+ 114   1          Power_TurnOffPanel(); //modify by smc.lmw 20160617 for solution DC can not wake up
+C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 3   
+
+ 115   1          mStar_PowerUp();
+ 116   1          Clr_PowerSavingFlag();
+ 117   1          Set_InputTimingChangeFlag();
+ 118   1          //Clr_ForcePowerDownFlag();
+ 119   1          SrcFlags |= SyncLoss;
+ 120   1          SwitchPortCntr = 0;
+ 121   1      #if AudioFunc
+ 122   1          hw_ClrAudio_SD();
+ 123   1      #endif
+ 124   1      
+ 125   1          mStar_SetupInputPort();
+ 126   1      }
+ 127          
+ 128          void Power_PowerOffSystem( void )
+ 129          {
+ 130   1      #if ENABLE_USB_INPUT
+                  if( !PowerOnFlag )
+                      hw_USB_LOW();
+              #endif
+ 134   1      
+ 135   1      #if AudioFunc
+ 136   1          hw_SetMute();
+ 137   1          hw_SetAudio_SD();
+ 138   1      #endif
+ 139   1      
+ 140   1          Power_TurnOffPanel();
+ 141   1          mStar_PowerDown();
+ 142   1          Set_PowerSavingFlag();
+ 143   1          Clr_InputTimingChangeFlag();
+ 144   1          OsdCounter = 0;
+ 145   1          PowerDownCounter = 0;
+ 146   1          Clr_OsdTimeoutFlag();
+ 147   1      }
+ 148          
+ 149          void Power_TurnOffLed( void )
+ 150          {
+ 151   1      #if ENABLE_TOUCH_KEY
+                  #if TOUCH_KEY_CTRL_LED
+                  //TouchKeySetLEDStatus = TouchKeyLEDStatus_OFF;
+                  TouchKey_CtrlLED(TouchKeyLEDStatus_OFF);
+                  #endif
+              #else
+ 157   1      #if Enable_LED
+              
+                hw_ClrGreenLed();
+              
+                hw_SetAmberLed();
+                printMsg("1111");
+                
+              #else
+ 165   1        hw_ClrGreenLed();
+ 166   1          hw_ClrAmberLed();
+ 167   1        printMsg("159789");
+ 168   1      #endif
+ 169   1      
+ 170   1      #endif
+ 171   1      }
+ 172          
+ 173          void Power_TurnOnGreenLed( void )
+ 174          {
+ 175   1      #if ENABLE_TOUCH_KEY
+                  #if TOUCH_KEY_CTRL_LED
+C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 4   
+
+                  //TouchKeySetLEDStatus = TouchKeyLEDStatus_GREEN_ON;
+                  TouchKey_CtrlLED(TouchKeyLEDStatus_GREEN_ON);
+                  #endif
+              #else
+ 181   1          hw_SetGreenLed();
+ 182   1          hw_ClrAmberLed();
+ 183   1      #endif
+ 184   1      }
+ 185          
+ 186          void Power_TurnOnAmberLed( void )
+ 187          {
+ 188   1      #if ENABLE_TOUCH_KEY
+                  #if TOUCH_KEY_CTRL_LED
+                  //TouchKeySetLEDStatus = TouchKeyLEDStatus_AMBER_ON;
+                  TouchKey_CtrlLED(TouchKeyLEDStatus_AMBER_ON);
+                  #endif
+              #else
+ 194   1          hw_ClrGreenLed();
+ 195   1          hw_SetAmberLed();
+ 196   1      #endif
+ 197   1      }
+ 198          
+ 199          void Power_TurnOnPanel( void )
+ 200          {
+ 201   1      
+ 202   1          while( bPanelOffOnFlag )
+ 203   1          {
+ 204   2              if(InputTimingChangeFlag && !DisplayLogoFlag)
+ 205   2                  return;
+ 206   2          }
+ 207   1      
+ 208   1          bPanelOnFlag = 1;
+ 209   1      
+ 210   1          hw_SetPanel();
+ 211   1      #if ENABLE_EDP_OUTPUT
+                  //eDP don't need this code
+              #else // LVDS
+ 214   1        mStar_BlackWhiteScreenCtrl(BW_SCREEN_BLACK);
+ 215   1      #if ENABLE_LED_CONTROLLER
+                  #if ENABLE_REDUCE_BOOST_VOLTAGE
+                  LEDBoostDutyCtrl(LED_DISPLAY_CURRENT_SETTING);
+                  #endif
+              #endif
+ 220   1      
+ 221   1          ForceDelay1ms( PanelOnTiming1 );
+ 222   1      
+ 223   1      #if PANEL_VCOM_ADJUST
+                  HW_SET_VCOM_I2C_SDA();
+                  HW_SET_VCOM_I2C_SCL();
+              #endif
+ 227   1      
+ 228   1          Power_ModCtrl(_ENABLE);
+ 229   1      
+ 230   1      #ifndef ENABLE_UP_LOW_BOUNDARY_PROTECTION
+                  if( !iGenTuningFinished )
+                  {
+                      I_Gen_Tuning();
+                  }
+              #endif
+ 236   1      
+ 237   1          ForceDelay1ms( PanelOnTiming2 );
+ 238   1      
+C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 5   
+
+ 239   1          mStar_BlackWhiteScreenCtrl(BW_SCREEN_OFF);
+ 240   1      
+ 241   1      #ifdef ENABLE_UP_LOW_BOUNDARY_PROTECTION
+ 242   1          if( !iGenTuningFinished )
+ 243   1          {
+ 244   2              I_Gen_Tuning();
+ 245   2              //printMsg("------------------------ENABLE_UP_LOW_BOUNDARY_PROTECTION");
+ 246   2          }
+ 247   1      #endif
+ 248   1      
+ 249   1      #endif //ENABLE_EDP_OUTPUT
+ 250   1          if( InputTimingChangeFlag && !DisplayLogoFlag )                     // for mode change
+ 251   1              Power_TurnOffPanel();
+ 252   1          else
+ 253   1          {
+ 254   2      
+ 255   2        mStar_AdjustBrightness(UserPrefBrightness);
+ 256   2        
+ 257   2        #if ((CHIP_ID==CHIP_TSUMB || CHIP_ID==CHIP_TSUMY || CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_I
+             -D==CHIP_TSUMD || CHIP_ID==CHIP_TSUMJ) && (ENABLE_LED_CONTROLLER))
+                      msLED_On();
+                #else
+ 260   2              hw_SetBlacklit();
+ 261   2        #endif
+ 262   2          }
+ 263   1      
+ 264   1          POWER_printData("  Power_TurnOnPanel", 1);
+ 265   1      }
+ 266          
+ 267          void Power_TurnOffPanel( void )
+ 268          {
+ 269   1          if( !bPanelOnFlag )
+ 270   1              return;
+ 271   1      
+ 272   1          bPanelOnFlag = 0;
+ 273   1      
+ 274   1      #if TurnOffOSD
+ 275   1          Osd_DoubleBuffer(FALSE);
+ 276   1          Osd_Hide();
+ 277   1          mStar_ScalerDoubleBuffer(FALSE);
+ 278   1          Delay4us();
+ 279   1      #endif
+ 280   1      
+ 281   1        #if ((CHIP_ID==CHIP_TSUMB || CHIP_ID==CHIP_TSUMY || CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_I
+             -D==CHIP_TSUMD  || CHIP_ID==CHIP_TSUMJ) && (ENABLE_LED_CONTROLLER))
+                  msLED_Off();
+                #else
+ 284   1         // if (!DisplayLogoFlag)
+ 285   1      
+ 286   1        #if ENABLE_FACTORY_AUTOTEST
+ 287   1          if (BFactoryAutoTest==0)
+ 288   1      #endif 
+ 289   1          {
+ 290   2          hw_ClrBlacklit();
+ 291   2          }
+ 292   1      #endif
+ 293   1      
+ 294   1      #if BRIGHTNESS_INVERSE   //+Duty power
+                       drvGPIO_SetBacklightDuty(BrightnessPWM, 0xFF);
+              #else              //-Duty power
+ 297   1               drvGPIO_SetBacklightDuty(BrightnessPWM, 0);
+ 298   1      #endif
+C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 6   
+
+ 299   1      
+ 300   1      
+ 301   1      
+ 302   1          ForceDelay1ms( PanelOffTiming1 );
+ 303   1      
+ 304   1      #if PanelType==PanelLTM230HT03
+                  mStar_BlackWhiteScreenCtrl(BW_SCREEN_BLACK);
+              #else
+ 307   1          mStar_BlackWhiteScreenCtrl(BW_SCREEN_WHITE);
+ 308   1      #endif
+ 309   1          ForceDelay1ms( 80 );
+ 310   1          mStar_BlackWhiteScreenCtrl(BW_SCREEN_OFF);
+ 311   1      
+ 312   1          Power_ModCtrl(_DISABLE);
+ 313   1      
+ 314   1      #if PANEL_VCOM_ADJUST
+                  HW_CLR_VCOM_I2C_SCL();
+                  HW_CLR_VCOM_I2C_SDA();
+              #endif
+ 318   1      
+ 319   1          ForceDelay1ms( PanelOffTiming2 );
+ 320   1        #if ENABLE_FACTORY_AUTOTEST
+ 321   1            if (BFactoryAutoTest==0)
+ 322   1      #endif 
+ 323   1          {
+ 324   2          hw_ClrPanel();
+ 325   2           }
+ 326   1      #if TurnOffOSD
+ 327   1          Osd_DoubleBuffer(TRUE);
+ 328   1      #endif
+ 329   1          SetPanelOffOnCounter(1200);
+ 330   1          //u16PanelOffOnCounter = 1200;
+ 331   1          //bPanelOffOnFlag = 1;
+ 332   1      
+ 333   1          POWER_printData("Power_TurnOffPanel", 1);
+ 334   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    402    ----
+   CONSTANT SIZE    =     13    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

@@ -1,0 +1,713 @@
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE GLOBAL
+OBJECT MODULE PLACED IN .\Obj\Global.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\Global.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYST
+                    -EM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\
+                    -INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\Global.lst) TABS(2) OBJECT(.\Obj\Global.
+                    -obj)
+
+line level    source
+
+   1          #include "types.h"
+   2          #include "board.h"
+   3          #include "global.h"
+   4          #include "Debug.h"
+   5          #include "Common.h"
+   6          #if (LANGUAGE_TYPE==ASIA)||(LANGUAGE_TYPE==SIXTEEN)
+   7          #include "menudef.h"
+   8          #endif
+   9          #include "MsDLC.h"
+  10          #include "MsACE.h"
+  11          #include "Userpref.h"
+  12          #include "mseread.h"
+  13          #if ENABLE_DPS
+  14          #include "msDPS_Setting.h"
+  15          #endif
+  16          #if ENABLE_DSC
+  17          #include "msDSC_Setting.h"
+  18          #endif
+  19          #include "COLOR_VERIFY.h"
+  20          #include "msEread.h"
+  21          #include "Detect.h"
+  22          #if MS_DAC
+              #include "drvDAC.h"
+              #endif
+  25          #include "menufunc.h"
+  26          #if 1///ENABLE_EDP_OUTPUT
+  27          #include "DPTxApp.h"
+  28          #endif
+  29          #if CHIP_ID >= CHIP_TSUMC
+  30          volatile BOOL g_bOutputVsyncIsrFlag;
+  31          #endif
+  32          
+  33          
+  34          
+  35          
+  36          #if ENABLE_WATCH_DOG_INT
+              BYTE xdata u8WDT_Status=0;
+              #endif
+  39          
+  40          #if EnableTime1Interrupt
+              WORD XDATA g_u16MsCounter1 = 1000; // for System timer
+              BOOL XDATA bSecondTimer1 = FALSE;
+              BYTE XDATA u8SecondTIMER1 = 0;
+              #endif
+  45          
+  46          #if (CHIP_ID == CHIP_TSUM9||CHIP_ID == CHIP_TSUMF)
+  47          BOOL g_bFROTrimResult;
+  48          #endif
+  49          
+  50          #if ENABLE_DPS||ENABLE_DSC
+  51          BOOL idata bRunToolFlag = 0;
+  52          #endif
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 2   
+
+  53          BYTE g_ucTimer0_TH0;
+  54          BYTE g_ucTimer0_TL0;
+  55          BYTE xdata g_u8SystemSpeedMode=0;
+  56          #if IR_FUNC_EN
+              BYTE xdata g_ucTimer1_TH0;
+              BYTE xdata g_ucTimer1_TL0;
+              BYTE idata IRClearCounter=0;
+              //BYTE idata IRFLAG=0;
+              #endif
+  62          
+  63          #if DEPOP_DCONOFF_FLOW
+  64          BYTE xdata u8PowerDownCount=0;
+  65          #endif
+  66          
+  67          #if ENABLE_DP_INPUT
+              bit g_bDoDPInit;
+              #endif
+  70          
+  71          #if ENABLE_MHL
+              BYTE xdata MHLExtenCountFlag = 0; // 0 means current MHL port has 1 chance to extend time for staying at c
+             -urrent port
+              #endif
+  74          
+  75          BYTE  xdata g_SwitchSec=DEF_FORCE_DPMS;
+  76          BYTE  xdata g_CountSwitchPortTimeFlag=FALSE;
+  77          
+  78          
+  79          bit g_bMcuPMClock = 0;
+  80          bit SecondFlag = 0;
+  81          bit ms10Flag = 0;
+  82          bit ms50Flag = 0;
+  83          bit ms500Flag = 0; // 120815 coding, set to bit data type for isr usage
+  84          bit ms1000Flag = 0;
+  85          
+  86          bit InputTimingChangeFlag = 0; // 120815 coding, set to bit data type for isr usage
+  87          
+  88          #if ENABLE_USB_INPUT
+              DWORD xdata u32UsbCount = 0;
+              #endif
+  91          
+  92          bit g_bInputSOGFlag = 0;
+  93          BYTE bInputVGAisYUV = 0;   // (0) VGA is RGB    (1) VGA is YUV //20150121
+  94          
+  95          WORD ms_Counter = SystemTick; // for System timer
+  96          BYTE xdata ModeDetectCounter = 20;
+  97          WORD xdata u16PanelOffOnCounter = 0;
+  98          bit bPanelOffOnFlag = 0;
+  99          
+ 100          bit bPanelOnFlag = 0; // 100811 coding addition to indicate panel power status
+ 101          BYTE xdata BackLightActiveFlag;
+ 102          xdata BYTE KeypadButton = 0;
+ 103          
+ 104          BYTE xdata DDCWPActiveFlag; //cc 2011.09.09 15:50
+ 105          
+ 106          BYTE xdata Second;
+ 107          
+ 108          #if MS_DAC
+              WORD xdata w16DAC_DePopCounter = 0;
+              bit bDAC_DePopCountFlag = 0;
+              BYTE xdata w16DAC_DePopStep = 0;
+              bit bDAC_DePopFlag = 0;
+              #endif
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 3   
+
+ 114          
+ 115          BYTE xdata TPDebunceCounter = 0;
+ 116          bit StartScanKeyFlag = 0;
+ 117          bit bKeyReadyFlag = 0;
+ 118          #if ENABLE_TOUCH_KEY
+              #if TOUCH_KEY_POWER_KEY_DEBOUNCE
+              bit bPowerKeyPressed = 0;
+              BYTE xdata PowerKeyDebounceCntr = 0;
+              #endif
+              #endif
+ 124          
+ 125          bit TI0_FLAG; // 120815 coding, set to bit data type for isr usage
+ 126          BYTE xdata SIORxBuffer[_UART_BUFFER_LENGTH_];
+ 127          BYTE xdata SIORxIndex;
+ 128          BYTE xdata u8ReSyncCounter;
+ 129          
+ 130          BYTE xdata OsdCounter = 0;
+ 131          BYTE xdata HotKeyCounter = 0;
+ 132          BYTE xdata PowerDownCounter = 0;
+ 133          BYTE xdata InputTimingStableCounter = 0;
+ 134          
+ 135          DWORD xdata BlacklitTime = 0;
+ 136          
+ 137          #if ENABLE_BURNIN_MENU
+              DWORD xdata BurninTime = 0;
+              bit SaveBurninTimeFlag = 0;
+              #endif
+ 141          
+ 142          bit SaveBlacklitTimeFlag = 0;
+ 143          //BYTE LanguageState=0;
+ 144          //BYTE CurrentLanguage=0;   //wumaozhong add 20050615
+ 145          //BYTE ShortcutLuminance=0;
+ 146          //BYTE SaveIndex=0; // saveIndex
+ 147          WORD xdata SystemFlags = 0; // for system status flags
+ 148          WORD xdata System2Flags = 0;
+ 149          BYTE xdata System3Flags = 0;  // Rex 100701 for 3D
+ 150          //BYTE xdata ChipVer = 0;
+ 151          BYTE xdata SaveIndex = 0; // saveIndex
+ 152          BYTE xdata PatternNo = 0;
+ 153          BYTE xdata BrightnessTemp = 0;
+ 154          BYTE xdata PrevHistoValue = 0;
+ 155          #if ENABLE_FACTORY_AUTOTEST
+ 156          bit BFactoryAutoTest=0;
+ 157          #endif
+ 158          
+ 159          #if ENABLE_TIME_MEASUREMENT
+ 160          WORD volatile xdata g_u16TimeMeasurementCounter = 0;
+ 161          bit bTimeMeasurementFlag=0;
+ 162          WORD xdata g_u16Time1;
+ 163          WORD xdata g_u16Time2;
+ 164          #endif
+ 165          
+ 166          bit gBoolVisualKey = 0;
+ 167          BYTE xdata gByteVisualKey = 0xff;
+ 168          BYTE xdata LanguageIndex;
+ 169          BYTE xdata SecondTblAddr;
+ 170          #if ENABLE_HDCP
+ 171          BYTE xdata HDCPFlag = 0;
+ 172          #endif
+ 173          #if ENABLE_HDCP&&HDCPKEY_IN_Flash
+ 174          BYTE xdata HDCPDataBuffer[6]; //[6];
+ 175          #endif
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 4   
+
+ 176          
+ 177          BYTE xdata InputColorFormat = 0; // indicate input color space is RGB or YUV
+ 178          
+ 179          bit DebugOnlyFlag = 0;
+ 180          #if 1//Enable_Expansion
+ 181          bit bExpansionBit = 0;
+ 182          #endif
+ 183          bit SaveFactorySettingFlag = 0;
+ 184          
+ 185          WORD u16DelayCounter = 0;
+ 186          bit bDelayFlag = 0;
+ 187          
+ 188          WORD xdata u16TimeOutCounter = 0; // 120510 coding, addition for checking register status
+ 189          bit bTimeOutCounterFlag = 0;
+ 190          bit SaveSettingFlag=0;
+ 191          #if ShowSourceType
+ 192          bit DisplayInputMsgFlag=0;
+ 193          #endif
+ 194          BYTE xdata UserPrefSelectInputType=0;
+ 195          #if Display_Checksum            //added  for factory menu checksum on jan 24th ,2019
+ 196          WORD xdata  Code_checksun;
+ 197          #endif
+ 198          
+ 199          #ifdef Internal_EDID_Write_To_24C02
+               bit bNoUsePin;
+              BYTE xdata EnableReadDDCType=I2C_EEPROM;
+              BYTE xdata DDC1[256];
+              
+              #endif
+ 205          
+ 206          #if EN_HotKeyTimes
+              BYTE xdata HotKeyTimes_Minutes=0;
+              BYTE xdata HotKeyTimes_Second=0;
+              
+              #endif
+ 211          
+ 212          
+ 213          bit g_bServiceEDIDUnLock = 0;
+ 214          
+ 215          OverScanType  xdata OverScanSetting;
+ 216          
+ 217          PanelSettingType xdata PanelSetting;
+ 218          InputTimingType xdata InputTiming;
+ 219          MonitorSettingType xdata MonitorSetting; //Benz 2007.4.15   19:44:07idata - >xdata
+ 220          #if USEFLASH
+ 221          MonitorSettingType2 xdata  MonitorSetting2;
+ 222          #endif
+ 223          ModeSettingType xdata ModeSetting;
+ 224          FactorySettingType xdata  FactorySetting;
+ 225          //==========================for AutoBacklight=====
+ 226          BYTE xdata HistogramNow = 0;
+ 227          BYTE xdata HistogramPrev = 0;
+ 228          BYTE xdata BacklightNow = 0;
+ 229          BYTE xdata BacklightPrev = 0;
+ 230          BYTE xdata HistogramFlag = 1;
+ 231          
+ 232          //xdata BYTE xfr_regs[256] _at_ 0xC000;
+ 233          //xdata BYTE g_FlashID = 0;
+ 234          
+ 235          BYTE xdata LastMenuPage = 0;
+ 236          
+ 237          //bit PowerGoodExistFlag = 0;
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 5   
+
+ 238          
+ 239          extern void msdrvDPRxAppDummy(void);
+ 240          extern void msDebugDummy(void);
+ 241          extern void msDPSSettingDummy(void);
+ 242          extern void msDPSHandlerDummy(void);
+ 243          extern void msDSCSettingDummy(void);
+ 244          extern void msDSCHandlerDummy(void);
+ 245          extern void msdrvHDMIDummy(void);
+ 246          extern void HDMIDummy(void);
+ 247          extern void msMhalMHLDummy(void);
+ 248          extern void msMapiMHLDummy(void);
+ 249          extern void msMdrvMHLDummy(void);
+ 250          extern void msGammaDummy(void);
+ 251          extern void msHDCPDummy(void);
+ 252          extern void msPMDummy(void);
+ 253          extern void msDACDummy(void);
+ 254          extern void mStarDummy(void);
+ 255          extern void msapmStarDummy(void);
+ 256          extern void msMainDummy(void);
+ 257          extern void msAdjustDummy(void);
+ 258          
+ 259          BYTE xdata SwitchPortCntr = 0;
+ 260          //bit g_bBacklightOn = 0;
+ 261          
+ 262          BYTE code UserDataCode[];// =//Set UserDataCode To Bank3 Addr:A000
+ 263          
+ 264          #if DECREASE_V_SCALING
+ 265          WORD xdata DecVScaleValue = 0;
+ 266          #endif
+ 267          
+ 268          #if ENABLE_DAC_DEPOP
+              BYTE EARDePopFlag = 0;
+              BYTE EARDePopStep = 1;
+              WORD xdata ucDePOP4SecCounter = 0;
+              #endif
+ 273          
+ 274          #if 1//CHIP_ID == CHIP_TSUM2 || CHIP_ID == CHIP_TSUMU || CHIP_ID == CHIP_TSUMC
+ 275          void msFBDummy(void);
+ 276          #endif
+ 277          
+ 278          #if !ENABLE_USB_INPUT
+ 279          void mshidcoreDummy(void);
+ 280          void mshostlibDummy(void);
+ 281          void msusbmainDummy(void);
+ 282          void mshostlib_2Dummy(void);
+ 283          void msusbmain_2Dummy(void);
+ 284          void mshidcore_2Dummy(void);
+ 285          #endif
+ 286          #if (!ENABLE_DEBUG) || (!ENABLE_USB_INPUT)
+ 287          void msdrvintpipeDummy(void);
+ 288          void msdrvintpipe_2Dummy(void);
+ 289          #endif
+ 290          
+ 291          #if !ENABLE_RTE
+ 292          void msOverDriveDummy();
+ 293          #endif
+ 294          #if 1//!ENABLE_RTE
+ 295          void drvmsOVDDummy(void);
+ 296          #endif
+ 297          
+ 298          #if !ENABLE_LED_CONTROLLER
+ 299              msLEDControllerDummy();
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 6   
+
+ 300          #endif
+ 301          #if  !ENABLE_3DLUT
+ 302           void ms3DLUT_Dummy();
+ 303          #endif
+ 304          
+ 305          #if  !ENABLE_R2_2DTO3D
+ 306          void ms2DTo3DDummy(void);
+ 307          #endif
+ 308          
+ 309          #if ENABLE_TOUCH_KEY
+              BYTE xdata TouchKeyRestortCounter; // unit: 50mS
+                  #if ENABLE_LOW_CONTACT
+                  BYTE xdata TouchKeyLowContactDelay; // unit: 50mS
+                  BYTE xdata TouchKeyLowContactDetectCntr; // unit: 1S, use to detect low contact peroid
+                  #endif
+                  #if 0//TOUCH_KEY_CTRL_LED
+                  BYTE xdata TouchKeySetLEDStatus;
+                  #endif
+              #else
+ 319          void TouchKeyDummy(void);
+ 320          #endif
+ 321          
+ 322          extern void UserDataSpaceDummy(void);
+ 323          
+ 324          void DummyCall(void)
+ 325          {
+ 326   1          BYTE i = 0;
+ 327   1      
+ 328   1          if(i)
+ 329   1          {
+ 330   2              (WORD)i = GetStandardModeVTotal();
+ 331   2              UserDataSpaceDummy();
+ 332   2          #if 1//ENABLE_DEBUG
+ 333   2              mStarDummy();
+ 334   2              msapmStarDummy();
+ 335   2              msMainDummy();
+ 336   2              msAdjustDummy();
+ 337   2          #endif
+ 338   2      
+ 339   2          #if !ENABLE_USB_INPUT && (CHIP_ID == CHIP_TSUMD)
+                      mshidcoreDummy();
+                      mshostlibDummy();
+                      msusbmainDummy();
+                      mshostlib_2Dummy();
+                      msusbmain_2Dummy();
+                      mshidcore_2Dummy();
+                  #endif
+ 347   2      
+ 348   2          #if ((!ENABLE_DEBUG) || (!ENABLE_USB_INPUT)) && (CHIP_ID == CHIP_TSUMD)
+                      msdrvintpipeDummy();
+                      msdrvintpipe_2Dummy();
+                  #endif
+ 352   2      
+ 353   2          #if  !ENABLE_R2_2DTO3D
+ 354   2              ms2DTo3DDummy();
+ 355   2          #endif
+ 356   2      
+ 357   2          #if (!ENABLE_DP_INPUT) && (CHIP_ID == CHIP_TSUMU || CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CH
+             -IP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUM9|| CHIP_ID == CHIP_TSUMF)
+ 358   2              msdrvDPRxAppDummy();
+ 359   2          #endif
+ 360   2      
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 7   
+
+ 361   2          #if !ENABLE_DEBUG
+                      msDebugDummy();
+                  #endif
+ 364   2      
+ 365   2          #if !ENABLE_DPS
+                      msDPSSettingDummy();
+                      msDPSHandlerDummy();
+                  #endif
+ 369   2      
+ 370   2          #if !ENABLE_DSC
+                      msDSCSettingDummy();
+                      msDSCHandlerDummy();
+                  #endif
+ 374   2      
+ 375   2          #if (!ENABLE_DEBUG) || (!ENABLE_HDMI)
+                      HDMIDummy();
+                  #endif
+ 378   2      
+ 379   2          #if  1//(!ENABLE_HDMI)
+ 380   2              msdrvHDMIDummy();
+ 381   2          #endif
+ 382   2      
+ 383   2          #if 0//!ENABLE_MHL
+                      msMhalMHLDummy();
+                      msMapiMHLDummy();
+                      msMdrvMHLDummy();
+                  #endif
+ 388   2      
+ 389   2              msMHLDummy();
+ 390   2      
+ 391   2          #if !Enable_Gamma
+                      msGammaDummy();
+                  #endif
+ 394   2      
+ 395   2          #if (!ENABLE_DEBUG) || (!ENABLE_HDCP) || defined(FPGA)
+                      msHDCPDummy();
+                  #endif
+ 398   2      
+ 399   2          #if (!ENABLE_DEBUG) || (!MS_PM)
+                      msPMDummy();
+                  #endif
+ 402   2      
+ 403   2          #if 1//CHIP_ID == CHIP_TSUM2 || CHIP_ID == CHIP_TSUMU || CHIP_ID == CHIP_TSUMC
+ 404   2              msFBDummy();
+ 405   2          #endif
+ 406   2      
+ 407   2          #if !ENABLE_RTE
+ 408   2              msOverDriveDummy();
+ 409   2          #endif
+ 410   2      
+ 411   2          #if 1//!ENABLE_RTE
+ 412   2              drvmsOVDDummy();
+ 413   2          #endif
+ 414   2      
+ 415   2          #if !(ENABLE_DEBUG&&COLORVERIFY_DEBUG)
+ 416   2              msColorVerifyDummy();
+ 417   2          #endif
+ 418   2      
+ 419   2          #if !ENABLE_LED_CONTROLLER
+ 420   2              msLEDControllerDummy();
+ 421   2          #endif
+ 422   2      
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 8   
+
+ 423   2          #if  !ENABLE_3DLUT
+ 424   2              ms3DLUT_Dummy();
+ 425   2          #endif
+ 426   2      
+ 427   2          #if !ENABLE_TOUCH_KEY
+ 428   2              TouchKeyDummy();
+ 429   2          #endif
+ 430   2      
+ 431   2          #if !ENABLE_MHL
+ 432   2              msEread_SetMHLInitialValue();
+ 433   2          #endif
+ 434   2      
+ 435   2          #if 1//!MS_DAC &&
+ 436   2              msDACDummy();
+ 437   2          #endif
+ 438   2      
+ 439   2              GetPow2(0);
+ 440   2              GetLog(0);
+ 441   2              GetImageHeight();
+ 442   2              GetImageWidth();
+ 443   2      
+ 444   2          #if defined(FPGA) || !(CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMK ||CHIP_ID==CHIP_TSUMD)
+ 445   2          {
+ 446   3              BYTE bHDCPKeyInEfuse,ucValue,u8ADCBandgapTrimVal;
+ 447   3              bHDCPKeyInEfuse = msEread_IsHDCPKeyInEfuse();
+ 448   3              ucValue = msEread_GetHDCPKeyFromEfuse(0);
+ 449   3              msEread_CompareHDCPChecksumInEfuse(0);
+ 450   3              u8ADCBandgapTrimVal = msEread_GetADCBandgapTrimValFromEfuse();
+ 451   3              msEread_SetComboInitialValue();
+ 452   3              msEread_SetHDMIInitialValue();
+ 453   3              msEread_SetMHLInitialValue();
+ 454   3          }
+ 455   2          #endif
+ 456   2      
+ 457   2          #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID == CHIP_TSUMF)
+ 458   2          #if(MS_PM)
+ 459   2              msPM_StartRCOSCCal();
+ 460   2          #endif
+ 461   2              drvGPIO_PWMAlignVSyncDelay(0, 0);
+ 462   2              drvGPIO_PWMInverse(0, 0);
+ 463   2              msDrvWriteInternalEDID(0, 0, 0);
+ 464   2              msDrvReadInternalEDID(0, 0);
+ 465   2          #endif
+ 466   2          #if ENABLE_DEBUG && MS_DAC && (CHIP_ID==CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID==CHIP_TSUMD||CHIP_ID=
+             -=CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
+                      PCM_GEN(0,0,0);
+                  #endif
+ 469   2          #if ENABLE_SW_DOUBLE_BUFFER
+ 470   2              msSWDBWrite2ByteMask(0, 0, 0);
+ 471   2              msSWDBWriteBit(0, 0, 0);
+ 472   2              msWrite3Byte(0, 0);
+ 473   2          #endif
+ 474   2              GetHSyncWidth();
+ 475   2          GetNonFuncValue();
+ 476   2        #if ENABLE_EDP_OUTPUT
+                    DPTxCheckCRC();
+                    DPAUX_TEST();
+                    DPTxEDIDRead();
+                #else
+ 481   2          msDpTxDummy();
+ 482   2        #endif
+ 483   2          msAdjustXVYccVideoHue( MAIN_WINDOW, 50 );
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 9   
+
+ 484   2          msAdjustXVYCCVideoContrastRGB(MAIN_WINDOW, 0x80, 0x80, 0x80, 0x80);
+ 485   2          msAdjustXVYccVideoSaturation( MAIN_WINDOW, 128 );
+ 486   2      
+ 487   2          }
+ 488   1      }
+ 489          
+ 490          void Init_GlobalVariables( void )
+ 491          {
+ 492   1      /////////////////////////////////////////////////
+ 493   1      // add for prevent complier warning
+ 494   1          DummyCall();
+ 495   1      //////////////////////////////////////////////////
+ 496   1        #if Enable_Expansion
+ 497   1        OverScanSetting.Enable= 1;
+ 498   1        OverScanSetting.AspRatio= UserprefExpansionMode;
+ 499   1        OverScanSetting.ScanRatio= 98;
+ 500   1        OverScanSetting.ImageRatio= 100;
+ 501   1      #endif
+ 502   1      
+ 503   1      #if CHIP_ID >= CHIP_TSUMC
+ 504   1        g_bOutputVsyncIsrFlag = 0;
+ 505   1      #endif
+ 506   1      
+ 507   1          InputTimingStableCounter = 0;
+ 508   1          Second = 0;
+ 509   1          OsdCounter = 0;
+ 510   1          PowerDownCounter = 0;
+ 511   1          bPanelOffOnFlag = 0;
+ 512   1          bPanelOnFlag = 0;
+ 513   1          Clr_StartScanKeyFlag();
+ 514   1          TPDebunceCounter = SKPollingInterval;
+ 515   1      
+ 516   1      #if USEFLASH
+ 517   1          BlacklitTime = UserprefBacklighttime;
+ 518   1      #endif
+ 519   1      
+ 520   1      #if ENABLE_BURNIN_MENU
+                   BurninTime = UserprefBurnintime;
+              #endif
+ 523   1      
+ 524   1      #if ENABLE_TOUCH_KEY
+                  TouchKeyRestortCounter = 0;
+                  #if ENABLE_LOW_CONTACT
+                  TouchKeyLowContactDetectCntr = TOUCH_KEY_LOW_CONTACT_DETECT_PEROID;
+                  TouchKeyLowContactDelay = 0;
+                  #endif
+                  #if 0//TOUCH_KEY_CTRL_LED
+                  TouchKeySetLEDStatus = TouchKeyLEDStatus_OFF;
+                  #endif
+              #endif
+ 534   1      
+ 535   1          SrcFlags = SyncLoss;
+ 536   1          SrcModeIndex = 0xFF;
+ 537   1      #if (Customer_Type_Sel==Customer_XINTAO)
+                  if( BurninModeFlag) //&&FactoryModeFlag 
+              #else
+ 540   1        if( BurninModeFlag&&FactoryModeFlag) 
+ 541   1      #endif
+ 542   1          {
+ 543   2              Set_DoBurninModeFlag();
+ 544   2          }
+ 545   1          else
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 10  
+
+ 546   1          {
+ 547   2              Clr_DoBurninModeFlag();
+ 548   2           Clr_BurninModeFlag();
+ 549   2          }
+ 550   1      
+ 551   1          if( !( ProductModeFlag || FactoryModeFlag ) )
+ 552   1              Set_ShowInputInfoFlag();
+ 553   1      
+ 554   1          if( PowerOnFlag )
+ 555   1          {
+ 556   2              Set_InputTimingChangeFlag();
+ 557   2      #if DisplayPowerOnLogo
+ 558   2              if(!FactoryModeFlag) //eshin
+ 559   2                  Set_DisplayLogoFlag();
+ 560   2         else
+ 561   2             Clr_DisplayLogoFlag();
+ 562   2      #else
+                      Clr_DisplayLogoFlag();  //2009-10-13
+              #endif
+ 565   2          }
+ 566   1          else
+ 567   1          {
+ 568   2              SystemFlags |= bForcePowerSavingBit;
+ 569   2              Clr_DisplayLogoFlag();
+ 570   2          }
+ 571   1      
+ 572   1      #if LANGUAGE_TYPE == ASIA
+ 573   1      #if 0  //disable by smc.lmw 20160628
+              
+                  if( UserPrefLanguage == LANG_TChina )
+                  {
+                      LanguageIndex = 1;
+                      SecondTblAddr = 0x80;
+                  }
+                  else if( UserPrefLanguage == LANG_Korea )
+                  {
+                      LanguageIndex = 2;
+                      SecondTblAddr = 0x80; //SecondTblAddr = 0xFF;
+                  }
+                  else
+              #endif
+ 587   1          {
+ 588   2              LanguageIndex = 0;
+ 589   2              SecondTblAddr = 0xFF;
+ 590   2          }
+ 591   1      #elif LANGUAGE_TYPE == SIXTEEN                    //090330 xiandi.yu
+                  if( UserPrefLanguage == LANG_SChina )
+                  {
+                      LanguageIndex = 1;
+                      SecondTblAddr = 0x80;
+                  }
+                  else if( UserPrefLanguage == LANG_Japanese )
+                  {
+                      LanguageIndex = 2;
+                      SecondTblAddr = 0x80; //SecondTblAddr = 0xFF;
+                  }
+                  else
+                  {
+                      LanguageIndex = 0;
+                      SecondTblAddr = 0xFF;
+                  }
+              #elif LANGUAGE_TYPE == EUROPE
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 11  
+
+                  LanguageIndex = 0;
+                  SecondTblAddr = 0xFF;
+              #endif
+ 611   1      
+ 612   1      #if DECREASE_V_SCALING
+ 613   1          DecVScaleValue = 0;
+ 614   1      #endif
+ 615   1      
+ 616   1      #if ENABLE_DPS
+ 617   1      #if DPS_UserBrightControl_EN
+ 618   1          REG_DPS_UserBrightContlGain = UserPrefBrightness;//(float)USER_PREF_BRIGHTNESS * 256 / 100;
+ 619   1      #else
+                  REG_DPS_UserBrightContlGain = 100;
+              #endif
+ 622   1      #endif
+ 623   1      #if EarphoneDet_Enable
+                 if(PowerOnFlag)    
+                 {
+                    if(HarphoneDet_Pin)//Ear Push In
+                    {
+                          Clr_HarphoneDetHighFlag();  
+                    }
+                    else
+                    {
+                          Set_HarphoneDetHighFlag();  
+                    }
+                 }
+              #endif
+ 636   1      
+ 637   1      }
+ 638          
+ 639          BYTE GetPow2(BYTE exp)
+ 640          {
+ 641   1          if( exp == 0 )
+ 642   1              return 1;
+ 643   1          else
+ 644   1              return (0x02<<(exp-1));
+ 645   1      }
+ 646          
+ 647          BYTE GetLog(DWORD value)
+ 648          {
+ 649   1          BYTE i = 0;
+ 650   1      
+ 651   1          if( value == 0 )
+ 652   1              return 0;
+ 653   1      
+ 654   1          while(value)
+ 655   1          {
+ 656   2              value >>= 1;
+ 657   2              i++;
+ 658   2          }
+ 659   1      
+ 660   1          return (i-1);
+ 661   1      }
+ 662          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    526    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =    341    ----
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 12  
+
+   DATA SIZE        =      9       9
+   IDATA SIZE       =      1    ----
+   BIT SIZE         =     25    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

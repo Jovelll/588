@@ -1,0 +1,24 @@
+@echo off
+CALL checkDataSize
+HEX2BIN /Q /L458752 obj\TSUM.H00 obj\TSUM56.BIN
+HEX2BIN /Q /O65536 /M obj\TSUM.H01 obj\TSUM56.BIN
+HEX2BIN /Q /O131072 /M obj\TSUM.H02 obj\TSUM56.BIN
+HEX2BIN /Q /O196608 /M obj\TSUM.H03 obj\TSUM56.BIN
+HEX2BIN /Q /O262144 /M obj\TSUM.H04 obj\TSUM56.BIN
+HEX2BIN /Q /O327680 /M obj\TSUM.H05 obj\TSUM56.BIN
+HEX2BIN /Q /O393216 /M obj\TSUM.H06 obj\TSUM56.BIN
+
+MD BIN
+DEL /Q/S BIN\*.*
+COPY Checksum.exe BIN\
+cd obj
+COPY "TSUM56.BIN" %1
+DEL "TSUM56.*"
+copy %1 ..\bin
+del %1
+cd..
+cd bin
+Checksum %1 /b
+del Checksum.exe
+copy /b ..\BIN\%1+..\..\DRIVER\T3D\aeon_boot.bin ..\BIN\TSUMXXD_DEMO_T3D.bin
+Pause

@@ -1,0 +1,693 @@
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE AUTOFUNC
+OBJECT MODULE PLACED IN .\Obj\AutoFunc.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\AutoFunc.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SY
+                    -STEM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVE
+                    -R\INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\AutoFunc.lst) TABS(2) OBJECT(.\Obj\Aut
+                    -oFunc.obj)
+
+line level    source
+
+   1          #define _AUTOFUNC_C_
+   2          #include <math.h>
+   3          #include "types.h"
+   4          #include "board.h"
+   5          #include "global.h"
+   6          #include "ms_reg.h"
+   7          #include "adjust.h"
+   8          //#include "msADC.h"
+   9          #include "ms_rwreg.h"
+  10          #include "misc.h"
+  11          #include "debug.h"
+  12          #include "Common.h"
+  13          #include "power.h"
+  14          //#include "panel.h"
+  15          
+  16          // INTERNAL
+  17          #include "AutoFunc.h"
+  18          #include "drvadc.h"
+  19          #include "mstar.h"
+  20          
+  21          /////////////////////////////////////
+  22          //#include "drvmStar.h"
+  23          //#include "halRwreg.h"
+  24          ////////////////////////////////////
+  25          
+  26          #define UseWorstPhase       0
+  27          #define EvenClock           1       //110929 Rick enable evenclock function - B029
+  28          
+  29          // Code
+  30          Bool CheckSyncLoss( void )
+  31          {
+  32   1      #if UseINT
+  33   1          if( InputTimingChangeFlag )
+  34   1          {
+  35   2              Power_TurnOffPanel();
+  36   2              return TRUE;
+  37   2          }
+  38   1          else
+  39   1          {
+  40   2              return FALSE;
+  41   2          }
+  42   1      #else
+                  Bool result = FALSE;
+                  if( labs( SrcHPeriod - SC0_READ_HPEROID()) > 10 )//( abs( SrcHPeriod - msRead2Byte(SC0_E4) ) > 10 )
+                  {
+                      result = TRUE;
+                  }
+                  else if( labs( SrcVTotal - SC0_READ_VTOTAL()) > 10 )//( abs( SrcVTotal - msRead2Byte(SC0_E2) ) > 10 )
+                  {
+                      result = TRUE;
+                  }
+                  if( result )
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 2   
+
+                  {
+                      Power_TurnOffPanel();
+                      Set_InputTimingChangeFlag();
+                  }
+                  return result;
+              #endif
+  59   1      }
+  60          void WaitAutoStatusReady( WORD u16RegAddr, BYTE regFlag )
+  61          {
+  62   1          WORD waits = 0xFFFF;
+  63   1          while( waits-- && !( msReadByte( u16RegAddr ) &regFlag ) && !SyncLossState());
+  64   1      }
+  65          WORD GetAutoValue(WORD u16RegLoAddr)
+  66          {
+  67   1          AUTO_POSITION_RESULT_READY();//WaitAutoStatusReady(SC0_7B, BIT1);
+  68   1          return msRead2Byte(u16RegLoAddr);
+  69   1      }
+  70          BYTE GetTranstionPosition( BYTE vsyncTime, WORD u16RegLoAddr )
+  71          {
+  72   1          BYTE retry = 6;
+  73   1          BYTE adjPhase;
+  74   1          WORD pos;
+  75   1          BYTE minPhase, maxPhase;
+  76   1          maxPhase = MAX_PHASE_VALUE;
+  77   1          minPhase = 0x00;
+  78   1          drvADC_SetPhaseCode( 0 );
+  79   1          Delay1ms(vsyncTime<<1); //Jison 090514,u8VSyncTime*2 for TSUMP sometime can't get correct AOHEND_H.
+  80   1          pos = GetAutoValue( u16RegLoAddr );
+  81   1          adjPhase = ( maxPhase + minPhase ) / 2;
+  82   1          while( retry-- )
+  83   1          {
+  84   2              drvADC_SetPhaseCode( adjPhase );
+  85   2              Delay1ms( vsyncTime );
+  86   2              if( GetAutoValue( u16RegLoAddr ) != pos )
+  87   2              {
+  88   3                  maxPhase = adjPhase;
+  89   3              }
+  90   2              else
+  91   2              {
+  92   3                  minPhase = adjPhase;
+  93   3              }
+  94   2              adjPhase = ( maxPhase + minPhase ) / 2;
+  95   2              if( CheckSyncLoss() )
+  96   2              {
+  97   3                  return FALSE;
+  98   3              }
+  99   2          }
+ 100   1      
+ 101   1          return ( adjPhase );
+ 102   1      }
+ 103          
+ 104          #define QuickAuto           0
+ 105          
+ 106          #if !QuickAuto
+ 107          BYTE AutoSetDataThreshold( BYTE vsyncTime )
+ 108          {
+ 109   1          BYTE thr;
+ 110   1          BYTE adjPhase;
+ 111   1          WORD regWord1, regWord2;
+ 112   1          for( thr = 4; thr < 0x10; thr++ )
+ 113   1          {
+ 114   2              AUTO_POSITION_SET_VALID_VALUE(thr);//msWriteByte(SC0_7C, thr << 4 );
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 3   
+
+ 115   2              drvADC_SetPhaseCode( 0 );
+ 116   2              Delay1ms( vsyncTime );
+ 117   2              AUTO_POSITION_RESULT_READY();//WaitAutoStatusReady(SC0_7B, BIT1);
+ 118   2              regWord1 = SC0_READ_AUTO_START_H();//msRead2Byte(SC0_80);
+ 119   2              #if (MAX_PHASE_VALUE==0x7F)
+ 120   2              for( adjPhase = 7; adjPhase < (MAX_PHASE_VALUE+1); adjPhase += 7 )
+ 121   2              #else
+                      for( adjPhase = 4; adjPhase < (MAX_PHASE_VALUE+1); adjPhase += 4 )
+                      #endif
+ 124   2              {
+ 125   3                  drvADC_SetPhaseCode( adjPhase );
+ 126   3                  Delay1ms( vsyncTime );
+ 127   3                  AUTO_POSITION_RESULT_READY();//WaitAutoStatusReady(SC0_7B, BIT1);
+ 128   3                  regWord2 = SC0_READ_AUTO_START_H();//msRead2Byte(SC0_80);
+ 129   3                  if( labs( (DWORD)regWord1 - regWord2 ) > 3 )
+ 130   3                      break;
+ 131   3                  if( CheckSyncLoss() )
+ 132   3                      return FALSE;
+ 133   3              }
+ 134   2              if (adjPhase>=(MAX_PHASE_VALUE+1))
+ 135   2                  break;
+ 136   2          }
+ 137   1      
+ 138   1          return thr;
+ 139   1      }
+ 140          #endif
+ 141          WORD SearchMaxWidth( BYTE vsyncTime )
+ 142          {
+ 143   1          BYTE startPhase;
+ 144   1          WORD hStart, hEnd;
+ 145   1          BYTE ucReg;
+ 146   1      
+ 147   1          ucReg = AUTO_POSITION_READ_VALID_VALUE();//msReadByte(SC0_7C);
+ 148   1          AUTO_POSITION_SET_VALID_VALUE(AOVDV_VALUE);//msWriteByte(SC0_7C, 0x40);
+ 149   1          drvADC_SetPhaseCode( 0 );
+ 150   1          Delay1ms( vsyncTime );
+ 151   1          Delay1ms( vsyncTime );
+ 152   1          hStart = AUTO_POSITION_READ_HSTART();//GetAutoValue(SC0_80);
+ 153   1          startPhase = AUTO_POSITION_READ_TRANSTION_POSITION(vsyncTime);//GetTranstionPosition( vsyncTime, SC0_8
+             -0 );
+ 154   1          hEnd = AUTO_POSITION_READ_HEND();//GetAutoValue(SC0_84);
+ 155   1          hStart = hEnd - hStart + 1;
+ 156   1          AUTO_POSITION_SET_VALID_VALUE(ucReg);//msWriteByte(SC0_7C, ucReg);
+ 157   1          Delay1ms(vsyncTime<<1); //Jison 090423, u8VSyncTime*2 wait the status ready because of AOVDV change(Au
+             -to Htotal issue).
+ 158   1      
+ 159   1          return hStart;
+ 160   1      }
+ 161          
+ 162          Bool mStar_AutoHTotal( BYTE vsyncTime )
+ 163          {
+ 164   1          WORD tempHTotal;
+ 165   1          WORD autoWidth;
+ 166   1          BYTE result;
+ 167   1      
+ 168   1          // 1st to coast tune HTotal
+ 169   1          drvADC_SetPhaseCode( 0 );
+ 170   1          Delay1ms( vsyncTime );
+ 171   1          autoWidth = AUTO_POSITION_READ_HEND() - AUTO_POSITION_READ_HSTART();//GetAutoValue(SC0_84) - GetAutoVa
+             -lue(SC0_80);
+ 172   1          tempHTotal = StandardModeWidth / 3;
+ 173   1          if( labs( (DWORD)autoWidth - StandardModeWidth ) > tempHTotal )
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 4   
+
+ 174   1          {
+ 175   2              drvADC_SetPhaseCode( UserPrefPhase );
+ 176   2              return FALSE;
+ 177   2          }
+ 178   1          tempHTotal = UserPrefHTotal;
+ 179   1          if( labs( (DWORD)autoWidth - StandardModeWidth ) > 1 )
+ 180   1          {
+ 181   2              tempHTotal = ( DWORD )UserPrefHTotal * StandardModeWidth / autoWidth;
+ 182   2              if( labs( (DWORD)tempHTotal - StandardModeHTotal ) > ClockAdjRange )
+ 183   2              {
+ 184   3                  goto AutoHTotalFailed;
+ 185   3              }
+ 186   2              drvADC_AdjustHTotal( tempHTotal );
+ 187   2              Delay1ms(vsyncTime);
+ 188   2          }
+ 189   1          autoWidth = SearchMaxWidth( vsyncTime );
+ 190   1      
+ 191   1          // 2nd fine tune
+ 192   1          if( autoWidth != StandardModeWidth )
+ 193   1          {
+ 194   2              tempHTotal = tempHTotal + ( StandardModeWidth - autoWidth );
+ 195   2              if( labs( (DWORD)tempHTotal - StandardModeHTotal ) > ClockAdjRange )
+ 196   2              {
+ 197   3                  goto AutoHTotalFailed;
+ 198   3              }
+ 199   2              drvADC_AdjustHTotal( tempHTotal );
+ 200   2              Delay1ms(vsyncTime);
+ 201   2              autoWidth = SearchMaxWidth( vsyncTime );
+ 202   2              tempHTotal = tempHTotal + ( StandardModeWidth - autoWidth );
+ 203   2          }
+ 204   1          else if( tempHTotal & 1 )
+ 205   1          {
+ 206   2              WORD autoWidth2;
+ 207   2              //tempHTotal=tempHTotal-1;
+ 208   2              drvADC_AdjustHTotal( tempHTotal - 1 );
+ 209   2              autoWidth = SearchMaxWidth( vsyncTime );
+ 210   2              drvADC_AdjustHTotal( tempHTotal + 1 );
+ 211   2              autoWidth2 = SearchMaxWidth( vsyncTime );
+ 212   2              if( autoWidth2 == StandardModeWidth )
+ 213   2              {
+ 214   3                  tempHTotal = tempHTotal + 1;
+ 215   3              }
+ 216   2              else if( autoWidth == StandardModeWidth )
+ 217   2              {
+ 218   3                  tempHTotal = tempHTotal - 1;
+ 219   3              }
+ 220   2          }
+ 221   1      #if EvenClock
+ 222   1          if( tempHTotal % 4 )
+ 223   1          {
+ 224   2              tempHTotal = (( tempHTotal + 1 ) / 4 ) * 4;
+ 225   2          }
+ 226   1      #endif
+ 227   1      AutoHTotalFailed:
+ 228   1          result = FALSE;
+ 229   1          if( labs( (DWORD)tempHTotal - StandardModeHTotal ) < ClockAdjRange )
+ 230   1          {
+ 231   2              UserPrefHTotal = tempHTotal;
+ 232   2              result = TRUE;
+ 233   2          }
+ 234   1          drvADC_AdjustHTotal( UserPrefHTotal );
+ 235   1          drvADC_SetPhaseCode( UserPrefPhase );
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 5   
+
+ 236   1          return result;
+ 237   1      #undef result
+ 238   1      }
+ 239          
+ 240          Bool mStar_AutoPhase( BYTE vsyncTime )
+ 241          {
+ 242   1          BYTE adjPhase, i;
+ 243   1      #if UseWorstPhase
+                  BYTE worsePhase, worsePhase2;
+                  DWORD mincksum, cksum;
+                  mincksum = 0xFFFFFFFFul;
+                  for( adjPhase = 0; adjPhase < 0x80; adjPhase += 7 )
+                  {
+                      drvADC_SetPhaseCode( adjPhase );
+                      Delay1ms( vsyncTime );
+                      AUTO_PHASE_RESULT_READY();//drvADC_WaitAutoStatusReady(SC0_8B, BIT1);
+                      //cksum = msRead2Byte(SC0_8E);
+                      //cksum = ( cksum << 16 ) | msRead2Byte(SC0_8C);
+                      cksum = AUTO_PHASE_READ_VALUE();
+                      if( cksum < mincksum )
+                      {
+                          mincksum = cksum;
+                          worsePhase = adjPhase;
+                      }
+              
+                      if( CheckSyncLoss() )
+                          return FALSE;
+                  }
+              
+                  // 2nd Search
+                  if (worsePhase<7)
+                      worsePhase=(worsePhase+127)%0x80; // 128-7
+                  else
+                      worsePhase-=7;
+              
+                  mincksum = 0xFFFFFFFFul;
+                  for (adjPhase=worsePhase; adjPhase<worsePhase+10; adjPhase++)
+                  {
+                      i=adjPhase%0x80;
+                      drvADC_SetPhaseCode( i );
+                      Delay1ms( 2 * vsyncTime );
+                      AUTO_PHASE_RESULT_READY();//drvADC_WaitAutoStatusReady(SC0_8B, BIT1);
+                      //cksum = msRead2Byte(SC0_8E);
+                      //cksum = ( cksum << 16 ) | msRead2Byte(SC0_8C);
+                      cksum = AUTO_PHASE_READ_VALUE();
+                      if( cksum < mincksum )
+                      {
+                          mincksum = cksum;
+                          worsePhase2 = i;
+                      }
+              
+                      if( CheckSyncLoss() )
+                          return FALSE;
+                  }
+                  UserPrefPhase = ( worsePhase2 + 63 ) % 0x80;
+              #else
+ 292   1          BYTE bestPhase, bestPhase2;
+ 293   1          DWORD maxcksum, cksum;
+ 294   1          maxcksum = 0;
+ 295   1          for( adjPhase = 0; adjPhase < 0x80; adjPhase += 7 )
+ 296   1          {
+ 297   2              drvADC_SetPhaseCode( adjPhase );
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 6   
+
+ 298   2              Delay1ms( 2 * vsyncTime );
+ 299   2              AUTO_PHASE_RESULT_READY();//drvADC_WaitAutoStatusReady(SC0_8B, BIT1);
+ 300   2              //cksum = msRead2Byte(SC0_8E);
+ 301   2              //cksum = ( cksum << 16 ) | msRead2Byte(SC0_8C);
+ 302   2              cksum = AUTO_PHASE_READ_VALUE();
+ 303   2              if( cksum > maxcksum )
+ 304   2              {
+ 305   3                  maxcksum = cksum;
+ 306   3                  bestPhase = adjPhase;
+ 307   3              }
+ 308   2      
+ 309   2              if( CheckSyncLoss() )
+ 310   2                  return FALSE;
+ 311   2          }
+ 312   1      
+ 313   1          // 2nd Search
+ 314   1          if ( bestPhase < 7 )
+ 315   1              bestPhase = (bestPhase+121)%0x80; // 128-7
+ 316   1          else
+ 317   1              bestPhase -= 7;
+ 318   1          maxcksum = 0;
+ 319   1          for( adjPhase = bestPhase; adjPhase < bestPhase + 10; adjPhase++)
+ 320   1          {
+ 321   2              i=adjPhase%0x80;
+ 322   2              drvADC_SetPhaseCode( i );
+ 323   2              Delay1ms( vsyncTime );
+ 324   2              AUTO_PHASE_RESULT_READY();//drvADC_WaitAutoStatusReady(SC0_8B, BIT1);
+ 325   2              //cksum = msRead2Byte(SC0_8E);
+ 326   2              //cksum = ( cksum << 16 ) | msRead2Byte(SC0_8C);
+ 327   2              cksum = AUTO_PHASE_READ_VALUE();
+ 328   2              if( cksum > maxcksum )
+ 329   2              {
+ 330   3                  maxcksum = cksum;
+ 331   3                  bestPhase2 = i;
+ 332   3              }
+ 333   2      
+ 334   2              if( CheckSyncLoss() )
+ 335   2                  return FALSE;
+ 336   2          }
+ 337   1      
+ 338   1          UserPrefPhase = bestPhase2;
+ 339   1      #endif
+ 340   1          drvADC_SetPhaseCode( UserPrefPhase );
+ 341   1          return TRUE;
+ 342   1      }
+ 343          Bool mStar_AutoPosition( void )
+ 344          {
+ 345   1          WORD height, width;
+ 346   1          WORD actHeight;
+ 347   1          WORD hStart, vStart;
+ 348   1          hStart = AUTO_POSITION_READ_HSTART();//GetAutoValue(SC0_80);
+ 349   1          vStart = AUTO_POSITION_READ_VSTART();//GetAutoValue(SC0_7E);
+ 350   1      
+ 351   1          if( hStart > StandardModeWidth || vStart > StandardModeHeight )
+ 352   1          {
+ 353   2              return FALSE;
+ 354   2          }
+ 355   1      
+ 356   1          if( StandardModeGroup == Res_640x350 && abs( StandardModeVFreq - 700 ) < 10 )
+ 357   1          {
+ 358   2              if( vStart > ( 2 * StandardModeVStart ) )
+ 359   2              {
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 7   
+
+ 360   3                  UserPrefVStart = StandardModeVStart;
+ 361   3                  if( AUTO_POSITION_READ_VEND() < ( StandardModeVStart + StandardModeHeight - 10 ) ) //if( GetAu
+             -toValue(SC0_82) < ( StandardModeVStart + StandardModeHeight - 10 ) )
+ 362   3                      UserPrefHStart = StandardModeHStart;
+ 363   3                  else
+ 364   3                      UserPrefHStart = hStart;
+ 365   3              }
+ 366   2              else
+ 367   2              {
+ 368   3                  UserPrefHStart = hStart;
+ 369   3                  UserPrefVStart = vStart;
+ 370   3              }
+ 371   2          }
+ 372   1          else
+ 373   1          {
+ 374   2              width = AUTO_POSITION_READ_HEND() - hStart + 1;//GetAutoValue(SC0_84) - hStart + 1;
+ 375   2              height = AUTO_POSITION_READ_VEND() - vStart + 1;//GetAutoValue(SC0_82) - vStart + 1;
+ 376   2      #if DECREASE_V_SCALING
+ 377   2              actHeight = SC0_READ_IMAGE_HEIGHT()-DecVScaleValue;//(msRead2Byte(SC0_09)&SC_MASK_V)-DecVScaleValu
+             -e;
+ 378   2      #else
+                      actHeight = SC0_READ_IMAGE_HEIGHT();//(msRead2Byte(SC0_09)&SC_MASK_V);
+              #endif
+ 381   2              if( UserModeFlag )
+ 382   2              {
+ 383   3                  if( height < ( StandardModeHeight * 2 / 3 ) || width < ( StandardModeWidth * 2 / 3 ) )
+ 384   3                  {
+ 385   4                      UserPrefHTotal = StandardModeHTotal;
+ 386   4                      drvADC_AdjustHTotal( UserPrefHTotal );
+ 387   4                      UserPrefHStart = StandardModeHStart;
+ 388   4                      UserPrefVStart = StandardModeVStart;
+ 389   4                      UserPrefAutoHStart = StandardModeHStart;
+ 390   4                      UserPrefAutoVStart = StandardModeVStart;
+ 391   4      
+ 392   4                      goto AutoPositionFail;
+ 393   4                  }
+ 394   3              }
+ 395   2              else if( height < ( StandardModeHeight - 80 ) || width < ( StandardModeWidth - 120 ) )
+ 396   2              {
+ 397   3                  UserPrefHTotal = StandardModeHTotal;
+ 398   3                  drvADC_AdjustHTotal( UserPrefHTotal );
+ 399   3                  UserPrefHStart = StandardModeHStart;
+ 400   3                  UserPrefVStart = StandardModeVStart;
+ 401   3                  UserPrefAutoHStart = StandardModeHStart;
+ 402   3                  UserPrefAutoVStart = StandardModeVStart;
+ 403   3      
+ 404   3                  goto AutoPositionFail;
+ 405   3              }
+ 406   2              if( actHeight > height || UserModeFlag )
+ 407   2              {
+ 408   3                  height = ( actHeight - height ) / 2;
+ 409   3                  if( vStart > height )
+ 410   3                  {
+ 411   4                          UserPrefVStart = ( vStart - height );
+ 412   4                  }
+ 413   3                  else
+ 414   3                  {
+ 415   4                      UserPrefHTotal = StandardModeHTotal;
+ 416   4                      drvADC_AdjustHTotal( UserPrefHTotal );
+ 417   4                      UserPrefHStart = StandardModeHStart;
+ 418   4                      UserPrefVStart = StandardModeVStart;
+ 419   4                      UserPrefAutoHStart = StandardModeHStart;
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 8   
+
+ 420   4                      UserPrefAutoVStart = StandardModeVStart;
+ 421   4      
+ 422   4                      goto AutoPositionFail;
+ 423   4                  }
+ 424   3              }
+ 425   2              else
+ 426   2              {
+ 427   3                  UserPrefVStart = vStart;
+ 428   3              }
+ 429   2      
+ 430   2      #if PANEL_WIDTH==1366&&PANEL_HEIGHT==768
+                      // input 1360x768 display on 1366 panel
+                      // input 1360 get 1366, so -3 is in center position.
+                      if( PanelWidth == 1366 )
+                      {
+                          if( StandardModeGroup == Res_1360x768 )
+                              UserPrefHStart = hStart - 3;
+                          else
+                              UserPrefHStart = hStart;
+                      }
+                      else
+              #endif
+ 442   2                  UserPrefHStart = hStart;
+ 443   2      
+ 444   2          } //2006-02-23 Andy
+ 445   1      AutoPositionFail:
+ 446   1      
+ 447   1          mStar_AdjustHPosition(UserPrefHStart); //msWrite2Byte( SC0_07, UserPrefHStart );
+ 448   1          mStar_AdjustVPosition(UserPrefVStart);
+ 449   1          return TRUE;
+ 450   1      }
+ 451          
+ 452          
+ 453          //#if PanelType==PanelM156B1L01
+ 454          #if 0//PANEL_WIDTH==1366&&PANEL_HEIGHT==768
+              void CheckHtotal( void )
+              {
+                  WORD cksum, cksum1, maxchsum, maxchsum1, tempHtotal, temp1, temp2, temp3;
+                  BYTE TempValue1, TempValue2 , i;
+                  BYTE retry = 2;
+                  temp1 = 0;
+                  temp2 = 0;
+                  temp3 = 0;
+              
+                  TempValue1 = msReadByte( BK0_7C );
+                  TempValue2 = msReadByte( BK0_01 );
+              
+                  msWriteByte( BK0_7C, 0x20 );
+                  msWriteByte( BK0_01, 0x05 );
+              
+                  do//while (retry--)
+                  {
+                      if( retry == 0 )
+                      {
+                          tempHtotal = StandardModeHTotal - 6;
+                      }
+                      else if( retry == 1 )
+                      {
+                          tempHtotal = StandardModeHTotal + 2;
+                      }
+                      else if( retry == 2 )
+                      {
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 9   
+
+                          tempHtotal = StandardModeHTotal;
+                      }
+              
+              
+                      // if(UserPrefHTotal!=tempHtotal)
+                      {
+                          maxchsum = 0;
+                          maxchsum1 = 0;
+                          for( i = 0; i < 63; i = i + 2 )
+                          {
+                              msADC_AdjustPhase( i );
+                              Delay1ms( 10 );
+              
+                              WaitAutoStatusReady( BK0_8B, BIT1 );
+                              cksum = mStar_ReadWord( BK0_8F );
+                              if( cksum > maxchsum )
+                                  maxchsum = cksum;
+                          }
+              
+                          msADC_AdjustHTotal( tempHtotal );
+                          Delay1ms( 30 );
+                          for( i = 0; i < 63; i = i + 2 )
+                          {
+                              msADC_AdjustPhase( i );
+                              Delay1ms( 10 );
+                              WaitAutoStatusReady( BK0_8B, BIT1 );
+                              cksum1 = mStar_ReadWord( BK0_8F );
+                              if( cksum1 > maxchsum1 )
+                                  maxchsum1 = cksum1;
+                          }
+              
+                          if( maxchsum1 > maxchsum )
+                              UserPrefHTotal = tempHtotal;
+              
+                          if( retry == 0 )
+                              temp1 = maxchsum1;
+                          else if( retry == 1 )
+                              temp2 = maxchsum1;
+                          else //if(retry==3)
+                              temp3 = maxchsum1;
+              
+                          msADC_AdjustHTotal( UserPrefHTotal );
+              
+                      }
+                  }
+                  while( retry-- ); //while
+              
+                  if( temp1 > temp2 )
+                  {
+                      if( temp1 > temp3 )
+                          UserPrefHTotal = StandardModeHTotal - 6;
+                      else if( temp2 > temp3 )
+                          UserPrefHTotal = StandardModeHTotal + 2;
+                      else
+                          UserPrefHTotal = StandardModeHTotal;
+                  }
+                  else
+                  {
+                      if( temp2 > temp3 )
+                          UserPrefHTotal = StandardModeHTotal + 2;
+                      else if( temp3 > temp1 )
+                          UserPrefHTotal = StandardModeHTotal;
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 10  
+
+                      else
+                          UserPrefHTotal = StandardModeHTotal - 6;
+                  }
+                  msADC_AdjustHTotal( UserPrefHTotal );
+              
+                  msWriteByte( BK0_7C, TempValue1 );
+                  msWriteByte( BK0_01, TempValue2 );
+              }
+              #endif
+ 553          
+ 554          Bool mStar_AutoGeomtry( void )
+ 555          {
+ 556   1          Bool result = TRUE;
+ 557   1          BYTE vsyncTime;
+ 558   1      
+ 559   1          vsyncTime = GetVSyncTime();
+ 560   1      
+ 561   1          if(CURRENT_INPUT_IS_VGA())
+ 562   1          {
+ 563   2              mStar_ScalerDoubleBuffer(FALSE);
+ 564   2              // wait for coding and check
+ 565   2              //msADC_AdjustAdcGain( 0xA0, 0xA0, 0xA0 );
+ 566   2              //msADC_AdjustAdcOffset( 0xA0, 0xA0, 0xA0 );
+ 567   2      
+ 568   2              // auto adjust threshold
+ 569   2              #if QuickAuto
+                      AUTO_POSITION_SET_VALID_VALUE(AOVDV_VALUE);//msWriteByte( BK0_7C, 0x40 );
+                      #else
+ 572   2              AutoSetDataThreshold( vsyncTime * 2 );
+ 573   2              #endif
+ 574   2              if( InputTimingChangeFlag )
+ 575   2              {
+ 576   3                  result = FALSE;
+ 577   3                  goto AutoGeomtryFailed;
+ 578   3              }
+ 579   2              // auto adjust htotal
+ 580   2              result = mStar_AutoHTotal( vsyncTime * 2 );
+ 581   2      
+ 582   2              if( !result )
+ 583   2                  goto AutoGeomtryFailed;
+ 584   2      
+ 585   2              if( InputTimingChangeFlag )
+ 586   2              {
+ 587   3                  result = FALSE;
+ 588   3                  goto AutoGeomtryFailed;
+ 589   3              }
+ 590   2              // auto adjust phase
+ 591   2              if( result )
+ 592   2              {
+ 593   3                  //msADC_AdjustAdcGain(UserPrefAdcRedGain, UserPrefAdcGreenGain, UserPrefAdcBlueGain);
+ 594   3                  //msADC_AdjustAdcOffset(UserPrefAdcRedOffset, UserPrefAdcGreenOffset, UserPrefAdcBlueOffset);
+ 595   3      
+ 596   3                  #if 0//PANEL_WIDTH==1366&&PANEL_HEIGHT==768
+                          if( StandardModeGroup == Res_1366x768 && abs( StandardModeVFreq - 600 ) < 10 ) // Check 1366 x
+             -768 60 Hz HTotal
+                              CheckHtotal();
+                          #endif
+ 600   3                  mStar_AutoPhase( vsyncTime * 2 ); //2006-02-12 +3);
+ 601   3              }
+ 602   2              if( InputTimingChangeFlag )
+ 603   2              {
+ 604   3                  result = FALSE;
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 11  
+
+ 605   3                  goto AutoGeomtryFailed;
+ 606   3              }
+ 607   2      
+ 608   2              Delay1ms( vsyncTime * 3 );
+ 609   2      
+ 610   2              if( mStar_AutoPosition() )            //Clock fail, but auto positon success still return true
+ 611   2              {
+ 612   3      
+ 613   3              }
+ 614   2          }
+ 615   1      AutoGeomtryFailed:
+ 616   1          //msWriteByte( BK0_7C, 0x40 );
+ 617   1          //msWriteByte( BK0_01, 0x05 );
+ 618   1          AUTO_POSITION_SET_VALID_VALUE(AOVDV_VALUE);//msWriteByte(SC0_7C, AOVDV_VALUE);
+ 619   1          mStar_ScalerDoubleBuffer(TRUE);
+ 620   1      
+ 621   1          //drvADC_SetRGBGainCode(UserPrefAdcRedGain, UserPrefAdcGreenGain, UserPrefAdcBlueGain);
+ 622   1          //drvADC_SetRGBOffsetCode(UserPrefAdcRedOffset, UserPrefAdcGreenOffset, UserPrefAdcBlueOffset);
+ 623   1      
+ 624   1          return result;
+ 625   1      }
+ 626          
+ 627          Bool mStar_AutoColor( void )
+ 628          {
+ 629   1          Bool result;
+ 630   1          BYTE vsyncTime;
+ 631   1          vsyncTime = GetVSyncTime();
+ 632   1          if(vsyncTime<(255/3))
+ 633   1              vsyncTime*=3;
+ 634   1          else
+ 635   1              vsyncTime=255;
+ 636   1          result = drvADC_AutoAdcColor(vsyncTime);
+ 637   1          if( InputTimingChangeFlag )
+ 638   1              return FALSE;
+ 639   1      
+ 640   1          return result;
+ 641   1      }
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   2014    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      59
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

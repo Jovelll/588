@@ -1,0 +1,248 @@
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDSC_HANDLER
+OBJECT MODULE PLACED IN .\Obj\msDSC_Handler.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\KERNEL\SCALER\msDSC_Handler.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERN
+                    -EL\SYSTEM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\
+                    -DRIVER\INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\msDSC_Handler.lst) TABS(2) OBJECT
+                    -(.\Obj\msDSC_Handler.obj)
+
+line level    source
+
+   1          #include <math.h>
+   2          #include "types.h"
+   3          #include "msDSC_Handler.h"
+   4          #include "msDSC_Setting.h"
+   5          #include "Debug.h"
+   6          #include "Common.h"
+   7          //========================================================================================================
+             -===========================================================:
+   8          #define  DSC_DEBUG  1
+   9          #define  DSC_FAD_MODE 1
+  10          #if (DSC_DEBUG&&ENABLE_DEBUG)
+  11          #define DSC_printData(str, value)   printData(str, value)
+  12          #define DSC_printMsg(str)               printMsg(str)
+  13          #else
+              #define DSC_printData(str, value)
+              #define DSC_printMsg(str)
+              #endif
+  17          
+  18          //========================================================================================================
+             -===========================================================:
+  19          #if  ENABLE_DSC
+  20          xdata WORD  curSaturationHist[32];
+  21          xdata DWORD  TotalPixCnt;
+  22          xdata WORD  PseudoMaxThd;
+  23          xdata BYTE  PseudoMaxPtr;
+  24          xdata BYTE  PseudoMaxRatio=REG_DSC_PseudoMaxRatio; // 0~100 <--> 0%~100%
+  25          xdata BYTE  SatGainStep=REG_DSC_SatGainStep; // 0~100 <--> 0%~100%
+  26          #if DSC_FAD_MODE
+  27          xdata WORD  DSC_Ygain_tar_pre = 1024;
+  28          xdata WORD  DSC_Ygain_diff = 0;
+  29          xdata WORD  DSC_Ygain_ISR = 1024;
+  30          xdata WORD  DSC_Ygain_nxt = 1024;
+  31          xdata BYTE  DSC_YgainCycLoopCount = 0;
+  32          #endif
+  33          //
+  34          //========================================================================================================
+             -===========================================================:
+  35          void msDSC_Handler ( void )
+  36          {
+  37   1          xdata WORD  preLumaHist[32] = 0;
+  38   1          xdata DWORD TempVariable1 = 0;
+  39   1          xdata DWORD TempVariable2 = 0;
+  40   1          xdata WORD  Ygain_tar = 0;
+  41   1          xdata BYTE  i;
+  42   1          //----------------------------------------------------------------------
+  43   1          //--check valid DPS loop
+  44   1          //----------------------------------------------------------------------
+  45   1      #if DSC_FAD_MODE
+  46   1              xdata DWORD TempVariable3 = 0;
+  47   1              xdata BYTE  Flag_SceneChangeValid = 0;
+  48   1              xdata BYTE  Flag_IsGrayPureColor = 0;
+  49   1              xdata BYTE  Ygain_sign = 0;
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 2   
+
+  50   1              xdata BYTE  HistDiffCount = 0;
+  51   1      #endif        
+  52   1      
+  53   1      #if !DEBUG_DSC_withoutInterrupt   
+  54   1          if ( ISR_curDSCLoopCount == ISR_preDSCLoopCount )
+  55   1          {
+  56   2            return;
+  57   2          }
+  58   1          ISR_preDSCLoopCount = ISR_curDSCLoopCount;
+  59   1      #endif    
+  60   1          //----------------------------------------------------------------------
+  61   1          //--latch current-frame Histogram
+  62   1          //----------------------------------------------------------------------
+  63   1          Flag_DSC_Latch_Busy = 1;
+  64   1          TotalPixCnt=0;
+  65   1          for ( i = 0; i < 32; i++ )
+  66   1          {
+  67   2            preLumaHist[i] = curSaturationHist[i];
+  68   2            curSaturationHist[i] = ISR_SatHistogram32H[i]; 
+  69   2            TotalPixCnt+=curSaturationHist[i];  
+  70   2           #if DSC_FAD_MODE
+  71   2             TempVariable1 = ABS2(preLumaHist[i], curSaturationHist[i]);
+  72   2                  if( TempVariable1 > REG_DSC_HistDiffCountThd) 
+  73   2                      HistDiffCount++;
+  74   2             #endif     
+  75   2          #if 0
+                        DSC_printData ( "\r\n curSaturationHist[i] =%x", ISR_SatHistogram32H[i] );
+                        DSC_printData ( "\r\n TotalPixCnt =%x", TotalPixCnt );
+                          #endif
+  79   2          }
+  80   1          #if 0
+                      DSC_printData ( "\r\n curSaturationHist[i] =%x", ISR_SatHistogram32H[i] );
+                  DSC_printData ( "\r\n TotalPixCnt =%x", TotalPixCnt );
+                  #endif
+  84   1          Flag_DSC_Latch_Busy = 0;
+  85   1          PseudoMaxThd=(TotalPixCnt*PseudoMaxRatio)/100;
+  86   1          PseudoMaxPtr=0;
+  87   1          #if 0
+                    DSC_printData ( "\r\n PseudoMaxThd =%x", PseudoMaxThd);
+                  #endif
+  90   1          
+  91   1          TempVariable1=0;    
+  92   1          for ( i = 31; i > 0; i-- )
+  93   1          {
+  94   2            TempVariable1+=curSaturationHist[i];  
+  95   2            #if 0     
+                    printData ( "\r\n  AA i =%d", i );
+                    printData ( "\r\n  BB TempVariable1 =%x", TempVariable1 );
+                    printData ( "\r\n  CC PseudoMaxThd =%x", PseudoMaxThd );
+                    #endif      
+ 100   2            if ((TempVariable1>=PseudoMaxThd) && (i>=PseudoMaxPtr))
+ 101   2            {
+ 102   3              PseudoMaxPtr=i;
+ 103   3              #if 0
+                      DSC_printData ( "\r\n  PseudoMaxPtr =%d", PseudoMaxPtr );
+                      #endif
+ 106   3            }
+ 107   2          }
+ 108   1      #if DSC_FAD_MODE
+ 109   1              if(PseudoMaxPtr == 0)
+ 110   1                  Flag_IsGrayPureColor = 1;
+ 111   1              else
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 3   
+
+ 112   1                  Flag_IsGrayPureColor = 0;
+ 113   1              
+ 114   1              PseudoMaxPtr ++; 
+ 115   1      #endif
+ 116   1          TempVariable2=(1024UL*(PseudoMaxPtr+SatGainStep))/PseudoMaxPtr;
+ 117   1          #if 0
+                    DSC_printData ( "\r\n  PseudoMaxPtr =%d", PseudoMaxPtr );
+                    DSC_printData ( "\r\n  TempVariable2 =%d", TempVariable2 );
+                  #endif
+ 121   1          Ygain_tar=MIN2 (2*1024UL,MIN2 ( 32*1024UL, TempVariable2 ));
+ 122   1            #if 0
+                  DSC_printData ( "\r\n  DSC_SatSet Ygain_tar=%x", Ygain_tar );
+                    #endif
+ 125   1      
+ 126   1         #if 0
+                      if(HistDiffCount != 0)
+                      {
+                      DSC_printData ( "\r\n  ABS =%d", ABS2(Ygain_tar, DSC_Ygain_tar_pre) );
+                      DSC_printData ( "\r\n  HistDiffCount =%d", HistDiffCount );     
+                      }
+                      #endif
+ 133   1      #if DSC_FAD_MODE
+ 134   1              Flag_SceneChangeValid = (ABS2(Ygain_tar, DSC_Ygain_tar_pre) > REG_DSC_SCENCE_GainDiff ? 1 : 0 )&&
+ 135   1                                      (HistDiffCount > REG_DSC_SceChgHistCntThd);
+ 136   1              #if 0
+                      if ( Flag_SceneChangeValid ) DSC_printData ( "=======S", Flag_SceneChangeValid );
+                      if ( Flag_IsGrayPureColor ) DSC_printData ( "=======P", Flag_IsGrayPureColor );
+                      #endif
+ 140   1      
+ 141   1              if ((DSC_Ygain_tar_pre != Ygain_tar))
+ 142   1              {
+ 143   2                  if (REG_DSC_UpdateFrameCyc == 0)
+ 144   2                  {
+ 145   3                          DSC_Ygain_diff = REG_DSC_YgainDiffMinTH;
+ 146   3                  }
+ 147   2                  else
+ 148   2                  {
+ 149   3                         TempVariable3 = ABS2 ( DSC_Ygain_ISR, Ygain_tar );
+ 150   3                         TempVariable1 = TempVariable3/REG_DSC_UpdateFrameCyc;
+ 151   3                         DSC_Ygain_diff = MAX2 ( TempVariable1, REG_DSC_YgainDiffMinTH );
+ 152   3                  }
+ 153   2              }
+ 154   1              
+ 155   1              if ( DSC_YgainCycLoopCount == REG_DSC_YgainUpdateCyc )
+ 156   1              {
+ 157   2                  if (DSC_Ygain_ISR != Ygain_tar)
+ 158   2                  {
+ 159   3                      Ygain_sign = ( Ygain_tar > DSC_Ygain_ISR ) ? 1 : 0;
+ 160   3                      if ( Ygain_sign )
+ 161   3                      {
+ 162   4                              TempVariable1 = DSC_Ygain_ISR + DSC_Ygain_diff;
+ 163   4                              DSC_Ygain_nxt = MIN2(TempVariable1, Ygain_tar);
+ 164   4                      }
+ 165   3                      else
+ 166   3                      {
+ 167   4                              TempVariable1 = DSC_Ygain_ISR >= DSC_Ygain_diff ? DSC_Ygain_ISR - DSC_Ygain_diff :
+             - 0;
+ 168   4                              DSC_Ygain_nxt = MAX2(TempVariable1, Ygain_tar);
+ 169   4                      }
+ 170   3                  }
+ 171   2              }
+ 172   1              
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 4   
+
+ 173   1              if ( DSC_YgainCycLoopCount == REG_DSC_YgainUpdateCyc )
+ 174   1              {
+ 175   2                  DSC_YgainCycLoopCount = 0;
+ 176   2              }
+ 177   1              else
+ 178   1              {
+ 179   2                  DSC_YgainCycLoopCount++;
+ 180   2              }
+ 181   1              
+ 182   1            
+ 183   1              DSC_Ygain_tar_pre = Ygain_tar;
+ 184   1              
+ 185   1              if(Flag_SceneChangeValid)
+ 186   1                  DSC_Ygain_nxt = Ygain_tar;
+ 187   1              
+ 188   1                  
+ 189   1              
+ 190   1              if(!Flag_IsGrayPureColor)
+ 191   1                  DSC_Ygain_ISR = DSC_Ygain_nxt;
+ 192   1      
+ 193   1              #if 0
+                      DSC_printData ( "\r\n  Ygain_tar=%x", Ygain_tar );
+                      DSC_printData ( "\r\n  DSC_Ygain_ISR=%x", DSC_Ygain_ISR );
+                    #endif
+ 197   1              
+ 198   1          msDSC_AdjustYgain ( DSC_Ygain_ISR );//
+ 199   1      #else
+                      msDSC_AdjustYgain ( Ygain_tar );//
+              #endif
+ 202   1      }
+ 203          #else
+              BYTE code msDSCHandlerNullData[] = {0};
+              void msDSCHandlerDummy(void)
+              {
+                  BYTE xdata i = msDSCHandlerNullData[0];
+              }
+              #endif // #if EnableDPS
+ 210          //========================================================================================================
+             -===========================================================:
+*** WARNING C294 IN LINE 145 OF ..\KERNEL\SCALER\msDSC_Handler.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1129    ----
+   CONSTANT SIZE    =     64    ----
+   XDATA SIZE       =     82      83
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

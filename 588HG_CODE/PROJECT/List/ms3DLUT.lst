@@ -1,0 +1,46 @@
+C51 COMPILER V9.60.0.0   MS3DLUT                                                           12/22/2020 19:50:44 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MS3DLUT
+OBJECT MODULE PLACED IN .\Obj\ms3DLUT.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\DRIVER\ms3DLUT.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\INC
+                    -;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;..
+                    -\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\ms3DLUT.lst) TABS(2) OBJECT(.\Obj\ms3DLUT.obj)
+
+line level    source
+
+   1          
+   2          #include "global.h"
+   3          
+   4          #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUMJ || CHI
+             -P_ID == CHIP_TSUM9|| CHIP_ID == CHIP_TSUMF)
+   5          #include "drv3DLUT_C.c"
+   6          #elif (CHIP_ID == CHIP_TSUML || CHIP_ID == CHIP_TSUMU || CHIP_ID == CHIP_TSUMB || CHIP_ID == CHIP_TSUMY ||
+             - CHIP_ID == CHIP_TSUMV || CHIP_ID == CHIP_TSUM2)
+              
+              #else
+              #message "please implement 3D_LUT for new chip"
+              #endif
+  11          
+  12          #if !ENABLE_3DLUT
+  13          BYTE code ms3DLUTDummy[] = {0};
+  14          void ms3DLUT_Dummy()
+  15          {
+  16   1          BYTE xdata x = ms3DLUTDummy;
+  17   1      }
+  18          #endif
+  19          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =      7    ----
+   CONSTANT SIZE    =      1    ----
+   XDATA SIZE       =   ----       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

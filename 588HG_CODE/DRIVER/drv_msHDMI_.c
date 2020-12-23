@@ -1,0 +1,785 @@
+#ifndef _DRV_MSHDMI__C_
+#define _DRV_MSHDMI__C_
+#include "types.h"
+#include "board.h"
+#if ENABLE_HDMI
+#include "Global.h"
+#include "Adjust.h"
+#include "ms_Reg.h"
+#include "ms_rwreg.h"
+#include "msHDMI.h"
+#include "Debug.h"
+#include "Common.h"
+#include "math.h"
+#include "misc.h"
+#include "GPIO_DEF.h"
+#include "Mstar.h"
+#if  ENABLE_HDMI_1_4
+#include "msScaler.h"
+#endif
+//#include "halRwreg.h"
+
+#define HDMI_DEBUG   1
+#if ENABLE_DEBUG &&HDMI_DEBUG
+#define HDMI_printData(str, value)   printData(str, value)
+#define HDMI_printMsg(str)           printMsg(str)
+#else
+#define HDMI_printData(str, value)
+#define HDMI_printMsg(str)
+#endif
+
+void drv_mstar_HDMIInitialAudio( void )
+{
+
+    msWriteByte( REG_050D, 0xCA ); // [7]: Output black color in video blanking, [6]: GCP CD val, [3]:Video mute when AVMUTE, [1]: HDMI/DVI auto detect
+    msWriteByte( REG_050E, 0x03 ); // [1:0]: deep color mode enable
+    //msWriteByteMask(REG_0510, 0, BIT4|BIT3); // [4]:0: select pixel clock, [3]:0: manuel pixel clock mode
+    msWriteByteMask( REG_0510, BIT3, BIT4 | BIT3 ); // [3]:1: auto pixel clock mode - Montior series
+
+    msWriteByteMask( REG_05B9, 0, BIT0 ); // [0]: HPLL power on
+    msWriteByteMask( REG_05F4, BIT5, BIT5 ); // [5]: Enable video clock 2x for HDMI deep color 12 bits
+
+#if ENABLE_AUDIO_AUTO_MUTE // auto mute setting
+    msWriteByte( REG_05D3, 0x7F ); // Fading events: [6]:HDMI video clock change, [5]: no input clock, [4]: HDMI CTS/N over range, [3]: HDMI AVMUTE, [2]: non-PCM, [1:0]:ASP error
+    msWriteByte( REG_05D4, 0x00 ); // Fading events: [9]:flat bit;   120209 coding, default set to disable, enable will cause short voice cannot be heared
+#endif
+#if ENABLE_AUDIO_AUTO_FADING // auto fading setting
+    msWriteByte( REG_05CE, 0x40 ); // [6:5]: Automatic fading mode
+    msWriteByte( REG_05D2, 0xC0); // [7:6]: fading speed select 8X
+    msWriteByte( REG_05D0, 0xFF ); // Zero crossing threshold = 0xFF
+    msWriteByte( REG_05D1, 0xFF ); // Zero crossing threshold = 0xFF
+    msWriteByte( REG_05D5, 0x7F ); // Fading events: [6]:HDMI video clock change, [5]: no input clock, [4]: HDMI CTS/N over range, [3]: HDMI AVMUTE, [2]: non-PCM, [1:0]:ASP error
+    msWriteByte( REG_05D6, 0x00 ); // Fading events: [9]:flat bit;   120209 coding, default set to disable, enable will cause short voice cannot be heared
+#endif
+
+    msWriteByteMask( SC0_7A, BIT7, BIT7 ); // [7]: HDMI 444 pixel repetition mode enable
+}
+
+void drv_mstar_HDMIRst( BYTE rst )
+{
+    msWriteByte( REG_05BF, rst );
+    msWriteByte( REG_05BF, 0 );
+}
+
+BYTE drv_mstar_HDMIPacketColor( void )
+{
+    BYTE temp;
+    
+    temp = INPUT_RGB;
+    switch(( msReadByte( REG_0580 ) & 0x60 ) >> 5 )
+    {
+        case 0:
+            temp = INPUT_RGB;
+            break;
+        case 1:
+            temp = INPUT_YUV422;
+            break;
+        case 2:
+            temp = INPUT_YUV444;
+            break;
+    }   
+    
+    switch( (msReadByte(REG_0581)&(BIT6|BIT7)) >>6)
+    {
+        case 0:
+        gScInfo.AVI_Colorimetry=YUV_Colorimetry_NoData;
+        break;
+        case 1:
+        gScInfo.AVI_Colorimetry=YUV_Colorimetry_ITU601;
+        break;
+        case 2:
+        gScInfo.AVI_Colorimetry=YUV_Colorimetry_ITU709;
+        break;
+    }   
+    
+    return temp;
+}
+
+void drv_mstar_HDMIAudioMute( BYTE sw )
+{   
+    gScInfo.OutputAudioState = sw;
+    HDMI_printData( "--gScInfo.OutputAudioState %d", gScInfo.OutputAudioState );
+
+    if( sw == HDMI_AUDIO_ON )
+    {
+        hw_ClrMute();
+        HDMI_printMsg( " HDMI_AUDIO_ON");
+    }
+    else
+    {
+        hw_SetMute();
+        HDMI_printMsg( " HDMI_AUDIO_OFF");
+#if ENABLE_HDMI_SW_AUDCLK_CHECK
+    gScInfo.CurOutAudFreq = AUD_FREQ_ERROR;
+    mstar_SetAudioClockLock( FALSE ); // chip w
+#endif
+
+    }
+    
+    msWriteByteMask( REG_05CC, sw == HDMI_AUDIO_OFF ? BIT4 : 0, BIT4 ); // global mute  
+
+  
+#if ENABLE_CTS_INT
+    if( sw == HDMI_AUDIO_ON )
+    {
+        gScInfo.CTSFilterEN = 1;
+       // drv_EnableCTSFileterFunction();
+    }
+    else
+    {
+        gScInfo.CTSFilterEN = 0;
+    }
+#endif   
+}
+
+void drv_mstar_HDMIGetPktStatus( void )
+{
+#if ENABLE_HDMI_SW_CTS_STABLE
+    BYTE  ucReg;
+#endif
+#if ENABLE_CTS_INT
+#if !ENABLE_CTSN_FILTER
+    DWORD dwData;
+#endif
+#endif  
+    static BYTE CNTS = 0;
+    gScInfo.InputPacketStatus = msRead2Byte( REG_0502 );
+    gScInfo.InputPacketError = msReadByte( REG_0508 );
+    msWrite2Byte( REG_0502, gScInfo.InputPacketStatus );
+    msWriteByte( REG_0508, gScInfo.InputPacketError );
+#if ENABLE_HDMI_SW_CTS_STABLE
+    ucReg = msReadByte( REG_0524 );
+
+    if( abs( ucReg - gScInfo.InputCTSValue ) < CTSRange ) // for Check PC CTS Stable
+    {
+        if( gScInfo.OutputAudioCnt )
+            gScInfo.OutputAudioCnt--;
+    }
+    else
+        gScInfo.OutputAudioCnt = AudioDeBounce;
+    gScInfo.InputCTSValue = ucReg;
+#endif // #if EN_HDMI_SW_CTS_STABLE
+
+#if ENABLE_CTS_INT
+#if !ENABLE_CTSN_FILTER
+    if( gScInfo.InputTmdsType == TMDS_HDMI )
+    {
+        dwData = (( DWORD )( msReadByte(REG_0528 ) & 0x0F ) << 16 ) | ( DWORD )msRead2Byte( REG_0524 );
+        if( labs( dwData - gScInfo.InputCTSData ) < CTSSTABLERANGE )
+        {
+            if( gScInfo.CTSStableCnt )
+                gScInfo.CTSStableCnt--;
+        }
+        else
+        {
+            gScInfo.CTSStableCnt = CTSSTABLECOUNT;
+        }
+        gScInfo.InputCTSData = dwData;
+        CheckCTSFilterFunction();
+
+    }
+#endif
+#endif
+   
+    if( gScInfo.InputPacketStatus & BIT3 )
+        gScInfo.InputAVIInfoReceived = 1;
+
+    if( gScInfo.InputPacketStatus & BIT2 )
+    {
+    	gScInfo.InputSPDInfoReceived = 1;
+    	CNTS = 50;
+    }
+    else
+    {
+    	if(CNTS != 0)
+    		CNTS--;
+    	else
+    	{
+    		gScInfo.InputSPDInfoReceived = 0;
+    	}
+    }
+
+}
+
+BYTE drv_mstar_HDMITmdsGetType( void )
+{
+    BYTE ret_type, temp;
+
+    ret_type = TMDS_DVI;;    //default DVI
+    temp = msReadByte( REG_28C2 );
+    if( temp & BIT0 )
+        ret_type = TMDS_HDMI;
+    return ret_type;
+}
+
+#if (ENABLE_FREESYNC&&ENABLE_HDMI)
+Bool drv_mstar_HDMIGetFreeSyncFlag(void)
+{
+    if ((msReadByte(REG_058E) == 0x1A) && (msReadByte(REG_058F) == 0x00) && (msReadByte(REG_0590) == 0x00))
+    {
+        if(msReadByte(REG_0593) & 0x01)
+            return TRUE;
+        else
+            return FALSE;
+    }
+    else
+       return FALSE;
+}
+#endif
+
+void drv_mstar_HDMIAutoEQProc(void)
+{
+   //do nothing
+}
+
+Bool drv_mstar_HDMIIsAudioPCM(void)
+{
+    Bool bAudFmtIsPCM;
+    
+    if (msReadByte(REG_05B4) & _BIT6)
+        bAudFmtIsPCM = FALSE;
+    else
+        bAudFmtIsPCM = TRUE;
+
+    return bAudFmtIsPCM;
+}
+
+#if ENABLE_CTS_INT
+#if ENABLE_CTSN_FILTER
+void drv_EnableCTSNFileterFunction( void )
+{
+    BYTE ucTemp;
+
+    HDMI_printMsg( "\r\n Enable CTSN Func" );
+    //msWriteBit(REG_05CC, FALSE, BIT2); // audio FIFO not reset
+    msWrite2Byte( REG_0514, gScInfo.InputCTSData & 0x00FFFF );  // CTS Limited
+    msWrite2Byte( REG_0516, gScInfo.InputNData & 0x00FFFF );  // N Limited
+    ucTemp = (( gScInfo.InputCTSData >> 16 ) & 0x0F ) | (( gScInfo.InputNData >> 12 ) & 0xF0 );
+    msWriteByte( REG_0513, ucTemp );
+
+    msWriteByteMask( REG_050F, BIT6, BIT6 ); // Enable CTS/N filter
+    msWrite2Byte( REG_0518, 0xFFFF ); //[15:8]: N range, [7:0]: CTS range
+
+    msWriteByteMask( REG_050F, BIT7, BIT7 ); // update CTS/N Limited
+    msWriteByteMask( REG_0504, BIT6, BIT6 ); // clear CTS/N over range
+}
+
+void drv_CheckCTSNFilterFunction( void )
+{
+    BYTE ucFlag = 0;
+    DWORD dwCTSValue;
+    DWORD dwNValue;
+
+    msWriteByte( REG_0524, 0x55 ); // write any value into this byte to update CTS/N value
+
+    dwCTSValue = (((DWORD)(msReadByte(REG_0528) & 0x0F)) << 16) | msRead2Byte(REG_0524);
+    dwNValue = ((((DWORD)(msReadByte( REG_0528 ) & 0xF0)) >> 4 ) << 16 ) | msRead2Byte( REG_0526 );
+
+    if( labs( dwCTSValue - gScInfo.InputCTSData ) > CTSN_Range ) // CTS over range
+        ucFlag |= _BIT2;
+    if( labs( dwNValue - gScInfo.InputNData ) > CTSN_Range ) // N over range
+        ucFlag |= _BIT3;
+
+    gScInfo.InputCTSData = dwCTSValue;
+    gScInfo.InputNData = dwNValue;
+
+    if( ucFlag )
+    {
+        ucFlag = FALSE;
+        gScInfo.CTSStableCnt = CTSSTABLECOUNT;
+    }
+    else
+    {
+        ucFlag = FALSE;
+        if( gScInfo.CTSStableCnt )
+        {
+            gScInfo.CTSStableCnt--;
+            if( gScInfo.CTSStableCnt == 0 )
+                ucFlag = TRUE;
+        }
+    }
+
+    if( gScInfo.CTSFilterEN == 1 )
+    {
+        if( ucFlag )
+            drv_EnableCTSNFileterFunction();
+        // CTS/N is over range
+        else if( gScInfo.CTSStableCnt == 0 && ( msReadByte( REG_0504 )& BIT6 ) )
+            gScInfo.CTSStableCnt = CTSSTABLECOUNT;
+    }
+}
+
+#else
+void drv_EnableCTSFileterFunction( void )
+{   
+
+    if( gScInfo.CTSFilterEN == 1 )
+    {
+        msWriteByteMask( REG_050F, 0, BIT6 ); // [6]: disable CTS/N filter
+        msWriteByteMask( REG_0513, gScInfo.InputCTSData >> 16, 0x0F );
+        msWrite2Byte( REG_0514, gScInfo.InputCTSData & 0x00FFFF );
+        msWriteByteMask( REG_050F, BIT7, BIT7 ); // [7]: update new CTS value
+        msWriteByteMask( REG_050F, BIT6, BIT6 ); // [6]: enable CTS/N filter
+        HDMI_printMsg( "  drv_EnableCTSFileterFunction" );
+    }  
+
+}
+
+void drv_CheckCTSFilterFunction( void )
+{
+  
+    if( gScInfo.CTSFilterEN == 1 )
+    {
+        if( gScInfo.InputPacketError & BIT1 )// BCH parity error
+        {
+            if( gScInfo.CTSStableCnt == 0 && InputTimingStableFlag )
+            {
+                drv_EnableCTSFileterFunction();
+            }
+        }
+    }
+    if(  gScInfo.InputPacketError & 0x30  )// ASP error or AS parity bit error
+    {
+        msWriteByteMask( REG_05CC, BIT4, BIT4 ); // global mute       
+    }
+
+    
+}
+#endif
+#endif
+
+
+
+#if ENABLE_HDMI_SW_AUDCLK_CHECK   // 20080403 audio clock over spec
+//*******************************************************************
+// Function Name: mstar_HDMICheckAudioFreq
+// Decscription: N/CTS = (128 fs)/(TMDS_Clk)
+//*******************************************************************
+AudioFreqType drv_mstar_HDMICheckAudioFreq( void )
+//BYTE mstar_HDMICheckAudioFreq(void)
+{
+    AudioFreqType bFreqVaild;
+    //BYTE bFreqVaild;
+    DWORD dwTemp1, dwTemp2;
+
+    dwTemp2 = (( DWORD )UserPrefHTotal * (( XTAL_CLOCK_KHZ + SrcHPeriod / 2 ) / SrcHPeriod ) ) / 1000;
+    //HDMI_printData("--CLK-- %d",dwTemp2);
+
+    msWriteByte(REG_0524, 0x00);
+    dwTemp1 = ((((DWORD)( msReadByte( REG_0528 ) & 0xF0 )) >> 4 ) << 16 ) | msRead2Byte( REG_0526 );
+    if( dwTemp1 < 0x10 )
+    {
+        return AUD_FREQ_ERROR;
+    }
+    dwTemp2 = dwTemp1 * dwTemp2 / 128;
+
+    dwTemp1 = (((DWORD)(msReadByte(REG_0528) & 0x0F)) << 16 ) | msRead2Byte( REG_0524 );
+    if( dwTemp1 < 0x10 )
+    {
+        return AUD_FREQ_ERROR;
+    }
+
+    dwTemp1 = ( dwTemp1 + 500 ) / 1000;
+    dwTemp2 = ( dwTemp2 + dwTemp1 / 2 ) / dwTemp1;
+    //HDMI_printData("--HDMI Audio Freq-- %d",dwTemp2);
+
+#if 0
+    if( dwTemp2 >= 25 && dwTemp2 <= ( 192 + 4 ) )
+        bFreqVaild = dwTemp2;
+    else
+        bFreqVaild = AUD_FREQ_ERROR;
+#else
+    if( abs( dwTemp2 - 32 ) < 4 )
+        bFreqVaild = AUD_FREQ_32K;
+    else if( abs( dwTemp2 - 44 ) < 4 )
+        bFreqVaild = AUD_FREQ_44K;
+    else if( abs( dwTemp2 - 48 ) < 4 )
+        bFreqVaild = AUD_FREQ_48K;
+    else if( abs( dwTemp2 - 88 ) < 4 )
+        bFreqVaild = AUD_FREQ_88K;
+    else if( abs( dwTemp2 - 96 ) < 4 )
+        bFreqVaild = AUD_FREQ_96K;
+    else if( abs( dwTemp2 - 192 ) < 4 )
+        bFreqVaild = AUD_FREQ_192K;
+    else
+    {
+        //HDMI_printData("--HDMI Audio Freq-- %d",dwTemp2);
+        bFreqVaild = AUD_FREQ_ERROR;
+    }
+#endif
+    return bFreqVaild;
+}
+
+void drv_mstar_SetAudioClockLock( Bool bLock )
+{
+    BYTE ucDBFC;
+
+    // ucDBFC = msReadByte( SC0_01 );
+    ucDBFC=mStar_ScalerDoubleBuffer(FALSE);
+    msWriteByteMask( SC0_01, 0, BIT0 );
+
+    if( bLock )
+    {
+        msWriteByteMask(REG_05F8, BIT3, BIT3);
+        HDMI_printData( "  mstar_SetAudioClockLock LOCK[%d]", gScInfo.CurOutAudFreq );
+    }
+    else
+    {
+        msWriteByteMask(REG_05F8, 0, BIT3);
+        HDMI_printMsg( "  mstar_SetAudioClockLock UNLOCK" );
+    }
+   // msWriteByte( SC0_01, ucDBFC );
+   mStar_ScalerDoubleBuffer(ucDBFC&BIT0);
+}
+#endif // #if EN_HDMI_SW_AUDCLK_CHECK
+
+#if ENABLE_AUDIO_AUTO_MUTE || ENABLE_AUDIO_AUTO_FADING || ENABLE_CTSN_FILTER
+///////////////////////////////////////////////////////////////////////////////
+//     Audio mute/fading events:
+//     [0]: HDMI audio sample error.
+//     [1]: HDMI audio sample parity error.
+//     [2]: HDMI non-PCM.
+//     [3]: HDMI AVMUTE.
+//     [4]: HDMI CTS/N over range.
+//     [5]: HDMI no input clock.
+//     [6]: HDMI video clock big change.
+//     [7]: HDMI audio sample channel status information changes.
+//     [8]: HDMI 2-channel audio sample present bit error.
+//     [9]: HDMI audio sample flat bit is set.
+///////////////////////////////////////////////////////////////////////////////
+void drv_CheckAudioErrorStatus( void )
+{
+    WORD uAudioMuteEn = 0;
+
+#if ENABLE_CTSN_FILTER
+    uAudioMuteEn |= (msReadByte(REG_05D3) & BIT4) | (msReadByte(REG_05D5) & BIT4);
+#endif
+#if ENABLE_AUDIO_AUTO_MUTE
+    uAudioMuteEn |= msRead2Byte(REG_05D3) & 0x3FF; // auto mute events
+#endif
+#if ENABLE_AUDIO_AUTO_FADING
+    uAudioMuteEn |= msRead2Byte(REG_05D5) & 0x3FF; // auto fading events
+#endif
+
+    if( uAudioMuteEn )
+    {
+        if( uAudioMuteEn & _BIT0 ) // ASP error
+        {
+            if( gScInfo.InputPacketError & _BIT4 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.bASPError = 1;
+                //msWriteBit(REG_0508, TRUE, _BIT4); // write 1 to clear
+            }
+            else
+                gScInfo.ucAudioErrorEvents.bASPError = 0;
+        }
+        if( uAudioMuteEn & _BIT1 ) // ASP pariy error
+        {
+            if( gScInfo.InputPacketError & _BIT5 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.bASPParityError = 1;
+                //msWriteBit(REG_0508, TRUE, _BIT5); // write 1 to clear
+            }
+            else
+                gScInfo.ucAudioErrorEvents.bASPParityError = 0;
+        }
+        if( uAudioMuteEn & _BIT2 ) // non-PCM, IC would check channel status directly, no firmware effort
+        {
+            if( msReadByte( REG_05B4 ) & _BIT6 ) // error status bit
+                gScInfo.ucAudioErrorEvents.bNonPCM = 1;
+            else
+                gScInfo.ucAudioErrorEvents.bNonPCM = 0;
+        }
+        if( uAudioMuteEn & _BIT3 ) // AVMUTE, IC would check GC packet directly, no firmware effort
+        {
+            if( msReadByte( REG_052A ) & _BIT0 ) // error status bit
+            {
+                if( !gScInfo.ucAudioErrorEvents.bAVMUTE )
+                {
+                gScInfo.ucAudioErrorEvents.bAVMUTE = 1;
+                    //mStar_SetupFreeRunMode();
+                }
+            }
+            else
+            {
+                if( gScInfo.ucAudioErrorEvents.bAVMUTE )
+                {
+                   gScInfo.ucAudioErrorEvents.bAVMUTE = 0;
+                   //mStar_SetupMode();
+        #if (GLASSES_TYPE==GLASSES_NVIDIA   )
+             if((SrcFlags & bUnsupportMode) ||(g_SetupPathInfo.ucSCFmtIn == SC_FMT_IN_NORMAL))
+                {
+                  NV_3Dmode(FALSE);
+                }
+                else
+                {
+                  NV_3Dmode(TRUE);
+                }
+        #endif      
+             mStar_BlackWhiteScreenCtrl(BW_SCREEN_OFF); //HDMI av Mute test  can't clear    
+             
+                }
+            }
+        }
+        if( uAudioMuteEn & _BIT4 ) // CTS/N over range
+        {
+            if( msReadByte( REG_0504 ) & _BIT6 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.bCTSNOverRange = 1;
+                msWriteByteMask(REG_050F, 0, BIT6); // SW path for CTSN enable can not receive ACR packet, [6]: turn off CTS/N filter
+                drv_CheckCTSNFilterFunction();
+            }
+            else
+                gScInfo.ucAudioErrorEvents.bCTSNOverRange = 0;
+        }
+        if( uAudioMuteEn & _BIT5 ) // DVI no input clock, IC would freeze the previous audio frequency when DVI is no input
+        {
+            if( msReadByte( REG_05FB ) & _BIT7 ) // error status bit
+                gScInfo.ucAudioErrorEvents.bNoInputClock = 1;
+            else
+                gScInfo.ucAudioErrorEvents.bNoInputClock = 0;
+        }
+        if( uAudioMuteEn & _BIT6 ) // Video clock big changed
+        {
+            if( msReadByte( REG_0504 ) & _BIT7 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.bVideoClockBigChanged = 1;
+                if( msReadByte( REG_05E3 ) & _BIT5 ) // video clock is stable
+                    msWriteBit( REG_0504, TRUE, _BIT7 ); // write 1 to clear
+            }
+            else
+                gScInfo.ucAudioErrorEvents.bVideoClockBigChanged = 0;
+        }
+        if( uAudioMuteEn & _BIT7 ) // Channel status changed
+        {
+            if( msReadByte( REG_0509 ) & _BIT2 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.bChannelStatusChanged = 1;
+                msWriteBit( REG_0509, TRUE, _BIT2 ); // write 1 to clear
+            }
+            else
+                gScInfo.ucAudioErrorEvents.bChannelStatusChanged = 0;
+        }
+        if( uAudioMuteEn & _BIT8 ) // 2-ch ASP present bit error
+        {
+            if( msReadByte( REG_0509 ) & _BIT3 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.b2CHASPPresentBitError = 1;
+                msWriteBit( REG_0509, TRUE, _BIT3 ); // write 1 to clear
+            }
+            else
+                gScInfo.ucAudioErrorEvents.b2CHASPPresentBitError = 0;
+        }
+        if( uAudioMuteEn & _BIT9 ) // flat bit
+        {
+            if( msReadByte( REG_0504 ) & _BIT4 ) // error status bit
+            {
+                gScInfo.ucAudioErrorEvents.bFlatBitReceived = 1;
+                msWriteBit( REG_0504, TRUE, _BIT4 ); // write 1 to clear
+            }
+            else
+                gScInfo.ucAudioErrorEvents.bFlatBitReceived = 0;
+        }
+    }
+}
+
+#endif // #if ENABLE_AUDIO_AUTO_MUTE || ENABLE_AUDIO_AUTO_FADING || ENABLE_CTSN_FILTER
+#if ENABLE_HDMI_1_4
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+//                                HDMI 1.4 new feature:
+//                                1. 3D format
+//                                2. 4K x 2K format
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+// HDMI_Video_Format: Vendor Specifc Info-frame, PB4[7:5]
+//   000: No additional HDMI video format is presented in this packet
+//   001: Extended resolution format (e.g. 4Kx2K video) present
+//   010: 3D format indication present
+//   011~111: Reserved
+E_HDMI_ADDITIONAL_VIDEO_FORMAT drv_msHDMI_Check_Additional_Format(void)
+{
+    E_HDMI_ADDITIONAL_VIDEO_FORMAT val;
+
+    if ((msReadByte(REG_0568) & 0xFF) == 0) // 000
+        val = E_HDMI_NO_ADDITIONAL_FORMAT;
+    else if ((msReadByte(REG_0568) & 0xFF) == BIT5) // 001
+        val = E_HDMI_4Kx2K_FORMAT;
+    else if ((msReadByte(REG_0568) & 0xFF) == BIT6) // 010
+        val = E_HDMI_3D_FORMAT;
+    else // 011 ~ 111
+        val = E_HDMI_RESERVED;
+
+    return val;
+}
+
+E_HDMI_3D_INPUT_MODE drv_msHDMI_Get_3D_Structure(void)
+{
+    E_HDMI_3D_INPUT_MODE val;
+
+    if ((msReadByte(REG_0569) & 0xF0) == 0)
+        val = E_HDMI_3D_INPUT_FRAME_PACKING;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x10)
+        val = E_HDMI_3D_INPUT_FIELD_ALTERNATIVE;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x20)
+        val = E_HDMI_3D_INPUT_LINE_ALTERNATIVE;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x30)
+        val = E_HDMI_3D_INPUT_SIDE_BY_SIDE_FULL;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x40)
+        val = E_HDMI_3D_INPUT_L_DEPTH;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x50)
+        val = E_HDMI_3D_INPUT_L_DEPTH_GRAPHICS_GRAPHICS_DEPTH;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x60)
+        val = E_HDMI_3D_INPUT_TOP_BOTTOM;
+    else if ((msReadByte(REG_0569) & 0xF0) == 0x80)
+        val = E_HDMI_3D_INPUT_SIDE_BY_SIDE_HALF;
+    else
+        val = E_HDMI_3D_RESERVED;
+
+    return val;
+}
+
+#if  0
+// 3D_Ext_Data: Vendor Specifc Info-frame, PB6[7:4]
+//   0000 ~ 0011 : Horizontal sub-sampling
+//   0100: Quincunx matrix - Odd/Left  picture, Odd/Right  picture
+//   0101: Quincunx matrix - Odd/Left  picture, Even/Right picture
+//   0110: Quincunx matrix - Even/Left picture, Odd/Right  picture
+//   0111: Quincunx matrix - Even/Left picture, Even/Right picture
+//   1000 ~ 1111: Reserved
+E_HDMI_3D_EXT_DATA_T drv_msHDMI_Get_3D_Ext_Data(void)
+{
+    E_HDMI_3D_EXT_DATA_T e_3d_extdata;
+    BYTE regval;
+
+    regval = msReadByte(REG_056A) & 0xF0;
+
+    switch(regval)
+    {
+        case 0x00:
+            e_3d_extdata = E_3D_EXT_DATA_HOR_SUB_SAMPL_0;
+            break;
+        case 0x10:
+            e_3d_extdata = E_3D_EXT_DATA_HOR_SUB_SAMPL_1;
+            break;
+        case 0x20:
+            e_3d_extdata = E_3D_EXT_DATA_HOR_SUB_SAMPL_2;
+            break;
+        case 0x30:
+            e_3d_extdata = E_3D_EXT_DATA_HOR_SUB_SAMPL_3;
+            break;
+        case 0x40:
+            e_3d_extdata = E_3D_EXT_DATA_QUINCUNX_MATRIX_0;
+            break;
+        case 0x50:
+            e_3d_extdata = E_3D_EXT_DATA_QUINCUNX_MATRIX_1;
+            break;
+        case 0x60:
+            e_3d_extdata = E_3D_EXT_DATA_QUINCUNX_MATRIX_2;
+            break;
+        case 0x70:
+            e_3d_extdata = E_3D_EXT_DATA_QUINCUNX_MATRIX_3;
+            break;
+        default:
+            e_3d_extdata = E_3D_EXT_DATA_RESERVE;
+            break;
+    }
+    return e_3d_extdata;
+}
+
+
+// 3D_Meta_Field: Vendor Specifc Info-frame, PB5[3], PB7 ~ PB7+N
+//   - 3D_Meta_Present: PB5[3]
+//   - 3D_Metadata_Type: PB7[7:5]
+//       000: parallax information defined in ISO23002-3
+//       001 ~ 111: reserved
+//   - 3D_Metadata_Length(N, N <= 31-8 = 23): PB7[4:0]
+//   - 3D_Metadata[] : PB8 ~ PB7+N
+void drv_msHDMI_Get_3D_Meta_Field(sHDMI_3D_META_FIELD *ptr)
+{
+    BYTE i, regval;
+
+    ptr->b3D_Meta_Present = (msReadByte(REG_0569) & BIT3) > 0 ? TRUE : FALSE;
+    regval = msReadByte(REG_056B) & 0xE0;
+    switch(regval)
+    {
+        case 0x00:
+            ptr->t3D_Metadata_Type = E_3D_META_DATA_PARALLAX_ISO23002_3;
+            break;
+        case 0x20:
+        case 0x30:
+        case 0x40:
+        case 0x50:
+        case 0x60:
+        case 0x70:
+            ptr->t3D_Metadata_Type = E_3D_META_DATA_RESERVE;
+            break;
+        default:
+            ptr->t3D_Metadata_Type = E_3D_META_DATA_MAX;
+            break;
+    }
+    ptr->u83D_Metadata_Length = msReadByte(REG_056B) & 0x1F;
+    for(i=0;i<ptr->u83D_Metadata_Length;i++)
+    {
+        ptr->u83D_Metadata[i] = msReadByte(REG_056C+i);
+    }
+}
+
+
+// VIC_CODE: Auxiliary Video Information Info-frame, PB4[6:0]
+BYTE drv_msHDMI_Get_VIC_Code(void)
+{
+    BYTE val;
+
+    val = msReadByte(REG_0583) & 0x7F;
+    return val;
+}
+
+
+// 4Kx2K VIC code: Vendor Specifc Info-frame, PB5[7:0]
+//   0x01: 1920(x2)x1080(x2) @ 29.97/30Hz
+//   0x02: 1920(x2)x1080(x2) @ 25Hz
+//   0x03: 1920(x2)x1080(x2) @ 23.976/24Hz
+//   0x04: 2048(x2)x1080(x2) @ 24Hz
+//   0x00, 0x05 ~ 0xFF: Reserved
+E_HDMI_VIC_4Kx2K_CODE drv_msHDMI_Get_4Kx2K_VIC_Code(void)
+{
+    E_HDMI_VIC_4Kx2K_CODE val;
+
+    if (msReadByte(REG_0569) == 0x01)
+        val = E_VIC_4Kx2K_30Hz;
+    else if (msReadByte(REG_0569) == 0x02)
+        val = E_VIC_4Kx2K_25Hz;
+    else if (msReadByte(REG_0569) == 0x03)
+        val = E_VIC_4Kx2K_24Hz;
+    else if (msReadByte(REG_0569) == 0x04)
+        val = E_VIC_4Kx2K_24Hz_SMPTE;
+    else
+        val = E_VIC_RESERVED;
+
+    return val;
+}
+#endif
+
+#endif // #if EN_HDMI_1_4
+#if 0//(ENABLE_FREESYNC&&ENABLE_HDMI)
+Bool drv_mstar_HDMIGetFreeSyncFlag(void)
+{
+    if ((msReadByte(REG_15B8) == 0x1A) && (msReadByte(REG_15B9) == 0x00) && (msReadByte(REG_15BA) == 0x00))
+    {
+        if(msReadByte(REG_15BD) & 0x01)
+            return TRUE;
+        else
+            return FALSE;
+    }
+    else
+       return FALSE;
+}
+#endif
+
+
+#else
+
+
+#endif//#if ENABLE_HDMI
+#endif
+

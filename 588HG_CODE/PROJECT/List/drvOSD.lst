@@ -1,0 +1,377 @@
+C51 COMPILER V9.60.0.0   DRVOSD                                                            12/22/2020 19:50:23 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DRVOSD
+OBJECT MODULE PLACED IN .\Obj\drvOSD.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\KERNEL\SCALER\drvOSD.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYST
+                    -EM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\
+                    -INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\drvOSD.lst) TABS(2) OBJECT(.\Obj\drvOSD.
+                    -obj)
+
+line level    source
+
+   1          
+   2          #define _DRVOSD_C
+   3          
+   4          #include "types.h"
+   5          #include "board.h"
+   6          #include "ms_reg.h"
+   7          #include "drvOSD.h"
+   8          #include "ms_rwreg.h"
+   9          #include "msosd.h"
+  10          #include "halrwreg.h"
+  11          
+  12          #if ENABLE_OSD_ROTATION
+  13          #include "LoadPropFont1218.h" //for Get FONT_HEIGHT
+  14          #endif
+  15          
+  16          extern  xdata BYTE  OsdFontColor;
+  17          
+  18          #if ENABLE_OSD_ROTATION
+  19          WORD drvOSD_GetTxtCAStart(BYTE u8Wnd, BYTE u8XPos, BYTE u8YPos)
+  20          {
+  21   1          BYTE u8LineOffset=msReadByte((u8Wnd<<5)+OSD2_12);
+  22   1          WORD u16CABase=msRead2Byte((u8Wnd<<5)+OSD2_10);
+  23   1      
+  24   1          BYTE xdata u8Bank=msReadByte(OSD1_00);
+  25   1          msWriteByte(OSD1_00,0x00);//subbank 0
+  26   1          
+  27   1          if (UserPrefOsdRotateMode==OSDRotateMenuItems_90)
+  28   1        {
+  29   2              u16CABase=GET_CABASE_90_0(u16CABase,u8LineOffset);
+  30   2        }
+  31   1        else
+  32   1        #if defined(_OSD_ROTATION_180_)
+  33   1          if (UserPrefOsdRotateMode==OSDRotateMenuItems_180)
+  34   1          {
+  35   2              BYTE u16Height; 
+  36   2              u16Height = (msRead2Byte(( u8Wnd << 5 )+OSD2_0A)- msRead2Byte(( u8Wnd << 5 )+OSD2_06))/(FONT_HEIGH
+             -T);
+  37   2              u16CABase=GET_CABASE_180_0(u16CABase,u8LineOffset, u16Height);    
+  38   2          }
+  39   1        else
+  40   1        #endif      
+  41   1        #if defined(_OSD_ROTATION_270_)
+  42   1          if (UserPrefOsdRotateMode==OSDRotateMenuItems_270)
+  43   1          {
+  44   2              BYTE u16Height; 
+  45   2              u16Height = (msRead2Byte((u8Wnd<<5)+OSD2_08)- msRead2Byte((u8Wnd<<5)+OSD2_04))/FONT_HEIGHT;
+  46   2              u16CABase=GET_CABASE_270_0(u16CABase,u8LineOffset,u16Height);
+  47   2          }
+  48   1        else
+  49   1        #endif  
+  50   1          msWriteByte(OSD1_00,u8Bank);
+  51   1          return (u16CABase+(WORD)u8YPos*u8LineOffset+u8XPos);
+C51 COMPILER V9.60.0.0   DRVOSD                                                            12/22/2020 19:50:23 PAGE 2   
+
+  52   1      }
+  53          #endif
+  54          
+  55          void drvOSD_DrawRealChar(BYTE u8Wnd, BYTE u8XPos, BYTE u8YPos, BYTE u8Char)
+  56          {
+  57   1          WORD u16TempValue;
+  58   1          BYTE u8DrawCode = (!(u8YPos & BIT7));
+  59   1      
+  60   1          u8YPos &= 0x7F;
+  61   1      
+  62   1          u16TempValue=GET_TXT_CASTART(u8Wnd,u8XPos,u8YPos); // get real address
+  63   1          WRITE_CAFSRAM_ADDR();   
+  64   1          msWrite2Byte(PORT_ATTR_ADDR, u16TempValue); // display font attribute
+  65   1          WRITE_ATTRIBUTE(); 
+  66   1          msWriteByte(PORT_ATTR_DATA, OsdFontColor);
+  67   1          if (u8DrawCode)
+  68   1          {
+  69   2             WRITE_CAFSRAM_ADDR();
+  70   2              msWrite2Byte(PORT_CODE_ADDR, u16TempValue); // dispaly font code
+  71   2              WRITE_CODE();   
+  72   2              msWriteByte(PORT_CODE_DATA, u8Char);
+  73   2          }
+  74   1      
+  75   1      }
+  76          void drvOSD_DrawContinuousChar(BYTE u8Wnd,BYTE u8XPos, BYTE u8YPos, BYTE u8Char, BYTE u8Num)
+  77          {
+  78   1          WORD u16TempValue;
+  79   1          BYTE i;
+  80   1          BYTE    u8DrawCode = (!(u8YPos & BIT7));
+  81   1      
+  82   1          u8YPos &= 0x7F;
+  83   1          u16TempValue=GET_TXT_CASTART(u8Wnd,u8XPos,u8YPos); // get real address
+  84   1          WRITE_CAFSRAM_ADDR();    
+  85   1          msWrite2Byte(PORT_ATTR_ADDR, u16TempValue);
+  86   1        WRITE_ATTRIBUTE();   
+  87   1          for(i=0;i<u8Num;i++)
+  88   1          {
+  89   2              msWriteByte(PORT_ATTR_DATA, OsdFontColor);
+  90   2          }
+  91   1          if (u8DrawCode)
+  92   1          {
+  93   2              WRITE_CAFSRAM_ADDR();    
+  94   2              msWrite2Byte(PORT_CODE_ADDR, u16TempValue);
+  95   2          WRITE_CODE();            
+  96   2              for(i=0;i<u8Num;i++)
+  97   2              {
+  98   3                  msWriteByte(PORT_CODE_DATA, u8Char);
+  99   3              }
+ 100   2          }
+ 101   1      }
+ 102          #if defined(_MANHATTAN_OSD_)
+              void drvOSD_DrawVContinuousChar(BYTE u8Wnd, BYTE u8XPos, BYTE u8YPos, BYTE u8Char, BYTE u8Num)
+              {
+                  WORD u16TempValue;
+                  BYTE i;
+                  BYTE u8DrawCode = (!(u8YPos & BIT7));
+              
+                  u8YPos &= 0x7F;
+              
+                  u16TempValue=GET_TXT_CASTART(u8Wnd,u8XPos,u8YPos); // get real address
+                  #define LINE_OFFSET u8Wnd
+                  LINE_OFFSET=msReadByte((u8Wnd<<5)+OSD2_12);
+C51 COMPILER V9.60.0.0   DRVOSD                                                            12/22/2020 19:50:23 PAGE 3   
+
+                  for (i=0;i<u8Num;i++)
+                  {
+                     WRITE_CAFSRAM_ADDR();
+                      msWrite2Byte(PORT_ATTR_ADDR, u16TempValue);
+                 WRITE_ATTRIBUTE(); 
+                      msWriteByte(PORT_ATTR_DATA, OsdFontColor);
+                      u16TempValue+=LINE_OFFSET;
+                  }
+                  if (u8DrawCode)
+                  {
+                      for(i=0;i<u8Num;i++)
+                      {
+                          u16TempValue-=LINE_OFFSET;
+                     WRITE_CAFSRAM_ADDR();      
+                          msWrite2Byte(PORT_CODE_ADDR, u16TempValue);
+                     WRITE_CODE(); 
+                          msWriteByte(PORT_CODE_DATA, u8Char);
+                      }
+                  }
+                  #undef LINE_OFFSET
+              }
+              #endif
+ 136          void drvOSD_DrawBlankPlane(BYTE u8Wnd,BYTE u8XPos,BYTE u8YPos,BYTE u8Width,BYTE u8Height)
+ 137          {
+ 138   1          BYTE i,j;
+ 139   1          WORD u16TempValue;
+ 140   1          BYTE IsDrawCode=(!(u8YPos & BIT7));
+ 141   1      
+ 142   1          u8YPos&=0x7F;
+ 143   1          u16TempValue=GET_TXT_CASTART(u8Wnd,u8XPos,u8YPos); // get real address
+ 144   1          #define LINE_OFFSET u8Wnd
+ 145   1          LINE_OFFSET=msReadByte((u8Wnd<<5)+OSD2_12);
+ 146   1          for (i = 0; i < u8Height; i++)
+ 147   1          {
+ 148   2             WRITE_CAFSRAM_ADDR();
+ 149   2              msWrite2Byte(PORT_ATTR_ADDR, u16TempValue);
+ 150   2         WRITE_ATTRIBUTE(); 
+ 151   2              for(j=0;j<u8Width;j++)
+ 152   2              {
+ 153   3                  msWriteByte(PORT_ATTR_DATA, OsdFontColor);
+ 154   3              }
+ 155   2              u16TempValue+=LINE_OFFSET;
+ 156   2          }
+ 157   1          if (!IsDrawCode)
+ 158   1              return;
+ 159   1          u16TempValue-=(LINE_OFFSET*u8Height); // recover real address
+ 160   1          for (i = 0; i < u8Height; i++)
+ 161   1          {
+ 162   2             WRITE_CAFSRAM_ADDR();
+ 163   2              msWrite2Byte(PORT_CODE_ADDR, u16TempValue);
+ 164   2         WRITE_CODE();   
+ 165   2              for(j=0;j<u8Width;j++)
+ 166   2              {
+ 167   3                  msWriteByte(PORT_CODE_DATA, SPACE_FONT);
+ 168   3              }
+ 169   2              u16TempValue+=LINE_OFFSET;
+ 170   2          }
+ 171   1          #undef LINE_OFFSET
+ 172   1      
+ 173   1      }
+ 174          
+ 175          void drvOSD_SetWndLineOffset(BYTE u8Wnd, BYTE u8LineOffset)
+C51 COMPILER V9.60.0.0   DRVOSD                                                            12/22/2020 19:50:23 PAGE 4   
+
+ 176          {
+ 177   1          msWriteByte((u8Wnd<<5)+OSD2_12,u8LineOffset);
+ 178   1      }
+ 179          #if !ENABLE_MENULOAD
+ 180          void drvOSD_SetWndHPosition(BYTE u8Wnd, WORD u16HStart, WORD u16HEnd)
+ 181          {
+ 182   1          u8Wnd<<=5;
+ 183   1          DB_W2B((u8Wnd)+OSD2_04,u16HStart);
+ 184   1          DB_W2B((u8Wnd)+OSD2_08,u16HEnd);
+ 185   1      }
+ 186          void drvOSD_SetWndVPosition(BYTE u8Wnd, WORD u16VStart, WORD u16VEnd)
+ 187          {
+ 188   1          u8Wnd<<=5;
+ 189   1          DB_W2B((u8Wnd)+OSD2_06,u16VStart);
+ 190   1          DB_W2B((u8Wnd)+OSD2_0A,u16VEnd);
+ 191   1      }
+ 192          #endif
+ 193          WORD drvOSD_GetWndInfo(BYTE u8Wnd,BYTE u8Info)
+ 194          {
+ 195   1          u8Wnd<<=5;
+ 196   1          if (u8Info==OSD_WND_INFO_H_START)
+ 197   1              return  msRead2Byte((u8Wnd)+OSD2_04);
+ 198   1          if (u8Info==OSD_WND_INFO_V_START)
+ 199   1              return msRead2Byte((u8Wnd)+OSD2_06);
+ 200   1          if (u8Info==OSD_WND_INFO_V_END)
+ 201   1              return msRead2Byte((u8Wnd)+OSD2_0A);
+ 202   1          if (u8Info==OSD_WND_INFO_LINE_OFFSET)
+ 203   1              return msReadByte((u8Wnd)+OSD2_12);
+ 204   1          if (u8Info==OSD_WND_INFO_CABASE)
+ 205   1              return msRead2Byte((u8Wnd)+OSD2_10);
+ 206   1          return 0;
+ 207   1      }
+ 208          void drvOSD_SetWndOn(BYTE u8Wnd,Bool u8On)
+ 209          {
+ 210   1          msWriteByteMask((u8Wnd<<5)+OSD2_00,(u8On?BIT0:0),BIT0);
+ 211   1      }
+ 212          void drvOSD_SetWndCtrl(BYTE u8Wnd, BYTE u8CtrlType, WORD u16Value,WORD u16Mask)
+ 213          {
+ 214   1          u8Wnd<<=5;
+ 215   1          if (u8CtrlType==OSD_WND_CTRL0)
+ 216   1              msWrite2ByteMask((u8Wnd)+OSD2_00,u16Value,u16Mask);
+ 217   1          else if (u8CtrlType==OSD_WND_CTRL1)
+ 218   1              msWrite2ByteMask((u8Wnd)+OSD2_02,u16Value,u16Mask);
+ 219   1          else if (u8CtrlType==OSD_WND_CTRL2)
+ 220   1              msWrite2ByteMask((u8Wnd)+OSD2_14,u16Value,u16Mask);
+ 221   1          else if (u8CtrlType==OSD_WND_CTRL3)
+ 222   1              msWrite2ByteMask((u8Wnd)+OSD2_1A,u16Value,u16Mask);
+ 223   1      }
+ 224          void drvOSD_SetWndFixAlpha(BYTE u8Wnd,BYTE u8Lvl,BYTE u8Value)
+ 225          {
+ 226   1          u8Wnd<<=5;
+ 227   1        //inverse color key define
+ 228   1          msWriteByteMask((u8Wnd)+OSD2_15,BIT5,BIT5);
+ 229   1          if (u8Lvl==OSD_ALPHA_OUT)
+ 230   1              msWriteByteMask((u8Wnd)+OSD2_0C,u8Value,0x3F);
+ 231   1          else if (u8Lvl==OSD_ALPHA_LV1)
+ 232   1              msWriteByteMask((u8Wnd)+OSD2_0D,u8Value,0x3F);
+ 233   1          else if (u8Lvl==OSD_ALPHA_LV2)
+ 234   1              msWriteByteMask((u8Wnd)+OSD2_19,u8Value,0x3F);
+ 235   1      }
+ 236          void drvOSD_SetWndFixColor(BYTE u8Wnd,BYTE u8Red,BYTE u8Green,BYTE u8Blue)
+ 237          {
+C51 COMPILER V9.60.0.0   DRVOSD                                                            12/22/2020 19:50:23 PAGE 5   
+
+ 238   1          u8Wnd<<=5;
+ 239   1          msWriteByte((u8Wnd)+OSD2_16,u8Red);
+ 240   1          msWriteByte((u8Wnd)+OSD2_17,u8Green);
+ 241   1          msWriteByte((u8Wnd)+OSD2_18,u8Blue);
+ 242   1      }
+ 243          void drvOSD_SetWndShiftPixel(BYTE u8Wnd,u8X,u8Y)
+ 244          {
+ 245   1          u8Wnd<<=5;
+ 246   1          msWriteByte((u8Wnd)+OSD2_0E,u8X);
+ 247   1          msWriteByte((u8Wnd)+OSD2_0F,u8Y);
+ 248   1      }
+ 249          void drvOSD_SetWndCABaseAddr(BYTE u8Wnd,WORD u16Addr)
+ 250          {
+ 251   1          msWrite2Byte((u8Wnd<<5)+OSD2_10,u16Addr);
+ 252   1      }
+ 253          void drvOSD_SetWndFixAttr(BYTE u8Wnd,BYTE u8Enable,BYTE u8Attr)
+ 254          {
+ 255   1          u8Wnd<<=5;
+ 256   1          msWriteByte((u8Wnd)+OSD2_1A,u8Attr);
+ 257   1          msWriteByteMask((u8Wnd)+OSD2_1B,(u8Enable?BIT7:0),BIT7);
+ 258   1      }
+ 259          void drvOSD_SetGDEngineEnableWnd(BYTE u8GDEngine, WORD u16EnableFlags,WORD u16Mask)
+ 260          {
+ 261   1          BYTE xdata u8Bank=msReadByte(OSD1_00);
+ 262   1          WORD xdata u16Addr;
+ 263   1          msWriteByte(OSD1_00,0x01);//subbank 1
+ 264   1          if (u8GDEngine<OSD_GD_EG4)
+ 265   1              u16Addr=OSD1_44+u8GDEngine;
+ 266   1          else
+ 267   1              u16Addr=OSD1_EC+(u8GDEngine-OSD_GD_EG4);// gd4/gd5 //110627
+ 268   1          if (u16EnableFlags&0xFF) //for wnd
+ 269   1          {
+ 270   2              msWriteByteMask(u16Addr,(u16EnableFlags&0xFF),(u16Mask&0xFF));
+ 271   2          }
+ 272   1          u16EnableFlags&=0x0F00;
+ 273   1          u16Mask&=0x0F00;
+ 274   1          if (u16Mask) //for timing gen
+ 275   1          {
+ 276   2              if (u8GDEngine&0x01) //GD1/GD3/GD5
+ 277   2              {
+ 278   3                  u16EnableFlags>>=4;
+ 279   3                  u16Mask>>=4;
+ 280   3              }
+ 281   2              else //GD0/GD2/GD4
+ 282   2              {
+ 283   3                  u16EnableFlags>>=8;
+ 284   3                  u16Mask>>=8;
+ 285   3              }
+ 286   2              msWriteByteMask(OSD1_EE+(u8GDEngine>>1),u16EnableFlags,u16Mask); //110627
+ 287   2          }
+ 288   1      
+ 289   1          msWriteByte(OSD1_00,u8Bank);
+ 290   1      }
+ 291          
+ 292          void drvOSD_FrameColorEnable(Bool bEnable)
+ 293          {
+ 294   1          msWriteByteMask(SC0_32,(bEnable?BIT0:0),BIT0);
+ 295   1      }
+ 296          void drvOSD_FrameColorRGB(BYTE u8Red,BYTE u8Green,BYTE u8Blue)
+ 297          {
+ 298   1          msWriteByte(SC0_33, u8Red);
+ 299   1          msWriteByte(SC0_34, u8Green);
+C51 COMPILER V9.60.0.0   DRVOSD                                                            12/22/2020 19:50:23 PAGE 6   
+
+ 300   1          msWriteByte(SC0_35, u8Blue);
+ 301   1      }
+ 302          
+ 303          void drvOSD_WaitOsdDeEndInterrupt()
+ 304          {
+ 305   1      #if CHIP_ID >= CHIP_TSUMC
+ 306   1        WORD u16Retry;
+ 307   1      
+ 308   1        g_bOutputVsyncIsrFlag = 0;
+ 309   1        u16Retry = 0xFFFF;
+ 310   1        while (u16Retry && (msReadByte(REG_2B24)&BIT0) && (!InputTimingChangeFlag))
+ 311   1          u16Retry--;
+ 312   1        
+ 313   1        u16Retry = 0xFFFF;   
+ 314   1        while (u16Retry && !(msReadByte(REG_2B24)&BIT0) && (!InputTimingChangeFlag) && (!g_bOutputVsyncIsrFlag))
+ 315   1          u16Retry--;
+ 316   1      #endif  
+ 317   1      }
+ 318          
+ 319          // wait for coding
+ 320          //extern void Osd_LoadColorPalette( void );
+ 321          
+ 322          void drvOSD_uncall(void)
+ 323          {
+ 324   1          drvOSD_DrawRealChar(0, 0, 0, 0);
+ 325   1          drvOSD_DrawContinuousChar(0, 0, 0, 0, 0);
+ 326   1          drvOSD_DrawBlankPlane(0, 0, 0, 0, 0);
+ 327   1          drvOSD_GetWndInfo(0, 0);
+ 328   1          drvOSD_SetWndOn(0, 0);
+ 329   1          drvOSD_SetWndCtrl(0, 0, 0, 0);
+ 330   1          drvOSD_SetWndFixAlpha(0, 0, 0);
+ 331   1          drvOSD_SetWndFixColor(0, 0, 0, 0);
+ 332   1          drvOSD_SetWndShiftPixel(0, 0, 0);
+ 333   1          drvOSD_SetWndCABaseAddr(0, 0);
+ 334   1          drvOSD_SetWndFixAttr(0, 0, 0);
+ 335   1          drvOSD_SetGDEngineEnableWnd(0, 0, 0);
+ 336   1          drvOSD_SetWndLineOffset(0, 0);
+ 337   1        drvOSD_WaitOsdDeEndInterrupt();
+ 338   1          //Osd_LoadColorPalette();
+ 339   1      }
+ 340          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1675    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----       4
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      68
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

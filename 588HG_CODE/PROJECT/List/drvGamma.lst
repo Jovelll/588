@@ -1,0 +1,57 @@
+C51 COMPILER V9.60.0.0   DRVGAMMA                                                          12/22/2020 19:50:43 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DRVGAMMA
+OBJECT MODULE PLACED IN .\Obj\drvGamma.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\DRIVER\drvGamma.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\IN
+                    -C;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;.
+                    -.\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\drvGamma.lst) TABS(2) OBJECT(.\Obj\drvGamma.o
+                    -bj)
+
+line level    source
+
+   1          
+   2          #include "global.h"
+   3          #if Enable_Gamma
+   4          #if CHIP_ID == CHIP_TSUMU
+              #include "drvGamma_U.c"
+              #elif CHIP_ID == CHIP_TSUMV
+              #include "drvGamma_V.c"
+              #elif CHIP_ID == CHIP_TSUMY
+              #include "drvGamma_Y.c"
+              #elif CHIP_ID == CHIP_TSUMB
+              #include "drvGamma_B.c"
+              #elif CHIP_ID == CHIP_TSUM2
+              #include "drvGamma_2.c"
+              #elif (CHIP_ID == CHIP_TSUMC || CHIP_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9|| CHIP_ID == CHIP_TSUMF)
+  15          #include "drvGamma_C.c"
+*** MESSAGE C320 IN LINE 15 OF ..\KERNEL\SCALER\INC\Panel_GAMMATBL.h: "Please Panel Gamma Table!"
+  16          #elif CHIP_ID == CHIP_TSUMD
+              #include "drvGamma_D.c"
+              #elif CHIP_ID == CHIP_TSUMK
+              #include "drvGamma_K.c"
+              #else
+              #message "please implement DrvGamma for new chip"
+              #endif
+  23          #else
+              BYTE code msGammaNullData[] = {0};
+              void msGammaDummy(void)
+              {
+                  BYTE xdata i = msGammaNullData[0];
+              }
+              #endif
+  30          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    318    ----
+   CONSTANT SIZE    =   2907    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      16
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

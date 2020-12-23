@@ -1,0 +1,841 @@
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ISR
+OBJECT MODULE PLACED IN .\Obj\isr.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\isr.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\
+                    -INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC
+                    -;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\isr.lst) TABS(2) OBJECT(.\Obj\isr.obj)
+
+line level    source
+
+   1          #include "types.h"
+   2          #include "board.h"
+   3          #include "global.h"
+   4          #include "power.h"
+   5          #include "debug.h"
+   6          #include "debugDef.h"
+   7          #include "Common.h"
+   8          #include "ddc2bi.h"
+   9          #include "ms_reg.h"
+  10          #include "Ms_rwreg.h"
+  11          #include "Userpref.h"
+  12          #include "gpio_def.h"
+  13          #include "drvadc.h"
+  14          #include "mcu.h"
+  15          //#include "halRwreg.h"
+  16           #if ENABLE_DP_INPUT
+              #include "drvDPRxApp.h"
+              #endif
+  19          #if ENABLE_EDP_OUTPUT
+              #include "DPTxApp.h"
+              #endif
+  22          #if TimerComboKey
+  23          #include "keypad.h"
+  24          #endif
+  25          #if ENABLE_HDMI||ENABLE_FREESYNC
+  26          #include "msHDMI.h"
+  27          #endif
+  28          #if MS_DAC
+              #include "drvdac.h"
+              #endif
+  31          #if ENABLE_LED_CONTROLLER
+              #include "LedControl.h"
+              #endif
+  34          #if ENABLE_DPS
+  35          #include "msDPS_Setting.h"
+  36          #endif
+  37          #if ENABLE_DSC
+  38          #include "msDSC_Setting.h"
+  39          #endif
+  40          #if ENABLE_IR_CONTROL
+              #include"Ir.h"
+              #include "IRfunc.h"
+              #endif
+  44          
+  45          #if 0//(ENABLE_MHL)
+              #include "mapi_mhl.h"
+              #if CHIP_ID == CHIP_TSUM2
+              extern WORD xdata g_u16S2PatchCnt;
+              extern bit g_u16S2PatchCntFlag;
+              extern WORD xdata g_u16MHLHandlerCnt;
+              extern bit bMHLHandlerCntFlag;
+              #endif
+              #endif
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 2   
+
+  54          #if ENABLE_FREESYNC
+              extern xdata Bool bHDMIFreesyncChk;
+              #endif
+  57          extern BYTE xdata u8DCRStepTransCnt; // 081205 dcr test
+  58          
+  59          //#define ReSyncTick          255//54 // 0.2 Second for resynchorize dubug process
+  60          #if EXT_TIMER0_1MS || (ENABLE_MENULOAD && ML_USE_INT)
+              #define EnableExt0Interrupt     1
+              #define EnableTime0Interrupt        0
+              #elif ENABLE_SW_DOUBLE_BUFFER
+  64          #define EnableExt0Interrupt     1
+  65          #define EnableTime0Interrupt        1
+  66          #else
+              #define EnableExt0Interrupt     1
+              #define EnableTime0Interrupt        (!EXT_TIMER0_1MS)
+              #endif
+  70          
+  71          #if UseINT
+  72          #define EnableExt1Interrupt     1
+  73          #define EnableSerialPortInterrupt   1 // 0
+  74          #else
+              #define EnableExt1Interrupt     0
+              #define EnableSerialPortInterrupt   1
+              #endif
+  78          
+  79          //#define EnableTime1Interrupt        1
+  80          //#define EnableTime2Interrupt        0
+  81          #if IR_FUNC_EN  //20130824
+              
+              bit bIrIoStatusFlag = 0;
+              bit bIrHeadFlag = 0;
+              bit bIrHoldFlag = 0;
+              bit bIrEndFlag = 0;
+              bit bIrPreLevelFlag = 0;  // ???¡ã?a??¦Ì???¡Á¡ä¨¬?;
+              
+              
+              BYTE idata byIrHighLevelCnt = 0;
+              BYTE idata byIrLowLevelCnt = 0;
+              BYTE idata byIrLowLevel_HighLevelCntTotal = 0;
+              BYTE idata byIrDataCnt = 32; // 32??bit;
+              
+              unIrDataType idata unIrData;
+              WORD idata g_IRRawdata[2];
+              
+              #endif
+  99          
+ 100          
+ 101          #if EXT_TIMER0_1MS
+              static void ms1MsHandler(void); // Jonson 20110713
+              #endif
+ 104          #if CHIP_ID == CHIP_TSUM2 || CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP
+             -_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9|| CHIP_ID == CHIP_TSUMF
+ 105          #if ENABLE_SW_DOUBLE_BUFFER
+ 106          extern XDATA StuSWDBCtrl SWDBCtrl;
+ 107          
+ 108          void IsrML(void)
+ 109          {
+ 110   1          SWDBCtrl.ucSWDB_Counter = 0;
+ 111   1          SWDBCtrl.ucSWDB_OnFire = 0;
+ 112   1          SWDBCtrl.ucSWDB_Num = 1;
+ 113   1          msRegs[REG_3C25] &=0x3F;
+ 114   1      }
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 3   
+
+ 115          #endif
+ 116          
+ 117          #if ENBLAE_BDMA_INT
+              void IsrBDMA(void)
+              {
+                  if(_bit2_(msRegs[REG_3302]))
+                  {
+                      msRegs[REG_3302] = BIT2|BIT3;
+                      msRegs[REG_12C4] = 0x00;
+                      msRegs[REG_2080] = 0x27;
+                  }
+              }
+              #endif
+ 128          #endif
+ 129          
+ 130          
+ 131          
+ 132          #if UseINT
+ 133          void MuteVideoAndAudio(void)
+ 134          {
+ 135   1      #if ENABLE_HDMI
+ 136   1          if( gScInfo.InputTmdsType == TMDS_HDMI )
+ 137   1              hw_SetMute(); // for changed mode have "po-po"
+ 138   1      #endif
+ 139   1      #if AudioFunc //111027 Rick modified for avoid bo sound while timingchange - B39440
+ 140   1      #if ENABLE_DP_AUDIO
+              if((CURRENT_INPUT_IS_DISPLAYPORT())&&(UserPrefAudioSource == AUDIO_DIGITAL))
+                  hw_SetMute();
+              #endif
+ 144   1      #endif
+ 145   1      
+ 146   1      #if ENABLE_LED_CONTROLLER
+                  MEM_MSWRITE_BYTE(REG_0A80,0x00);
+                  MEM_MSWRITE_BYTE(REG_0A81,0x00);
+                  MEM_MSWRITE_BYTE(REG_0A68,0x00);
+                  MEM_MSWRITE_BYTE(REG_0A69,0x00);
+                  MEM_MSWRITE_BYTE(REG_0AD0,0x00);
+                  MEM_MSWRITE_BYTE(REG_0AD1,0x00);
+              
+              
+                  MEM_MSWRITE_BYTE(REG_0A4E,0xFF);
+                  MEM_MSWRITE_BYTE(REG_0A4F,0xFF);
+                  MEM_MSWRITE_BYTE(REG_0A52,0xFF);
+                  MEM_MSWRITE_BYTE(REG_0A53,0xFF);
+                  MEM_MSWRITE_BYTE(REG_0AC0,0xFF);
+                  MEM_MSWRITE_BYTE(REG_0AC1,0xFF);
+              
+              
+              #else
+ 164   1        //  hw_ClrBlacklit();
+ 165   1      #endif
+ 166   1      
+ 167   1          Set_InputTimingChangeFlag();
+ 168   1          SrcFlags |= SyncLoss;
+ 169   1      }
+ 170          
+ 171          void IsrModeChangeCheck(void)
+ 172          {
+ 173   1          MEM_SCWRITE_BYTE(0, 0); //bk0
+ 174   1      #if ENABLE_R2_2DTO3D
+                  if(INT_STATUS_A_ISR(BIT2))  //Vsync INT
+                  {
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 4   
+
+                      MEM_SCWRITE_BYTE(SC0_CC,MEM_SCREAD_BYTE(SC0_CC)&(~BIT2));  //clear Vsync INT final status
+                      MEM_MSWRITE_BYTE_MASK(REG_2B7C,BIT0,BIT0);  //51 INT R2
+                  }
+              #endif
+ 181   1          if (INT_STATUS_A_ISR((MEM_SCREAD_BYTE(SC0_CE))&(BIT4|BIT5|BIT6|BIT7)) || (INT_STATUS_B_ISR((MEM_SCREAD
+             -_BYTE(SC0_CF))&(BIT2))))//((MEM_SCREAD_BYTE(SC0_CC)&(BIT4|BIT5|BIT6|BIT7)) || (MEM_SCREAD_BYTE(SC0_CD)&BIT2))
+ 182   1          {
+ 183   2      #if ENABLE_DEBUG_TIMING_CHANGE_POINT
+                      if(INT_STATUS_A_ISR(BIT7))
+                          SetTimingChangeFirstPoint(TimingChange_ISR_Vchange);
+                      else if(INT_STATUS_A_ISR(BIT6))
+                          SetTimingChangeFirstPoint(TimingChange_ISR_Hchange);
+                      else if(INT_STATUS_A_ISR(BIT5))
+                          SetTimingChangeFirstPoint(TimingChange_ISR_Vdisappear);
+                      else if(INT_STATUS_A_ISR(BIT4))
+                          SetTimingChangeFirstPoint(TimingChange_ISR_Hdisappear);
+                      else if(INT_STATUS_B_ISR(BIT2))
+                          SetTimingChangeFirstPoint(TimingChange_ISR_CLKchange);
+              #endif
+ 195   2              INT_SCALER_A_ISR(0);//MEM_SCWRITE_BYTE(SC0_CE, 0); //disable INT
+ 196   2              INT_SCALER_B_ISR(0);//MEM_SCWRITE_BYTE(SC0_CF, 0); //disable INT
+ 197   2              INT_STATUS_CLEAR_ISR();
+ 198   2      
+ 199   2      #if ENABLE_SW_RESET_HDCP_FSM
+                      HDCP_RESET_ISR(TRUE);
+                      HDCP_RESET_ISR(FALSE);
+              #endif
+ 203   2      
+ 204   2              if (!SyncLossState())
+ 205   2              {
+ 206   3                  MuteVideoAndAudio();
+ 207   3              }
+ 208   2          }
+ 209   1      #if (ENABLE_FREESYNC||ENABLE_DPS||ENABLE_DSC ||(ENABLE_RTE && CHIP_ID==CHIP_TSUMF))
+ 210   1          else if (INT_STATUS_A_ISR((MEM_SCREAD_BYTE(SC0_CE))&BIT3))
+ 211   1          {
+ 212   2          scWriteByte ( SC0_CE, scReadByte ( SC0_CE ) & ( ~BIT3 ) ); //scRegs[0xCE] = scRegs[0xCE]&(~BIT3);
+ 213   2          scWriteByte ( SC0_CC, scReadByte ( SC0_CC ) & ( ~BIT3 ) ); //scRegs[0xCC] = scRegs[0xCC]&(~BIT3);
+ 214   2      #if CHIP_ID >= CHIP_TSUMC
+ 215   2            g_bOutputVsyncIsrFlag = 1;
+ 216   2      #endif
+ 217   2      
+ 218   2      #if ENABLE_DPS
+ 219   2              msDPS_Interrupt();
+ 220   2      #endif
+ 221   2      #if ENABLE_DSC
+ 222   2              msDSC_Interrupt();
+ 223   2      #endif
+ 224   2      #if ENABLE_RTE && CHIP_ID==CHIP_TSUMF
+                      msOD_Histogram_Interrupt();
+              #endif
+ 227   2      #if ENABLE_FREESYNC
+                      if(IS_HDMI_FREESYNC_ISR())
+                      {
+                          if(bHDMIFreesyncChk)
+                              MEM_SCWRITE_BYTE(SC0_E8,(MEM_SCREAD_BYTE(SC0_E8)&(~BIT1))|BIT0);    //Enable force P mode
+                          bHDMIFreesyncChk = FALSE;
+                      }
+              #endif
+ 235   2          }
+ 236   1      #endif
+ 237   1      
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 5   
+
+ 238   1      }
+ 239          #endif
+ 240          
+ 241          #if EnableExt0Interrupt
+ 242          void EXT0Interrupt( void )interrupt 0
+ 243          {
+ 244   1          BYTE ucStatus;
+ 245   1          ucStatus = msRegs[REG_2B10];
+ 246   1        #if ENABLE_MENULOAD && ML_USE_INT
+                  if( ucStatus & _BIT5 )
+                  {
+                      extern BYTE xdata u8ML_Status;
+                      u8ML_Status=msRegs[REG_3C27]&(ML_STS_BUSY|ML_STS_TRIG_ERR|ML_STS_CMD_ERR|ML_STS_DONE);
+                      msRegs[REG_3C25]=msRegs[REG_3C25]&~(BIT7|BIT6); //disable ML
+                  }
+                #endif
+ 254   1      
+ 255   1      #if ENABLE_WATCH_DOG_INT
+                if( ucStatus & _BIT1 )
+                {
+                  u8WDT_Status=0x33;
+                }
+              #endif
+ 261   1      
+ 262   1      #if CHIP_ID == CHIP_TSUM2 || CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP
+             -_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9 || CHIP_ID == CHIP_TSUMF
+ 263   1      #if  ENABLE_SW_DOUBLE_BUFFER
+ 264   1          if(_bit5_(ucStatus))
+ 265   1              IsrML();
+ 266   1      #endif
+ 267   1      #endif
+ 268   1      
+ 269   1        #if EXT_TIMER0_1MS
+                  if( ucStatus & _BIT0 )
+                      ms1MsHandler();
+                #endif
+ 273   1      
+ 274   1          msRegs[REG_2B08] = ucStatus;
+ 275   1          msRegs[REG_2B08] = 0x00;
+ 276   1          IE0 = 0;
+ 277   1      }
+ 278          #endif
+ 279          #if EnableTime0Interrupt
+ 280          //extern WORD ms_Counter;
+ 281          //extern BYTE ReSyncCounter;
+ 282          //extern BYTE Second;
+ 283          //extern BYTE xdata OsdCounter;
+ 284          //extern BYTE xdata PowerDownCounter;
+ 285          void Time0Interrupt( void )interrupt 1
+ 286          #else
+              static void ms1MsHandler(void)
+              #endif
+ 289          {
+ 290   1          TH0 = g_ucTimer0_TH0;
+ 291   1          TL0 = g_ucTimer0_TL0;
+ 292   1      
+ 293   1          ms_Counter--;
+ 294   1      
+ 295   1      #if ENABLE_USB_INPUT
+                  u32UsbCount++;
+              #endif
+ 298   1      
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 6   
+
+ 299   1      #if ENABLE_DEBUG
+ 300   1          if( u8ReSyncCounter )
+ 301   1          {
+ 302   2              u8ReSyncCounter--;
+ 303   2              if( u8ReSyncCounter == 0)
+ 304   2              {
+ 305   3                  Clr_RxBusyFlag();
+ 306   3                  SIORxIndex = 0;
+ 307   3              }
+ 308   2          }
+ 309   1      #endif
+ 310   1      
+ 311   1          if( bDelayFlag )
+ 312   1              if( --u16DelayCounter == 0 )
+ 313   1                  bDelayFlag = 0;
+ 314   1      
+ 315   1          if( bTimeOutCounterFlag )
+ 316   1              if( --u16TimeOutCounter == 0 )
+ 317   1                  bTimeOutCounterFlag = 0;
+ 318   1      
+ 319   1      #if ENABLE_DP_INPUT
+              #if((CHIP_ID==CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) ||(CHIP_ID==CHIP_TSUMD) || (CHIP_ID==CHIP_TSUM9)|| (CHI
+             -P_ID==CHIP_TSUMF))
+                  if( bDPRxStableTimeoutFlag )
+                      if( --u16DPRxStableTimeout == 0 )
+                          bDPRxStableTimeoutFlag = 0;
+              #endif
+              #if CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK ||CHIP_ID == CHIP_TSUMD
+              #if 0
+                  if( bAudio_CntFlag )
+                      if( --u16Audio_Cnt == 0 )
+                          bAudio_CntFlag = 0;
+              
+                  if( bHDCP_CntFlag )
+                      if( --u16HDCP_Cnt == 0 )
+                          bHDCP_CntFlag = 0;
+              #endif
+              #endif
+              
+              
+              #if (CHIP_ID==CHIP_TSUM9 || CHIP_ID==CHIP_TSUMF ||CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK ||CHIP_ID =
+             -= CHIP_TSUMD)
+                    if( bHDCP_CntFlag )
+                      if( --u16HDCP_Cnt == 0 )
+                          bHDCP_CntFlag = 0;
+              #endif
+              
+              #if (CHIP_ID==CHIP_TSUM9 || CHIP_ID==CHIP_TSUMF)
+                  if(gDPInfo.bPacketTimer )
+                        gDPInfo.bPacketTimer --;
+              #endif
+              
+              #if DPCTS
+              #if 1
+                  if( bCDR_HPDCntFlag )
+                      if( --u16CDR_HPDCnt == 0 )
+                          bCDR_HPDCntFlag = 0;
+              #else
+                      if(u16CDR_HPDCnt)
+                         u16CDR_HPDCnt--;
+              #endif
+              #if 1
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 7   
+
+                  if( bSkew_HPDCntFlag )
+                      if( --u16Skew_HPDCnt == 0 )
+                          bSkew_HPDCntFlag = 0;
+              #else
+                      if(Skew_HPDCnt)
+                         Skew_HPDCnt--;
+              #endif
+              #if CHIP_ID == CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID == CHIP_TSUMD
+              #if 1
+              if( bAudio_BWCntFlag )
+                  if( --u16Audio_BWCnt == 0 )
+                      bAudio_BWCntFlag = 0;
+              #else
+                  if(Audio_BWCnt)           //20130716
+                         Audio_BWCnt--;
+              #endif
+              #endif
+              #endif
+              #endif
+ 378   1      
+ 379   1      
+ 380   1      #if 0//ENABLE_TIME_MEASUREMENT   //need enable this if test Timer0
+                  if( g_u16TimeMeasurementCounter )
+                      g_u16TimeMeasurementCounter--;
+              #endif
+ 384   1      #if MS_DAC && (CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMK ||CHIP_ID==CHIP_TSUMD||CHIP_ID==CHIP_TSUM9||CHIP
+             -_ID==CHIP_TSUMF)
+              #if InitialDACByISR
+                          if( bDAC_DePopCountFlag )
+                          {
+                              if( --w16DAC_DePopCounter == 0 )
+                              {
+                                  bDAC_DePopCountFlag = 0;
+                                  bDAC_DePopFlag = 1;
+                              }
+                          }
+              #endif
+              #endif
+ 396   1      
+ 397   1          if(!g_bMcuPMClock) // system runs at normal speed
+ 398   1          {
+ 399   2              if( u8DCRStepTransCnt )
+ 400   2                  u8DCRStepTransCnt --;
+ 401   2      
+ 402   2              if( bPanelOffOnFlag ) //091013
+ 403   2                  if( --u16PanelOffOnCounter == 0 )
+ 404   2                      bPanelOffOnFlag = 0;
+ 405   2      
+ 406   2      #if ENABLE_MHL
+                  #if CHIP_ID == CHIP_TSUM2
+                      if(bS2PatchCntFlag)
+                      {
+                          if(--g_u16S2PatchCnt == 0)
+                              bS2PatchCntFlag = 0;
+                      }
+              
+                      if(bMHLHandlerCntFlag)
+                      {
+                          if(--g_u16MHLHandlerCnt == 0)
+                              bMHLHandlerCntFlag = 0;
+                      }
+                  #elif (CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID == CHIP_TSUM9)
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 8   
+
+             -||(CHIP_ID == CHIP_TSUMF)
+                      mapi_mhl_CbusTimerInterrupt();
+                  #endif
+              #endif
+ 423   2      
+ 424   2      #if ENABLE_LED_CONTROLLER
+                      if(bBoostCounterFlag)
+                      {
+                          if(--u16BoostCounter == 0)
+                              bBoostCounterFlag = 0;
+                      }
+              
+                  #if ENABLE_LED_OPEN_SHORT_DEBOUNCE
+                      if(bLEDOpenShortFlag)
+                      {
+                          if(LEDOpenShortCounter)
+                              LEDOpenShortCounter--;
+              
+                          if(LEDOpenShortCounter)
+                          {
+                              if(!bLEDOpenShortIntEnFlag && LEDOpenShortCounter <= LED_ENABLE_INTERRUPT_COUNT)
+                                  LEDStringEnableInterrupt(LEDOpenShortString);
+                          }
+                          else
+                          {
+                              bLEDOpenShortFlag = 0;
+                              LEDShutDownCounter = 0;
+                          }
+                      }
+                  #endif
+              #endif
+ 450   2      
+ 451   2          }
+ 452   1      
+ 453   1      #if TimerComboKey
+ 454   1          if ((ms_Counter % 200) == 0)
+ 455   1          {
+ 456   2            if (bEnableComboKeyFlag)
+ 457   2            {
+ 458   3              if (ComboCounter<100)
+ 459   3              {
+ 460   4                if (++ComboCounter==22)   // 243x200ms = 4.8S
+ 461   4                {
+ 462   5                  bDoComboKeyFlag=1;
+ 463   5                }
+ 464   4              }
+ 465   3            }       
+ 466   2          }
+ 467   1        #endif
+ 468   1      
+ 469   1          if(( ms_Counter % 10 ) == 0 )
+ 470   1          {
+ 471   2              Set_ms10Flag();
+ 472   2      
+ 473   2              if(( ms_Counter % 50 ) == 0 )
+ 474   2              {
+ 475   3                  Set_ms50Flag();
+ 476   3      
+ 477   3                  if(( ms_Counter % 200 ) == 0 )
+ 478   3                  {
+ 479   4      #if _NEW_SOG_DET_
+ 480   4                      if(SyncLossState())
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 9   
+
+ 481   4                          NEW_SOG_DET_FLUSH();
+ 482   4      #endif
+ 483   4                  }
+ 484   3      
+ 485   3                  if(( ms_Counter % 500 ) == 0 )
+ 486   3                  {
+ 487   4                      Set_ms500Flag();
+ 488   4      
+ 489   4                      if( ms_Counter == 0 )        //
+ 490   4                      {
+ 491   5                          #if ENABLE_FREESYNC
+                                  Set_ms1000Flag();
+                                  #endif
+ 494   5                          Set_SecondFlag();
+ 495   5                          ms_Counter = SystemTick;
+ 496   5                      }
+ 497   4                  }
+ 498   3              }
+ 499   2      
+ 500   2          }
+ 501   1      
+ 502   1          if(TF0)
+ 503   1          {
+ 504   2              TH0 = g_ucTimer0_TH0;
+ 505   2              TL0 = g_ucTimer0_TL0;
+ 506   2          }
+ 507   1          //msRegs[REG_022C]=msRegs[REG_022C]&(!BIT2);
+ 508   1      
+ 509   1          TF0 = 0; // timer 1 flag
+ 510   1      
+ 511   1      }
+ 512          //#endif
+ 513          #if EnableExt1Interrupt
+ 514          
+ 515          void EXT1Interrupt( void )interrupt 2
+ 516          {
+ 517   1          //  EX1=0;
+ 518   1      
+ 519   1       BYTE ucBank = MEM_SCREAD_BYTE(0x00);       //110926 Rick add to store the current bank - Verify A036, A03
+             -9
+ 520   1      
+ 521   1      #if (ENABLE_DP_INPUT&& ((CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID 
+             -== CHIP_TSUM9)||(CHIP_ID == CHIP_TSUMF)))
+                  if((_bit2_(msRegs[REG_2B2A]))||(_bit3_(msRegs[REG_2B2A])))
+                  {
+                          DPISR_AUX0();
+                  }
+              #endif
+ 527   1      
+ 528   1      #if (CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID == CHIP_TSUM9)||(CHI
+             -P_ID == CHIP_TSUMF)
+ 529   1      
+ 530   1          if(_bit7_(msRegs[REG_2B29]))
+ 531   1          {
+ 532   2              TMDSISR();
+ 533   2          #if ENABLE_DP_INPUT
+                      DPISR();
+                  #endif
+ 536   2          }
+ 537   1      
+ 538   1        #if ENABLE_MHL
+                  if(_bit0_(msRegs[REG_2B2A]))
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 10  
+
+                  {
+                      mapi_mhl_IsrHandler();
+                  }
+              
+                #endif
+ 545   1      
+ 546   1      #endif
+ 547   1      
+ 548   1      #if CHIP_ID == CHIP_TSUMU
+              #if ENABLE_DP_INPUT
+                  if(_bit6_(msRegs[REG_2B29])) { DPISR(); }   // read status
+              #endif
+              #if ENABLE_EDP_OUTPUT
+                  if(_bit7_(msRegs[REG_2B29])) { DPISR_TX(); }   // read status
+              #endif
+              #endif
+ 556   1      
+ 557   1      #if ENABLE_LED_CONTROLLER
+                #if ENABLE_LED_INT
+                { extern void msLED_Interrupt(void);
+                  //BYTE  final_status;                 // use idata to speedup
+                  //final_status = msRegs[REG_2B28];    // read status
+                  //msRegs[REG_2B28] = final_status;    // clear status
+                  //msRegs[REG_2B28] = 0x00;
+                  if (INT_STATUS_LEDSARINT_ISR()) msLED_Interrupt();
+                }
+                #endif
+              #endif
+ 568   1      
+ 569   1          if( INT_STATUS_D2B_ISR() )
+ 570   1          {
+ 571   2              ISR_DDC2Bi();
+ 572   2          }
+ 573   1      
+ 574   1      #if UseINT
+ 575   1          if(INT_STATUS_DISP_ISR())
+ 576   1          {
+ 577   2              IsrModeChangeCheck();
+ 578   2          }
+ 579   1      #endif
+ 580   1          #if ENBLAE_BDMA_INT
+              #if CHIP_ID == CHIP_TSUM2
+                  if(_bit0_(msRegs[REG_2B2A]))
+                      IsrBDMA();
+              #elif CHIP_ID == CHIP_TSUMD
+                  if(_bit5_(msRegs[REG_2B2A]))
+                  {
+                      IsrBDMA();
+                  }
+                  #endif
+              #endif
+ 591   1      
+ 592   1          MEM_SCWRITE_BYTE(0x00, ucBank);
+ 593   1          IE1 = 0;
+ 594   1          //  EX1=1;
+ 595   1      }
+ 596          
+ 597          #endif
+ 598          
+ 599          #if EnableTime1Interrupt
+              void Time1Interrupt( void )interrupt 3
+              {
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 11  
+
+                bIrIoStatusFlag = IR_DataKey;
+                TF1=0;
+                TH1=g_ucTimer1_TH0;
+                TL1=g_ucTimer1_TL0; 
+                  
+                if (bIrIoStatusFlag)
+                { // IR high level;
+                  bIrPreLevelFlag = 1;
+                  if (byIrHighLevelCnt < 250)       //  250*200us=50ms
+                  {
+                    ++byIrHighLevelCnt;
+                  }
+                  else
+                  { 
+                    unIrData.dwIrData = 0;
+                    byIrDataCnt = 32;
+                    bIrHeadFlag = 0;
+                  }
+                }
+                else
+                { // IR low level;  
+                  if (bIrPreLevelFlag)
+                  {
+                    byIrLowLevel_HighLevelCntTotal = byIrLowLevelCnt;
+                  
+                    
+                    bIrPreLevelFlag = 0;
+              
+                    
+                      if (!bIrHeadFlag)
+                      { 
+                      
+                        if (byIrHighLevelCnt < 23)                      //  high max is 4.5ms    timer=180us--220us,4.5ms/200
+             -us=22
+                        { 
+                      //    IRFLAG=IRFLAG|0x01;
+                          if ((byIrLowLevelCnt>30) && (byIrLowLevelCnt<46))       //low 9ms   timer=200us--300us
+                          { 
+                        //    IRFLAG=IRFLAG|0x02;
+                            if ((byIrHighLevelCnt>12) && (byIrHighLevelCnt<23))         //high  4.5ms    timer=200us--300us
+                            { 
+                              bIrHeadFlag = 1;
+                        //      IRFLAG=IRFLAG|0x04;
+                              
+                            }
+                            else
+                            {
+                              if ((byIrHighLevelCnt>6) && (byIrHighLevelCnt<12))    //high  repet 2.25ms   timer=200us--300us
+                              { //ÖØ¸´Âë
+                                bIrHoldFlag = 1;
+                      //          IRFLAG=IRFLAG|0x80;
+                              }
+                            }
+                          }
+                        }
+                      }
+                      else
+                      { 
+                        if (byIrDataCnt > 0)
+                        { 
+                          --byIrDataCnt;
+                          unIrData.dwIrData = (unIrData.dwIrData<<1);
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 12  
+
+              
+                          byIrLowLevel_HighLevelCntTotal += byIrHighLevelCnt;
+                          if ((byIrLowLevel_HighLevelCntTotal>3) && (byIrLowLevel_HighLevelCntTotal<6))     //data 0  1.12ms  
+             - timer=200us--300us
+                          { 
+                            unIrData.byData[3] &= 0xfe;////0
+                          }
+                          else if ((byIrLowLevel_HighLevelCntTotal>6) &&(byIrLowLevel_HighLevelCntTotal<12))   //data 1  2.25m
+             -s   timer=200us--300us
+                          { 
+                            unIrData.byData[3] |= 0x01;/////1
+                          }
+                          
+                          
+                          if (byIrDataCnt == 0) 
+                          { 
+                            bIrEndFlag = 1;
+                            bIrHeadFlag = 0;
+                            g_IRRawdata[0]=unIrData.iIrData[0];
+                            g_IRRawdata[1]=unIrData.iIrData[1];
+                          }
+                          
+                        }
+                      }
+                      byIrLowLevelCnt = 0;
+                      byIrHighLevelCnt = 0;
+                  }
+              
+                  if (byIrLowLevelCnt < 75)     //max 9ms   15ms/200us=75
+                  {
+                    ++byIrLowLevelCnt;
+                  }
+                }
+              
+              #if 0//1ms no use 
+              #if ENABLE_TIME_MEASUREMENT  //need enable this if test Timer1
+                  if(bTimeMeasurementFlag)
+                  {
+                      if(--g_u16TimeMeasurementCounter == 0)
+                          bTimeMeasurementFlag = 0;
+                  }
+              #endif
+              
+                  g_u16MsCounter1--;
+                  if (g_u16MsCounter1==0) //
+                  {
+                      bSecondTimer1 = TRUE;
+                      g_u16MsCounter1=1000;
+                  }
+              #endif
+              }
+              #endif
+ 713          #if EnableSerialPortInterrupt
+ 714          void SerialPortInterrupt( void )interrupt 4
+ 715          {
+ 716   1          BYTE sioData;
+ 717   1      
+ 718   1          if( RI )
+ 719   1          {
+ 720   2              RI = 0;
+ 721   2              sioData = SBUF;
+ 722   2              if( SIORxIndex < _UART_BUFFER_LENGTH_ )
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 13  
+
+ 723   2              {
+ 724   3                  SIORxBuffer[SIORxIndex++] = sioData;
+ 725   3                  if(SIORxIndex < UART_CMD_LENGTH)
+ 726   3                      u8ReSyncCounter = ReSyncTick;
+ 727   3                  else
+ 728   3                      u8ReSyncCounter = 0xFF;
+ 729   3              }
+ 730   2          }
+ 731   1          if( TI )
+ 732   1          {
+ 733   2              TI = 0;
+ 734   2              TI0_FLAG = 1;
+ 735   2          }
+ 736   1      }
+ 737          #endif
+ 738          #if EnableTime2Interrupt
+              void Time2Interrupt( void )interrupt 5
+              {
+                  TF2 = 0;
+              }
+              #endif
+ 744          #if UART1
+              void SerialPort1Interrupt (void)interrupt 16
+              {
+                  BYTE sioData;
+              
+                  if(S1CON & RI1)
+                  {
+                      S1CON &= ~RI1;
+                      sioData = S1BUF;
+                      if( SIORxIndex < _UART_BUFFER_LENGTH_ )
+                      {
+                          u8ReSyncCounter = ReSyncTick;
+                          SIORxBuffer[SIORxIndex++] = sioData;
+                      }
+                  }
+              
+                  if(S1CON & TI1)
+                  {
+                      S1CON &= ~TI1;
+                      TI0_FLAG = 1;
+                  }
+              }
+              #endif
+ 767          
+ 768          void EXT3Interrupt( void )interrupt 10 // add for WDT interrupt
+ 769          {
+ 770   1      
+ 771   1      }
+ 772          
+ 773          void EXT2Interrupt( void )interrupt 9 // add for timer interrupt
+ 774          {
+ 775   1      
+ 776   1      }
+ 777          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    685    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 14  
+
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

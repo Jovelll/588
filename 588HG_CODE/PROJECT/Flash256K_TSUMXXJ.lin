@@ -1,0 +1,67 @@
+BankArea(0x0000,0xFFFF) 
+PRINT(".\List\TSUM.m51") RAMSIZE(256) DW(6,14)
+BANK0(
+		?CO?MENUSTRPROP(0x3500)
+		,?CO?MENU
+		,?CO?MSOSD									
+	 )
+BANK1(	
+		?CO?MODE(0x3500)
+		,?CO?drvMCU							
+		,?CO?MSSCALER				
+		,?CO?MENUSTR				
+		,?CO?MENUSTRFUNC		
+		,?CO?MENUFUNC	
+		,?CO?MSACE	
+		,?CO?MAIN						
+		,?CO?MS2DTO3D	
+		,?CO?MSTAR
+        ,?CO?MSDLC
+	)
+BANK2(		
+		?CO?DDC2Bi(0x4000)	
+		,?CO?DRVDDC2BI			
+		,?CO?COLORPALETTE		
+		,?CO?LOADCOMMONFONT
+		,?CO?TOUCHKEY	
+		,?CO?ADJUST					
+	)
+BANK3(						
+		?CO?DRVMSTAR(0x3500)					
+		//,?CO?MSTAR
+		,?CO?APPMSTAR			
+		,?CO?MSFB						
+		//,?CO?USERDATASPACE(0xA000)		
+	)			
+BANK4(						
+		?CO?MSOVD(0x3500)		
+		,?CO?LEDCONTROL     	
+		,?CO?Ms_PM
+		,?CO?DRVDAC
+		,?CO?Debug
+		,?CO?DRVMSOVD
+		,?CO?DRVADC	
+	)	
+BANK5(						
+		?CO?COLOR_VERIFY(0x3500)		
+		,?CO?drvGAMMA				
+		,?CO?MS3DLUT				
+		,?CO?MSDPS_HANDLER	
+		,?CO?MSDPS_SETTING	
+		,?CO?MSDSC_HANDLER	
+		,?CO?MSDSC_SETTING	
+	)	
+BANK6(			
+
+		?CO?MSHDCP(0x3500)
+		//,?CO?drvDPRxApp						
+		,?CO?MSHDMI				
+		,?CO?DRV_MSHDMI
+		,?CO?DRVMHL	
+	)	
+BANK7(
+		?CO?USERDATASPACE(0xA000)	
+	)
+	  
+XDATA( 0X4000-0X4BFF )
+

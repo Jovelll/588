@@ -1,0 +1,680 @@
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDPS_HANDLER
+OBJECT MODULE PLACED IN .\Obj\msDPS_Handler.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\KERNEL\SCALER\msDPS_Handler.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERN
+                    -EL\SYSTEM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\
+                    -DRIVER\INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\msDPS_Handler.lst) TABS(2) OBJECT
+                    -(.\Obj\msDPS_Handler.obj)
+
+line level    source
+
+   1          #include <math.h>
+   2          #include "types.h"
+   3          #include "msDPS_Handler.h"
+   4          #include "msDPS_Setting.h"
+   5          #include "Debug.h"
+   6          //#include "Debugmsg.h"
+   7          //#include "debug.h"
+   8          #include "Common.h"
+   9          
+  10          //========================================================================================================
+             -===========================================================:
+  11          #define  DPS_DEBUG  0
+  12          #if (DPS_DEBUG&&ENABLE_DEBUG)
+              #define DPS_printData(str, value)   printData(str, value)
+              #define DPS_printMsg(str)               printMsg(str)
+              #else
+  16          #define DPS_printData(str, value)
+  17          #define DPS_printMsg(str)
+  18          #endif
+  19          
+  20          //========================================================================================================
+             -===========================================================:
+  21          #if  ENABLE_DPS
+  22          #if 0
+              #define msDpsVer        0x0005
+              #endif
+  25          //////msDPS_Handler/////////////////////////////////////////////////////////////
+  26          #if DPS_YminForWindowSave_EN
+              xdata BYTE  Flag_CurWindowSavePat = 0;
+              #endif
+  29          xdata WORD  curLumaHist[32];
+  30          xdata BYTE  HistDataMaxArray[5] = 0;
+  31          xdata BYTE  HistDataAvgArray[5] = 0;
+  32          xdata BYTE  HistImgYMax_tar = 0;
+  33          xdata BYTE  StepIncCount = 0;
+  34          xdata BYTE  StepDecCount = 0;
+  35          xdata BYTE  YgainCycLoopCount = 0;
+  36          xdata BYTE  PdutyCycLoopCount = 0;
+  37          xdata WORD  Ygain_diff = 0;
+  38          xdata BYTE  Pduty_diff = 0;
+  39          xdata WORD  Ygain_nxt = 0;
+  40          xdata BYTE  Pduty_nxt = 0;
+  41          xdata WORD  Ygain_ISR = 1024;
+  42          xdata BYTE  Pduty_ISR = 255;
+  43          xdata WORD  Ygain_tar_pre = 0;
+  44          xdata BYTE  Pduty_tar_pre = 0;
+  45          #if DPS_HistPseuMax_MOD1_EN 
+              xdata BYTE  HistPseuMax;
+              #endif
+  48          //========================================================================================================
+             -===========================================================:
+  49          //////////////////////////////////////////////////////////////////////////////////
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 2   
+
+  50          ///// Main Code ///////////////////////////////////////////////////////////////////
+  51          ///// Input Interface ///////////////////////////////////////////////////////////////
+  52          ///// 1. BYTE   xdata ISR_Count;
+  53          ///// 2. WORD xdata ISR_LumaHistogram32H[32]; // >>6
+  54          ///// 3. BYTE   xdata ISR_HistogramMax;              // 0~255
+  55          ///// 4. BYTE   xdata ISR_HistogramMin;               // 0~255
+  56          ///// 5. WORD xdata ISR_HistogramTotalPix;        // >>6
+  57          ///// 6. WORD xdata ISR_HistogramTotalLuma;    // >>14
+  58          ///// 7. WORD xdata CurYgain;                           // 2.10 format
+  59          ///// 8. BYTE   xdata CurBacklight;                      // 0~255 <--> 0%~100%
+  60          //////////////////////////////////////////////////////////////////////////////////
+  61          ///// Output Interface///////////////////////////////////////////////////////////////
+  62          ///// 1. Backlight ==> static void msDPS_AdjustBacklight(BYTE BLValue)  // 0~255 <--> 0%~100%
+  63          ///// 2. Y-gain    ==>  static void msDPS_AdjustYgain(WORD YgainValue) // 2.10 format
+  64          //////////////////////////////////////////////////////////////////////////////////
+  65          void msDPS_ClearBuffer ( void )
+  66          {
+  67   1          StepIncCount = 0;
+  68   1          StepDecCount = 0;
+  69   1          YgainCycLoopCount = 0;
+  70   1          PdutyCycLoopCount = 0;
+  71   1          Ygain_diff = 0;
+  72   1          Pduty_diff = 0;
+  73   1      }
+  74          void msDPS_Handler ( void )
+  75          {
+  76   1      #if DPS_YminForWindowSave_EN
+                  xdata BYTE  Flag_PreWindowSavePat = 0;
+                  xdata BYTE  Flag_OutWindowSavePat = 0;
+                  xdata WORD  HistogramWeight_L0= 0;
+                  xdata WORD  HistogramWeight_L31= 0;
+              #endif
+  82   1          xdata BYTE  Flag_PureColorPattern = 0;
+  83   1          xdata BYTE  Flag_SceneChangeValid = 0;
+  84   1          xdata BYTE  Flag_GradientPattern = 0;
+  85   1          xdata BYTE  Flag_BlendSchemeInPWM = 0;
+  86   1          xdata BYTE  Flag_StepIncValid = 0;
+  87   1          xdata BYTE  Flag_StepDecValid = 0;
+  88   1          xdata BYTE  curPixelMax = 0;
+  89   1          xdata BYTE  curPixelMin = 0;
+  90   1          xdata WORD  curPixelCount = 0;
+  91   1          xdata WORD  curPixelWeight = 0;
+  92   1          xdata WORD  preLumaHist[32] = 0;
+  93   1          xdata BYTE  HistDiffWeight = 0;
+  94   1          xdata BYTE  HistDiffCount = 0;
+  95   1          xdata DWORD TempVariable1 = 0;
+  96   1          xdata DWORD TempVariable2 = 0;
+  97   1          xdata DWORD TempVariable3 = 0;
+  98   1          xdata BYTE  HistDensity = 0;
+  99   1          xdata BYTE  HistDataMax = 0;
+ 100   1          xdata BYTE  HistDataMin = 0;
+ 101   1          xdata BYTE  HistDataAvg = 0;
+ 102   1          xdata BYTE  HistDataMaxDiff = 0;
+ 103   1          xdata BYTE  HistDataAvgDiff = 0;
+ 104   1          xdata BYTE  RefSection = 0;
+ 105   1          xdata BYTE  RefDistance = 0;
+ 106   1          xdata BYTE  RowStart = 0;
+ 107   1          xdata BYTE  ColStart = 0;
+ 108   1          xdata BYTE  PowerLimit = 0;
+ 109   1          xdata BYTE  PdutyLimit = 0;
+ 110   1          xdata BYTE  LumiMap = 0;
+ 111   1          xdata BYTE  YMaxIndex = 0;
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 3   
+
+ 112   1          xdata BYTE  LevelIndex = 0;
+ 113   1          xdata WORD  Ygain_tar = 0;
+ 114   1          xdata BYTE  Pduty_tar = 0;
+ 115   1          xdata BYTE  Ygain_sign = 0;
+ 116   1          xdata BYTE  Pduty_sign = 0;
+ 117   1          xdata BYTE  i, j, Flag_ES60WhitePattern;
+ 118   1          xdata BYTE  REG_DPS_ColStart;
+ 119   1          //----------------------------------------------------------------------
+ 120   1          //--check valid DPS loop
+ 121   1          //----------------------------------------------------------------------
+ 122   1          if ( ISR_curLoopCount == ISR_preLoopCount )
+ 123   1          {
+ 124   2              return;
+ 125   2          }
+ 126   1          ISR_preLoopCount = ISR_curLoopCount;
+ 127   1          //----------------------------------------------------------------------
+ 128   1          //--latch current-frame Histogram
+ 129   1          //----------------------------------------------------------------------
+ 130   1          Flag_DPS_Latch_Busy = 1;
+ 131   1          curPixelCount = ISR_HistogramTotalPix;
+ 132   1          curPixelWeight = ISR_HistogramTotalLuma; 
+ 133   1          curPixelMax = ISR_HistogramMax; 
+ 134   1          curPixelMin = ISR_HistogramMin; 
+ 135   1          for ( i = 0; i < 32; i++ )
+ 136   1          {
+ 137   2              preLumaHist[i] = curLumaHist[i];
+ 138   2              curLumaHist[i] = ISR_LumaHistogram32H[i]; 
+ 139   2              TempVariable1 = ABS2 ( preLumaHist[i], curLumaHist[i] );
+ 140   2              TempVariable2 += TempVariable1;
+ 141   2              TempVariable3 += (DWORD)curLumaHist[i]*(DWORD)(i*8+7);
+ 142   2              if ( TempVariable1 >= REG_DPS_HistDiffCountThd )
+ 143   2              {
+ 144   3                  HistDiffCount++;
+ 145   3              }
+ 146   2              DPS_printData ( "i =%d", i*8+7 );
+ 147   2              DPS_printData ( "curLumaHist[i] =%d", curLumaHist[i] );
+ 148   2      #if DPS_HistPseuMax_MOD1_EN 
+                      if (curLumaHist[i]>REG_MouseCount)
+                          HistPseuMax = i*8+4;
+              #endif
+ 152   2          }
+ 153   1          curPixelWeight = TempVariable3>>8; // Return for pure color with mouse which will effect "pure colro d
+             -etection" for Nanao 
+ 154   1          DPS_printData ( "curPixelWeight=%x", curPixelWeight );
+ 155   1          TempVariable2 = TempVariable2 >> 7;
+ 156   1          TempVariable2 = MIN2 ( TempVariable2, 255 );
+ 157   1          HistDiffWeight = TempVariable2;
+ 158   1          Flag_DPS_Latch_Busy = 0;
+ 159   1      #if DPS_HistPseuMax_MOD1_EN 
+                  curPixelMax = HistPseuMax;
+              #endif
+ 162   1      #if DPS_HistPseuMax_MOD2_EN 
+                  curPixelMax = ( ( curPixelMax >> 3 ) << 3 ) + 7;
+              #endif
+ 165   1          //----------------------------------------------------------------------
+ 166   1          //--Histogram parser
+ 167   1          //----------------------------------------------------------------------
+ 168   1          TempVariable1 = ( 256UL * curPixelWeight ) / curPixelCount;
+ 169   1          TempVariable1 = ( ( TempVariable1 >> 3 ) << 3 ) + 7;
+ 170   1          TempVariable1 = MIN2 ( TempVariable1, 255 );
+ 171   1          HistDataAvg = TempVariable1;
+ 172   1          RefSection = HistDataAvg >> 3;
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 4   
+
+ 173   1          TempVariable2 = 0;
+ 174   1          for ( i = 32; i > 0; i-- )
+ 175   1          {
+ 176   2              j = i - 1;
+ 177   2              if ( curLumaHist[j] != 0 )
+ 178   2              {
+ 179   3                  if ( HistDataMax == 0 )
+ 180   3                  {
+ 181   4                      HistDataMax = j * 8 + 7;
+ 182   4                  }
+ 183   3                  HistDataMin = j * 8 + 7;
+ 184   3              }
+ 185   2              if ( j >= RefSection )
+ 186   2              {
+ 187   3                  RefDistance = j - RefSection + 1;
+ 188   3              }
+ 189   2              else
+ 190   2              {
+ 191   3                  RefDistance = RefSection - j + 1;
+ 192   3              }
+ 193   2              TempVariable2 += curLumaHist[j] / RefDistance;
+ 194   2          }
+ 195   1          TempVariable2 = ( 255UL * TempVariable2 ) / curPixelCount;
+ 196   1          TempVariable2 = MIN2 ( TempVariable2, 255 );
+ 197   1          HistDensity = TempVariable2;
+ 198   1          //----------------------------------------------------------------------
+ 199   1          //--check flags
+ 200   1          //----------------------------------------------------------------------
+ 201   1      
+ 202   1          //ToDo ES6.0
+ 203   1          if(REG_DPS_BW_MODE_EN)
+ 204   1          {
+ 205   2          if(REG_DPS_YOUT_ENABLE)
+ 206   2              TempVariable1 = curLumaHist[29]+curLumaHist[2];
+ 207   2          else    
+ 208   2              TempVariable1 = curLumaHist[31]+curLumaHist[0];
+ 209   2          TempVariable1 = TempVariable1*256/curPixelCount;
+ 210   2          Flag_ES60WhitePattern = TempVariable1>REG_DPS_BW_MODE_Gain;
+ 211   2          }
+ 212   1          
+ 213   1          TempVariable1 = ABS2 ( curPixelMax, HistDataAvg );
+ 214   1          Flag_PureColorPattern = ( HistDensity >= REG_DPS_PureColorDstyThd ) &&
+ 215   1                                  ( TempVariable1 <= REG_DPS_PureColorDiffThd );
+ 216   1          DPS_printData ( "HistDensity=%d", HistDensity );
+ 217   1          DPS_printData ( "TempVariable1=%d", TempVariable1 );
+ 218   1      #if DPS_YminForWindowSave_EN
+              
+                  HistogramWeight_L0 = (DWORD)(curLumaHist[0]*32768) / curPixelCount; 
+                  HistogramWeight_L31 =  (DWORD)(curLumaHist[31]*32768) / curPixelCount; 
+                  TempVariable1 = 255; // max
+                  TempVariable2 = 0; //min
+                  
+                  Flag_PreWindowSavePat = Flag_CurWindowSavePat;
+                  Flag_CurWindowSavePat = ( !Flag_PureColorPattern ) &&
+                                          ( HistDensity >= REG_DPS_WindowSaveDensityTH ) &&
+                                          ( HistDataAvg <= REG_DPS_WindowSaveYavgLimit )/* &&
+                                          (curPixelMax == TempVariable1 )&& (curPixelMin == TempVariable2) &&
+                                          (HistogramWeight_L0 >= REG_DPS_WindowSaveHisWeight_0_Up) && 
+                                          (HistogramWeight_L0 <= REG_DPS_WindowSaveHisWeight_0_Down)&&
+                                          (HistogramWeight_L31 >= REG_DPS_WindowSaveHisWeight_31_Up)&&
+                                          (HistogramWeight_L31 <= REG_DPS_WindowSaveHisWeight_31_Down))||
+                                          (Flag_PureColorPattern &&(curPixelMax == TempVariable2 )&& (curPixelMin == Tem
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 5   
+
+             -pVariable2) )*/;
+              
+                  Flag_OutWindowSavePat = ( Flag_PreWindowSavePat == 1 && Flag_CurWindowSavePat == 0 ) ||
+                                          ( Flag_PreWindowSavePat == 0 && Flag_CurWindowSavePat == 1 );
+              #if 0    
+                  //DPS_printData ( "Flag_CurWindowSavePat=%d", Flag_CurWindowSavePat );
+                  //DPS_printData ( "HistDensity=%d", HistDensity );
+                  //DPS_printData ( "HistDataAvg=%d", HistDataAvg );
+                  //DPS_printData ( "HistogramWeight_L0=%d", HistogramWeight_L0 );
+                  //DPS_printData ( "HistogramWeight_L31=%d", HistogramWeight_L31 );
+              #endif   
+              #endif
+ 246   1          for ( i = 4; i > 0; i-- )
+ 247   1          {
+ 248   2              HistDataMaxArray[i] = HistDataMaxArray[i-1];
+ 249   2              HistDataAvgArray[i] = HistDataAvgArray[i-1];
+ 250   2          }
+ 251   1          HistDataMaxArray[0] = curPixelMax;
+ 252   1          HistDataAvgArray[0] = HistDataAvg;
+ 253   1          TempVariable1 = ( HistDataMaxArray[0] > HistDataMaxArray[1] ) &&
+ 254   1                          ( HistDataMaxArray[1] > HistDataMaxArray[2] ) &&
+ 255   1                          ( HistDataMaxArray[2] > HistDataMaxArray[3] ) &&
+ 256   1                          ( HistDataMaxArray[3] > HistDataMaxArray[4] );
+ 257   1          TempVariable2 = ( HistDataMaxArray[0] < HistDataMaxArray[1] ) &&
+ 258   1                          ( HistDataMaxArray[1] < HistDataMaxArray[2] ) &&
+ 259   1                          ( HistDataMaxArray[2] < HistDataMaxArray[3] ) &&
+ 260   1                          ( HistDataMaxArray[3] < HistDataMaxArray[4] );
+ 261   1          Flag_GradientPattern = ( TempVariable1 != 0 ) || ( TempVariable2 != 0 );
+ 262   1          TempVariable1 = 0;
+ 263   1          TempVariable2 = 255;
+ 264   1          for ( i = 0; i < 5; i++ )
+ 265   1          {
+ 266   2              if ( HistDataMaxArray[i] >= TempVariable1 )
+ 267   2              {
+ 268   3                  TempVariable1 = HistDataMaxArray[i];
+ 269   3              }
+ 270   2              if ( HistDataMaxArray[i] <= TempVariable2 )
+ 271   2              {
+ 272   3                  TempVariable2 = HistDataMaxArray[i];
+ 273   3              }
+ 274   2          }
+ 275   1          HistDataMaxDiff = ABS2 ( TempVariable1, TempVariable2 );
+ 276   1          TempVariable1 = 0;
+ 277   1          TempVariable2 = 255;
+ 278   1          for ( i = 0; i < 5; i++ )
+ 279   1          {
+ 280   2              if ( HistDataAvgArray[i] >= TempVariable1 )
+ 281   2              {
+ 282   3                  TempVariable1 = HistDataAvgArray[i];
+ 283   3              }
+ 284   2              if ( HistDataAvgArray[i] <= TempVariable2 )
+ 285   2              {
+ 286   3                  TempVariable2 = HistDataAvgArray[i];
+ 287   3              }
+ 288   2          }
+ 289   1          HistDataAvgDiff = ABS2 ( TempVariable1, TempVariable2 );
+ 290   1          Flag_SceneChangeValid = ( Flag_GradientPattern == 0 ) &&
+ 291   1                                  ( HistDataMaxDiff >= REG_DPS_SceChgMaxDiffThd ) &&
+ 292   1                                  ( HistDataAvgDiff >= REG_DPS_SceChgAvgDiffThd ) &&
+ 293   1                                  ( HistDiffWeight >= REG_DPS_SceChgHistWgtThd ) &&
+ 294   1                                  ( HistDiffCount >= REG_DPS_SceChgHistCntThd );
+ 295   1      #if DPS_YminForWindowSave_EN
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 6   
+
+                  Flag_SceneChangeValid = Flag_SceneChangeValid || Flag_OutWindowSavePat;
+              #endif
+ 298   1          DPS_printData ( "M = %d", HistDataMaxDiff );
+ 299   1          DPS_printData ( "A = %d", HistDataAvgDiff );
+ 300   1          DPS_printData ( "W = %d", HistDiffWeight );
+ 301   1          DPS_printData ( "C = %d", HistDiffCount );
+ 302   1          if ( Flag_GradientPattern  ) DPS_printData ( "======G", Flag_GradientPattern );
+ 303   1          if ( Flag_PureColorPattern ) DPS_printData ( "============P", Flag_PureColorPattern );
+ 304   1          if ( Flag_SceneChangeValid ) DPS_printData ( "==================S", Flag_SceneChangeValid );
+ 305   1          DPS_printData ( "curPixelMax=%d", curPixelMax );
+ 306   1          //----------------------------------------------------------------------
+ 307   1          //--get HistImgYMax_tar
+ 308   1          //----------------------------------------------------------------------
+ 309   1          TempVariable3 = curPixelMax;
+ 310   1          if(REG_DPS_YOUT_ENABLE)
+ 311   1          {
+ 312   2              TempVariable1 = (WORD)(((WORD)HistImgYMax_tar) * ((WORD)219)/((WORD)255))+16;
+ 313   2              TempVariable1 = MIN2 ( TempVariable1, 235 );
+ 314   2              Flag_StepIncValid = ( TempVariable3 > TempVariable1 ) ? 1 : 0;
+ 315   2              Flag_StepDecValid = ( TempVariable3 < TempVariable1 ) ? 1 : 0;
+ 316   2          }
+ 317   1          else
+ 318   1          {
+ 319   2              Flag_StepIncValid = ( TempVariable3 > HistImgYMax_tar ) ? 1 : 0;
+ 320   2              Flag_StepDecValid = ( TempVariable3 < HistImgYMax_tar ) ? 1 : 0;
+ 321   2          }
+ 322   1          
+ 323   1          if ( Flag_StepIncValid )
+ 324   1          {
+ 325   2              StepIncCount++;
+ 326   2          }
+ 327   1          else if ( Flag_StepDecValid && StepIncCount != 0 )
+ 328   1          {
+ 329   2              StepIncCount--;
+ 330   2          }
+ 331   1          if ( Flag_StepDecValid )
+ 332   1          {
+ 333   2              StepDecCount++;
+ 334   2          }
+ 335   1          else if ( Flag_StepIncValid && StepDecCount != 0 )
+ 336   1          {
+ 337   2              StepDecCount--;
+ 338   2          }
+ 339   1          if ((Flag_SceneChangeValid)||(StepIncCount >= REG_DPS_StepIncCountThd)||(StepDecCount >= REG_DPS_StepD
+             -ecCountThd))
+ 340   1          {
+ 341   2              StepIncCount = 0;
+ 342   2              StepDecCount = 0;
+ 343   2              HistImgYMax_tar = curPixelMax;
+ 344   2              if(REG_DPS_YOUT_ENABLE)
+ 345   2              {
+ 346   3                  TempVariable1 = (WORD)((WORD)HistImgYMax_tar - 16) * (255)/(219);
+ 347   3                  TempVariable1 = MIN2 ( TempVariable1, 255 );
+ 348   3                  HistImgYMax_tar = TempVariable1;
+ 349   3              }
+ 350   2          }
+ 351   1          else 
+ 352   1          {
+ 353   2              HistImgYMax_tar = HistImgYMax_tar;
+ 354   2          }
+ 355   1      
+ 356   1      #if 0
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 7   
+
+                  DPS_printData ( "HistImgYMax_tar=%d", HistImgYMax_tar );
+              #endif
+ 359   1      
+ 360   1          if (Flag_PureColorPattern)
+ 361   1          {
+ 362   2              HistImgYMax_tar = MIN2 ( HistImgYMax_tar, REG_DPS_ImgYmaxForPureColor );
+ 363   2              HistImgYMax_tar = MAX2 ( HistImgYMax_tar, REG_DPS_ImgYminForPureColor );
+ 364   2          }
+ 365   1          else
+ 366   1          {
+ 367   2              HistImgYMax_tar = MIN2 ( HistImgYMax_tar, REG_DPS_ImgYmaxForNatureImg );
+ 368   2              HistImgYMax_tar = MAX2 ( HistImgYMax_tar, REG_DPS_ImgYminForNatureImg );
+ 369   2          }
+ 370   1          if ( Flag_GradientPattern  ) DPS_printData ( "====G", Flag_GradientPattern );
+ 371   1          if ( Flag_PureColorPattern ) DPS_printData ( "=====P", Flag_PureColorPattern );
+ 372   1          if ( Flag_SceneChangeValid ) DPS_printData ( "=======S", Flag_SceneChangeValid );
+ 373   1          DPS_printData ( "curPixelMax =%d", curPixelMax );
+ 374   1          DPS_printData ( "HistImgYMax_cur =%d", TempVariable3   );
+ 375   1          DPS_printData ( "HistImgYMax_tar =%d", HistImgYMax_tar );
+ 376   1          ///----------------------------------------------------------------------
+ 377   1          //--get Ygain_tar & Pduty_tar
+ 378   1          //----------------------------------------------------------------------
+ 379   1          if((REG_DPS_UserBrightContlGain%10)> 0)
+ 380   1              REG_DPS_ColStart = (REG_DPS_UserBrightContlGain / 10)+1;
+ 381   1          else
+ 382   1              REG_DPS_ColStart = REG_DPS_UserBrightContlGain / 10;
+ 383   1      
+ 384   1          REG_DPS_ColStart = MIN2 ( REG_DPS_ColStart,10 );
+ 385   1          
+ 386   1          RowStart = REG_DPS_RowStart; //--REG setting (no used now)
+ 387   1          ColStart = 10 - REG_DPS_ColStart; //--PWM setting (0 for 100%; 1 for 90%; ...)
+ 388   1          PowerLimit = MAX2(REG_DPS_PowerLimitHW, REG_DPS_PowerLimitFW);
+ 389   1          PdutyLimit = ( 255UL * PowerLimit * 10 ) / 100;
+ 390   1          TempVariable1 = ( HistImgYMax_tar == 255 ) ? 16 : ( HistImgYMax_tar >> 4 );
+ 391   1          YMaxIndex = 16 - TempVariable1;
+ 392   1          if ( YMaxIndex == 0 )
+ 393   1          {
+ 394   2              LumiMap = DPS_Lumi_Table[0][ColStart];
+ 395   2          }
+ 396   1          else
+ 397   1          {
+ 398   2              TempVariable1 = ( ( WORD ) ( DPS_Lumi_Table[YMaxIndex - 1][ColStart] - DPS_Lumi_Table[YMaxIndex][C
+             -olStart] ) * ( HistImgYMax_tar - ( ( 16UL - YMaxIndex ) << 4 ) ) ) >> 4;
+ 399   2              TempVariable1 += DPS_Lumi_Table[YMaxIndex][ColStart];
+ 400   2              LumiMap = TempVariable1;
+ 401   2          }
+ 402   1          Flag_BlendSchemeInPWM = ( DPS_Lumi_Table[RowStart][10 - PowerLimit] < LumiMap ) ? 1 : 0;
+ 403   1          if ( LumiMap >= REG_DPS_LevelLimit )
+ 404   1          {
+ 405   2              Ygain_tar = 1024;
+ 406   2              Pduty_tar = 255;
+ 407   2          }
+ 408   1          else
+ 409   1          {
+ 410   2              if ( Flag_BlendSchemeInPWM )
+ 411   2              {
+ 412   3                  if ( RowStart == 0 )
+ 413   3                  {
+ 414   4                      TempVariable1 = ( 1024UL * 255 ) / HistImgYMax_tar;
+ 415   4                  }
+ 416   3                  else
+ 417   3                  {
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 8   
+
+ 418   4                      TempVariable1 = 1024UL * 16 * ( 16UL - RowStart ) / HistImgYMax_tar;
+ 419   4                  }
+ 420   3                  for ( i = 0; i < ( 10 - PowerLimit ); i++ )
+ 421   3                  {
+ 422   4                      if ( DPS_Lumi_Table[RowStart][i] >= LumiMap )
+ 423   4                      {
+ 424   5                          LevelIndex = i;
+ 425   5                      }
+ 426   4                  }
+ 427   3                  TempVariable2 = 10UL * ( LumiMap - DPS_Lumi_Table[RowStart][LevelIndex + 1] ) / ( DPS_Lumi_Tab
+             -le[RowStart][LevelIndex] - DPS_Lumi_Table[RowStart][LevelIndex + 1] );
+ 428   3                  TempVariable2 += 100 - ( LevelIndex + 1 ) * 10;
+ 429   3                  TempVariable2 = ( 255UL * TempVariable2 ) / 100;
+ 430   3              }
+ 431   2              else
+ 432   2              {
+ 433   3                  for ( i = RowStart; i < 16; i++ )
+ 434   3                  {
+ 435   4                      if ( DPS_Lumi_Table[i][10 - PowerLimit] >= LumiMap )
+ 436   4                      {
+ 437   5                          LevelIndex = i;
+ 438   5                      }
+ 439   4                  }
+ 440   3                  TempVariable1 = 16UL * ( LumiMap - DPS_Lumi_Table[LevelIndex + 1][10 - PowerLimit] ) / ( DPS_L
+             -umi_Table[LevelIndex][10 - PowerLimit] - DPS_Lumi_Table[LevelIndex + 1][10 - PowerLimit] );
+ 441   3                  TempVariable1 += ( 16 - ( LevelIndex + 1 ) ) << 4;
+ 442   3                  TempVariable1 = 1024UL * TempVariable1 / HistImgYMax_tar;
+ 443   3                  TempVariable2 = PdutyLimit;
+ 444   3              }
+ 445   2              Ygain_tar = TempVariable1;
+ 446   2              Pduty_tar = TempVariable2;
+ 447   2          }
+ 448   1          /*
+ 449   1          TempVariable3 = ((DWORD)Pduty_tar * REG_DPS_UserBrightContlGain) >> 8;
+ 450   1          Pduty_tar = TempVariable3;
+ 451   1          */  
+ 452   1          TempVariable3 = (DWORD)Pduty_tar * REG_DPS_UserBrightContlGain / (REG_DPS_ColStart*10);
+ 453   1          Pduty_tar = TempVariable3;
+ 454   1          
+ 455   1          //#if DPS_AggrPowerSaveMode_EN
+ 456   1          if ((!REG_DPS_BW_MODE_EN)||(REG_DPS_BW_MODE_EN && !Flag_ES60WhitePattern))
+ 457   1          {    
+ 458   2              if (HistImgYMax_tar <= REG_DPS_AggressiveGainRange)
+ 459   2          {
+ 460   3          TempVariable3 = MIN2( REG_DPS_UserBrightLimitGain, REG_DPS_AggressivePdutyGain);
+ 461   3          TempVariable1 = ((DWORD)Ygain_tar * REG_DPS_AggressiveYgainGain) >> 8;
+ 462   3          TempVariable2 = ((DWORD)Pduty_tar * TempVariable3) >> 8;
+ 463   3          Ygain_tar = Flag_PureColorPattern ? Ygain_tar : TempVariable1;
+ 464   3          Pduty_tar = Flag_PureColorPattern ? Pduty_tar : TempVariable2;
+ 465   3          /*
+ 466   3          TempVariable1 = ((DWORD)Ygain_tar * REG_DPS_AggressiveYgainGain) >> 8;
+ 467   3          TempVariable2 = ((DWORD)Pduty_tar * REG_DPS_AggressivePdutyGain) >> 8;
+ 468   3          Ygain_tar = Flag_PureColorPattern ? Ygain_tar : TempVariable1;
+ 469   3          Pduty_tar = Flag_PureColorPattern ? Pduty_tar : TempVariable2;
+ 470   3          */
+ 471   3          }
+ 472   2          }
+ 473   1          #if 0
+                  DPS_printData ( "ES6.0_Flag  %d", Flag_ES60WhitePattern );
+                  #endif
+ 476   1          //#endif
+ 477   1          Ygain_tar = MIN2 ( Ygain_tar,       2047 ); //--Max. Ygain = 1.99x
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 9   
+
+ 478   1          Ygain_tar = MAX2 ( Ygain_tar,       1024 ); //--min. Ygain = 1.00x
+ 479   1          Pduty_tar = MIN2 ( Pduty_tar,        255 ); //--HW Limitation
+ 480   1          Pduty_tar = MAX2 ( Pduty_tar, PdutyLimit ); //--HW Limitation
+ 481   1      #if 0
+                  DPS_printData ( "REG_DPS_UserBrightContlGain =%d", REG_DPS_UserBrightContlGain );
+                  DPS_printData ( "Flag_BlendSchemeInPWM =%d", Flag_BlendSchemeInPWM );
+                  DPS_printData ( "LumiMap =%d", LumiMap );
+                  DPS_printData ( "YMaxIndex =%d", YMaxIndex );
+                  DPS_printData ( "LevelIndex =%d", LevelIndex );
+                  DPS_printData ( "Ygain_tar =%d", Ygain_tar );
+                  DPS_printData ( "Pduty_tar =%d", Pduty_tar );
+              #endif
+ 490   1      #if 0
+                  DPS_printData ( "======", HistImgYMax_tar );
+                  DPS_printData ( "Y=%d", Ygain_tar );
+                  DPS_printData ( "P=%d", Pduty_tar );
+              #endif
+ 495   1      
+ 496   1          //----------------------------------------------------------------------
+ 497   1          //--get Ygain_nxt & Pduty_nxt
+ 498   1          //----------------------------------------------------------------------
+ 499   1          if ((Ygain_tar_pre != Ygain_tar) || (Pduty_tar_pre != Pduty_tar))
+ 500   1          {
+ 501   2              if (REG_DPS_UpdateFrameCyc == 0)
+ 502   2              {
+ 503   3                      Ygain_diff = REG_DPS_YgainDiffMinTH;
+ 504   3                      Pduty_diff = REG_DPS_PdutyDiffMinTH;
+ 505   3              }
+ 506   2              else
+ 507   2              {
+ 508   3                      TempVariable3 = ABS2 ( Pduty_ISR, Pduty_tar );
+ 509   3                      TempVariable1 = TempVariable3/REG_DPS_UpdateFrameCyc;
+ 510   3                      Pduty_diff = MAX2 ( TempVariable1, REG_DPS_PdutyDiffMinTH );
+ 511   3                      TempVariable3 = TempVariable3/Pduty_diff;
+ 512   3                      TempVariable2 = ABS2 ( Ygain_ISR, Ygain_tar );
+ 513   3                      TempVariable2 = (TempVariable3 !=0) ? TempVariable2/TempVariable3 : 0;
+ 514   3                      Ygain_diff = MAX2 ( TempVariable2, REG_DPS_YgainDiffMinTH );
+ 515   3              }
+ 516   2          }
+ 517   1          if ( YgainCycLoopCount == REG_DPS_YgainUpdateCyc )
+ 518   1          {
+ 519   2              if (Ygain_ISR != Ygain_tar)
+ 520   2              {
+ 521   3                      Ygain_sign = ( Ygain_tar > Ygain_ISR ) ? 1 : 0;
+ 522   3                      if ( Ygain_sign )
+ 523   3                  {
+ 524   4                          TempVariable1 = Ygain_ISR + Ygain_diff;
+ 525   4                          Ygain_nxt = MIN2(TempVariable1, Ygain_tar);
+ 526   4                  }
+ 527   3                  else
+ 528   3                  {
+ 529   4                          TempVariable1 = Ygain_ISR >= Ygain_diff ? Ygain_ISR - Ygain_diff : 0;
+ 530   4                          Ygain_nxt = MAX2(TempVariable1, Ygain_tar);
+ 531   4                  }
+ 532   3              }
+ 533   2          }
+ 534   1          if ( PdutyCycLoopCount == REG_DPS_PdutyUpdateCyc )
+ 535   1          {
+ 536   2              if (Pduty_ISR != Pduty_tar)
+ 537   2              {
+ 538   3                  Pduty_sign = ( Pduty_tar > Pduty_ISR ) ? 1 : 0;
+ 539   3                  if ( Pduty_sign )
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 10  
+
+ 540   3          {
+ 541   4                      TempVariable1 = Pduty_ISR + Pduty_diff;
+ 542   4                      Pduty_nxt = MIN2(TempVariable1, Pduty_tar);
+ 543   4          }
+ 544   3                  else
+ 545   3          {
+ 546   4                      TempVariable1 = Pduty_ISR >= Pduty_diff ? Pduty_ISR - Pduty_diff : 0;
+ 547   4                      Pduty_nxt = MAX2(TempVariable1, Pduty_tar);
+ 548   4          }
+ 549   3              }
+ 550   2          }
+ 551   1          if ( YgainCycLoopCount == REG_DPS_YgainUpdateCyc )
+ 552   1          {
+ 553   2              YgainCycLoopCount = 0;
+ 554   2          }
+ 555   1          else
+ 556   1          {
+ 557   2              YgainCycLoopCount++;
+ 558   2          }
+ 559   1          if ( PdutyCycLoopCount == REG_DPS_PdutyUpdateCyc )
+ 560   1          {
+ 561   2              PdutyCycLoopCount = 0;
+ 562   2          }
+ 563   1          else
+ 564   1          {
+ 565   2              PdutyCycLoopCount++;
+ 566   2          }
+ 567   1          Ygain_tar_pre = Ygain_tar;
+ 568   1          Pduty_tar_pre = Pduty_tar;
+ 569   1      #if 0
+                  DPS_printData ( "M=%d", HistImgYMax_tar );
+                  DPS_printData ( "Y=%d", Ygain_tar );
+                  DPS_printData ( "P=%d", Pduty_tar );
+                  DPS_printData ( "       %d", Ygain_nxt );
+                  DPS_printData ( "            %d", Pduty_nxt );
+              #endif
+ 576   1          //----------------------------------------------------------------------
+ 577   1          //--special patch
+ 578   1          //----------------------------------------------------------------------
+ 579   1      #if DPS_YminForWindowSave_EN
+                  if ( Flag_CurWindowSavePat )
+                  {
+                      Ygain_nxt = REG_DPS_WindowSaveYgain;
+                      Pduty_nxt = REG_DPS_PowerLevel; // REG_DPS_PowerLevel; //PdutyLimit
+                      msDPS_ClearBuffer();
+                  }
+              #endif
+ 587   1          if ( Flag_SceneChangeValid )
+ 588   1          {
+ 589   2              Ygain_nxt = Ygain_tar;
+ 590   2              Pduty_nxt = Pduty_tar;
+ 591   2              msDPS_ClearBuffer();
+ 592   2          }
+ 593   1          //----------------------------------------------------------------------
+ 594   1          //--update Ygain & Pduty
+ 595   1          //----------------------------------------------------------------------
+ 596   1      
+ 597   1          Ygain_nxt = MIN2 ( Ygain_nxt,       2047 ); //--Max. Ygain = 1.99x
+ 598   1          Ygain_nxt = MAX2 ( Ygain_nxt,       1024 ); //--min. Ygain = 1.00x
+ 599   1          Pduty_nxt = MIN2 ( Pduty_nxt,        255 ); //--HW Limitation
+ 600   1          Pduty_nxt = MAX2 ( Pduty_nxt, PdutyLimit ); //--HW Limitation
+ 601   1      
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 11  
+
+ 602   1          Ygain_ISR = Ygain_nxt;
+ 603   1          Pduty_ISR = Pduty_nxt;
+ 604   1          
+ 605   1          msDPS_AdjustYgain ( Ygain_ISR );
+ 606   1          msDPS_AdjustBacklight ( Pduty_ISR );
+ 607   1      }
+ 608          #if 0
+              WORD msDPS_Ver(void)
+              {
+                  return msDpsVer;
+              }
+              #endif
+ 614          //========================================================================================================
+             -===========================================================:
+ 615          #else
+              BYTE code msDPSHandlerNullData[] = {0};
+              void msDPSHandlerDummy(void)
+              {
+                  BYTE xdata i = msDPSHandlerNullData[0];
+              }
+              #endif // #if EnableDPS
+ 622          //========================================================================================================
+             -===========================================================:
+*** WARNING C294 IN LINE 503 OF ..\KERNEL\SCALER\msDPS_Handler.c: unreachable code
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   4309    ----
+   CONSTANT SIZE    =     64    ----
+   XDATA SIZE       =     91     114
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

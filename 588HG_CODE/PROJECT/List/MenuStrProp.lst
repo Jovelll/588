@@ -1,0 +1,29 @@
+C51 COMPILER V9.60.0.0   MENUSTRPROP                                                       12/20/2020 14:10:43 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MENUSTRPROP
+OBJECT MODULE PLACED IN .\Obj\MenuStrProp.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\UI\MenuStrProp.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\INC
+                    -;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC;..
+                    -\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\MenuStrProp.lst) TABS(2) OBJECT(.\Obj\MenuStrP
+                    -rop.obj)
+
+line level    source
+
+   1          
+   2          
+   3          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

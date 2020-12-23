@@ -1,0 +1,657 @@
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSHDMI
+OBJECT MODULE PLACED IN .\Obj\msHDMI.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\Scaler\msHDMI.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYST
+                    -EM\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\
+                    -INC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\msHDMI.lst) TABS(2) OBJECT(.\Obj\msHDMI.
+                    -obj)
+
+line level    source
+
+   1          #ifndef _MSHDMI_C_
+   2          #define _MSHDMI_C_
+   3          #include "types.h"
+   4          #include "board.h"
+   5          #if ENABLE_HDMI
+   6          #include "Global.h"
+   7          #include "Adjust.h"
+   8          #include "ms_Reg.h"
+   9          #include "ms_rwreg.h"
+  10          #include "msHDMI.h"
+  11          #include "Debug.h"
+  12          #include "Common.h"
+  13          #include "math.h"
+  14          #include "misc.h"
+  15          #include "GPIO_DEF.h"
+  16          #include "Mstar.h"
+  17          #if  ENABLE_HDMI_1_4
+              #include "msScaler.h"
+              #endif
+  20          #include "halRwreg.h"
+  21          extern void mStar_SetUserPref( void );
+  22          
+  23          #define HDMI_DEBUG   1
+  24          #if ENABLE_DEBUG &&HDMI_DEBUG
+  25          #define HDMI_printData(str, value)   printData(str, value)
+  26          #define HDMI_printMsg(str)           printMsg(str)
+  27          #else
+              #define HDMI_printData(str, value)
+              #define HDMI_printMsg(str)
+              #endif
+  31          
+  32          void mstar_HDMIInitialVariable( void )
+  33          {
+  34   1          gScInfo.InputColor = INPUT_RGB;
+  35   1          gScInfo.AVI_Colorimetry = YUV_Colorimetry_ITU601;
+  36   1          gScInfo.InputSource = INPUT_TMDS_A;
+  37   1          gScInfo.InputTmdsType = TMDS_DVI;
+  38   1          gScInfo.ColorChanged = 0;
+  39   1          gScInfo.ModeChange = 0;
+  40   1          gScInfo.wAviPktLossCnt = 0;
+  41   1          gScInfo.InputPacketStatus = 0;
+  42   1      #if ENABLE_HDMI_1_4
+                  gScInfo.NoVsPktCnt = 0;
+              #endif
+  45   1          gScInfo.AudioOffDebunce = 0;
+  46   1          gScInfo.InputPacketError = 0;
+  47   1          gScInfo.InputVideoMode = 16; // check here
+  48   1          gScInfo.InputAVIInfoReceived = 0;
+  49   1          gScInfo.InputSPDInfoReceived = 0;
+  50   1          gScInfo.OutputAudioState = HDMI_AUDIO_OFF; //Mute
+  51   1          gScInfo.OutputDataState = HDMI_DATA_OUTPUT_OFF;
+  52   1      #if ENABLE_HDMI_SW_CTS_STABLE
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 2   
+
+                  gScInfo.InputCTSValue = 0;
+                  gScInfo.OutputAudioCnt = AudioDeBounce;
+              #endif
+  56   1          gScInfo.cs0 = 0;
+  57   1      #if  0
+                  CSpcPollingCounter = 0;
+              #endif
+  60   1      }
+  61          
+  62          void mstar_HDMIInitialAudio( void )
+  63          {
+  64   1          drv_mstar_HDMIInitialAudio();
+  65   1      }
+  66          
+  67          void mstar_HDMIHandler( void )
+  68          {
+  69   1          mstar_MonitorHDMI();
+  70   1          mstar_HDMIHandleColor();
+  71   1          mstar_HDMIHandleMode();
+  72   1      }
+  73          
+  74          
+  75          void mstar_HDMIRst( BYTE rst )
+  76          {
+  77   1          drv_mstar_HDMIRst(rst);
+  78   1      }
+  79          
+  80          void mstar_HDMIHandleMode( void )
+  81          {
+  82   1          //BYTE    temp;
+  83   1          if( gScInfo.ModeChange )
+  84   1          {
+  85   2              gScInfo.ModeChange = 0;
+  86   2              Set_InputTimingChangeFlag();
+  87   2              HDMI_printData( "TMDS mode is=%d", gScInfo.InputTmdsType );
+  88   2      #if ENABLE_DEBUG_TIMING_CHANGE_POINT
+                      SetTimingChangeFirstPoint(TimingChange_HDMIModeChange);
+              #endif
+  91   2          }
+  92   1      }
+  93          #if  0
+              void SetMainWinVideoDomain( BYTE Domain ) //void SetMainWinColorControl(BYTE ucControl)
+              {
+                  BYTE XDATA ucBank, ucReg;
+              
+                  ucBank = msReadByte( BK0_00 );
+                  msWriteByte( BK0_00, REGBANK3 );
+                  ucReg = msReadByte( BK3_71 );
+                  if( Domain )
+                      ucReg |= BIT3;
+                  else
+                      ucReg &= ~BIT3;
+              
+                  msWriteByte( BK0_00, REGBANK0 );
+                  if( Domain )
+                  {
+                      mStar_WaitForDataBlanking();
+                      msWriteByte( BK0_2B, 0x70 );
+                      msWriteByte( BK0_2C, 0x70 );
+                      msWriteByte( BK0_2D, 0x70 );
+                      mStar_WriteByteMask( BK0_02, 0x00, BIT3 );  //msWriteByte( BK0_02, msReadByte( BK0_02 )&~BIT3 );
+                      msWriteByte( BK0_00, REGBANK3 );
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 3   
+
+                      msWriteByte( BK3_71, ucReg | BIT2 );
+                      msWriteByte( BK3_70, 0x15 );
+                      msWriteByte( BK3_71, ucReg );
+                      msWriteByte( BK0_00, REGBANK0 );
+                  }
+                  else
+                  {
+                      mStar_WaitForDataBlanking();
+                      msWriteByte( BK0_2B, 0x80 );
+                      msWriteByte( BK0_2C, 0x80 );
+                      msWriteByte( BK0_2D, 0x80 );
+                      msWriteByte( BK0_00, REGBANK3 );
+                      msWriteByte( BK3_71, ucReg | BIT2 );
+                      msWriteByte( BK3_70, 0x10 );
+                      msWriteByte( BK3_71, ucReg );
+                      msWriteByte( BK0_00, REGBANK0 );
+                  }
+                  msWriteByte( BK0_00, ucBank );
+              }
+              #endif
+ 135          void mstar_HDMIHandleColor( void )
+ 136          {
+ 137   1          if( gScInfo.ColorChanged )
+ 138   1          {
+ 139   2              gScInfo.ColorChanged = 0;
+ 140   2              mStar_SetUserPref();
+ 141   2              HDMI_printData( "Handle HDMI CSC%d", gScInfo.InputColor );
+ 142   2          }
+ 143   1      }
+ 144          #if  0
+              void mstar_HDMIResetColorSpace( void )
+              {
+                  BYTE temp, reg_bank;
+              
+              
+                  HDMI_printMsg( "HDMIResetColorSpace ");
+              
+                  reg_bank = msReadByte( BK0_00 );
+                  msWriteByte( BK0_00, REGBANK0 );
+              
+                  if( msReadByte( BK0_5C )&BIT3 )
+                  {
+                      temp = msReadByte( BK0_5A ) | BIT7 | BIT6;
+                      msWriteByte( BK0_5A, temp );
+                  }
+                  temp = msReadByte( BK0_02 ) & ( ~BIT3 );
+                  msWriteByte( BK0_02, temp );
+                  SetMainWinVideoDomain( INPUT_RGB );     //MainWin Color Space Change YUV -> RGB
+                  msWriteByte( BK0_00, reg_bank );
+              }
+              #endif
+ 166          void mstar_MonitorHDMI( void )
+ 167          {
+ 168   1          BYTE temp, curr_color;
+ 169   1      
+ 170   1          if( HdmiPollingCounter == 0 )
+ 171   1          {
+ 172   2              HdmiPollingCounter = 20;
+ 173   2      
+ 174   2              if(CURRENT_INPUT_IS_TMDS())//( SrcInputType == Input_Digital || SrcInputType == Input_Digital2 )
+ 175   2              {
+ 176   3                  if( SrcFlags&( SyncLoss | bUnsupportMode ) ) // unsupport mode
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 4   
+
+ 177   3      
+ 178   3                  {
+ 179   4                      if( gScInfo.OutputAudioState != HDMI_AUDIO_OFF )
+ 180   4                          mstar_HDMIAudioMute( HDMI_AUDIO_OFF ); // mute audio
+ 181   4                  }
+ 182   3                  //else if( InputTimingStableFlag )
+ 183   3                  else if(DVI_DE_STABLE())
+ 184   3                  {
+ 185   4      
+ 186   4                      temp = mstar_HDMITmdsGetType();
+ 187   4      
+ 188   4                      if( temp != gScInfo.InputTmdsType )
+ 189   4                      {
+ 190   5                          gScInfo.InputTmdsType = temp;
+ 191   5                          gScInfo.InputPacketStatus = 0;
+ 192   5                         //gScInfo.ModeChange = 1;
+ 193   5                          return;
+ 194   5                      }
+ 195   4      
+ 196   4                      // 120604 coding modified for reading packet status is unnecessary for DVI mode.
+ 197   4                      if(temp == TMDS_DVI)
+ 198   4                      {
+ 199   5                          mstar_HDMIRst(Reset_HDMIStatus);
+ 200   5                          return;
+ 201   5                      }
+ 202   4      
+ 203   4                  mstar_HDMIGetPktStatus();
+ 204   4                  mstar_HDMICheckAudio();
+ 205   4                  mstar_HDMIIsAudioPCM(); //temp solution to eliminate warning
+ 206   4                  mstar_HDMIAutoEQProc();
+ 207   4              #if (ENABLE_CTS_INT && (ENABLE_CTSN_FILTER || ENABLE_AUDIO_AUTO_MUTE || ENABLE_AUDIO_AUTO_FADING))
+ 208   4                          CheckAudioErrorStatus();
+ 209   4                      #endif
+ 210   4                #if ENABLE_HDMI_1_4
+                          msHDMI_Check_3D_Mode_Chg(1);
+                        #endif
+ 213   4      
+ 214   4                      if( gScInfo.InputPacketStatus & BIT3 )
+ 215   4                      {
+ 216   5                          gScInfo.wAviPktLossCnt = 0;
+ 217   5                          curr_color = mstar_HDMIPacketColor();
+ 218   5      
+ 219   5                          if( curr_color != gScInfo.InputColor )
+ 220   5                          {
+ 221   6                              gScInfo.InputColor = curr_color;
+ 222   6                              gScInfo.ColorChanged = 1;
+ 223   6                              if(curr_color == INPUT_RGB)
+ 224   6                            {
+ 225   7                                  InputColorFormat = INPUTCOLOR_RGB;
+ 226   7                                  UserPrefInputColorFormat = INPUTCOLOR_RGB;
+ 227   7                            }
+ 228   6                              else
+ 229   6                            {
+ 230   7                                  InputColorFormat = INPUTCOLOR_YUV;
+ 231   7                                  UserPrefInputColorFormat = INPUTCOLOR_YUV;
+ 232   7                            }
+ 233   6                
+ 234   6                          }
+ 235   5                      }
+ 236   4                      else
+ 237   4                      {
+ 238   5                          if( gScInfo.wAviPktLossCnt >= AviPktLossBound )
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 5   
+
+ 239   5                          {
+ 240   6                              if( gScInfo.InputColor != INPUT_RGB )
+ 241   6                              {
+ 242   7                                  gScInfo.InputColor = INPUT_RGB;
+ 243   7                                  InputColorFormat = INPUTCOLOR_RGB;
+ 244   7                                  UserPrefInputColorFormat = INPUTCOLOR_RGB;
+ 245   7                    
+ 246   7                                  mstar_HDMIRst(Reset_Color);
+ 247   7                                  gScInfo.ColorChanged = 1;
+ 248   7                              }
+ 249   6                          }
+ 250   5                      }
+ 251   4      
+ 252   4                  }
+ 253   3              }
+ 254   2          }
+ 255   1      }
+ 256          
+ 257          void mstar_HDMICheckAudio( void )
+ 258          {
+ 259   1          BYTE temp;
+ 260   1      #if ENABLE_HDMI_SW_AUDCLK_CHECK
+                  BYTE ucCurInFreq;
+              #endif
+ 263   1      
+ 264   1          if( (gScInfo.InputPacketError &( BIT5 | BIT4 )) )//|| gScInfo.cs0 & BIT6 ) //audio sample error
+ 265   1          {
+ 266   2              temp = HDMI_AUDIO_OFF;
+ 267   2          }
+ 268   1          else if(( gScInfo.InputPacketStatus&( BIT6 | BIT5 ) ) == ( BIT6 | BIT5 ) )
+ 269   1          {
+ 270   2              if( UserPrefVolume == 0 )
+ 271   2                  temp = HDMI_AUDIO_OFF;
+ 272   2              else
+ 273   2              {
+ 274   3                  if( gScInfo.OutputDataState == HDMI_DATA_OUTPUT_ON )
+ 275   3                      temp = HDMI_AUDIO_ON;
+ 276   3                  else
+ 277   3                      temp = HDMI_AUDIO_OFF;
+ 278   3              }
+ 279   2      
+ 280   2      #if ENABLE_HDMI_SW_CTS_STABLE
+                      if( gScInfo.OutputAudioCnt ) // && gScInfo.OutputAudioState==HDMI_AUDIO_ON)    // Check CTS Value 
+             -Stable
+                          temp = HDMI_AUDIO_OFF;
+              #endif
+ 284   2          }
+ 285   1      
+ 286   1          else
+ 287   1              temp = HDMI_AUDIO_OFF;
+ 288   1      
+ 289   1          if( gScInfo.OutputAudioState == HDMI_AUDIO_ON && temp == HDMI_AUDIO_OFF )
+ 290   1          {
+ 291   2              if( ++gScInfo.AudioOffDebunce < 20 )
+ 292   2                  return ;
+ 293   2          }
+ 294   1          else
+ 295   1              gScInfo.AudioOffDebunce = 0;
+ 296   1      #if ENABLE_HDMI_SW_AUDCLK_CHECK// 20080403 audio clock over spec
+                  ucCurInFreq = mstar_HDMICheckAudioFreq();
+                  if( temp == HDMI_AUDIO_ON )
+                  {
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 6   
+
+                      if(( ucCurInFreq > AUD_FREQ_ERROR ) )
+                      {
+                          if( ucCurInFreq != gScInfo.CurOutAudFreq )
+                          {
+                              if( ++gScInfo.FreqStableDebunce > 1 ) // > "1" this value can be adjust
+                              {
+                                  gScInfo.CurOutAudFreq = ucCurInFreq;
+                                  mstar_SetAudioClockLock( TRUE ); // chip w
+                              }
+                          }
+                          else
+                              gScInfo.FreqStableDebunce = 0;
+                      }
+                      else
+                      {
+                          if( ucCurInFreq != gScInfo.CurOutAudFreq )
+                          {
+                              if( ++gScInfo.FreqStableDebunce > 3 )
+                              {
+                                  HDMI_printData( "--Input Audio Freq Error[%d]--", gScInfo.CurOutAudFreq );
+                                  gScInfo.CurOutAudFreq = ucCurInFreq;
+                                  if( temp == HDMI_AUDIO_ON )
+                                      temp = HDMI_AUDIO_OFF;
+                              }
+                          }
+                          else
+                              gScInfo.FreqStableDebunce = 0;
+                      }
+                  }
+              #endif
+ 330   1      
+ 331   1          if( temp != gScInfo.OutputAudioState )
+ 332   1          {
+ 333   2              mstar_HDMIAudioMute( temp );
+ 334   2          }
+ 335   1      }
+ 336          
+ 337          BYTE mstar_HDMIPacketColor( void )
+ 338          {
+ 339   1          return drv_mstar_HDMIPacketColor();
+ 340   1      }
+ 341          
+ 342          
+ 343          void mstar_HDMIAudioMute( BYTE sw )
+ 344          {
+ 345   1          drv_mstar_HDMIAudioMute(sw);
+ 346   1      }
+ 347          
+ 348          void mstar_HDMIGetPktStatus( void )
+ 349          {
+ 350   1          drv_mstar_HDMIGetPktStatus();
+ 351   1      }
+ 352          
+ 353          #if (ENABLE_FREESYNC&&ENABLE_HDMI)
+              Bool mstar_HDMIGetFreeSyncFlag( void )
+              {
+                #if 0
+                return drv_mstar_HDMIGetFreeSyncFlag();
+                #else
+                  if(gScInfo.InputSPDInfoReceived)
+                      return drv_mstar_HDMIGetFreeSyncFlag();
+                  else 
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 7   
+
+                      return FALSE;
+                #endif
+              }
+              #endif
+ 366          
+ 367          void mstar_HDMIAutoEQProc(void)
+ 368          {
+ 369   1          drv_mstar_HDMIAutoEQProc();
+ 370   1      }
+ 371          
+ 372          BYTE mstar_HDMITmdsGetType( void )
+ 373          {
+ 374   1          return drv_mstar_HDMITmdsGetType();
+ 375   1      }
+ 376          
+ 377          Bool mstar_HDMIIsAudioPCM(void)
+ 378          {
+ 379   1          // if TRUE, then audio format is PCM, otherwise its non-PCM;
+ 380   1          return drv_mstar_HDMIIsAudioPCM();
+ 381   1      }
+ 382          
+ 383          #if ENABLE_CTS_INT
+ 384          #if ENABLE_CTSN_FILTER
+ 385          /*
+ 386          void EnableCTSNFileterFunction( void )
+ 387          {
+ 388              drv_EnableCTSNFileterFunction();
+ 389          }
+ 390          
+ 391          void CheckCTSNFilterFunction( void )
+ 392          {
+ 393              drv_CheckCTSNFilterFunction();
+ 394          }
+ 395          */
+ 396          #else
+              void EnableCTSFileterFunction( void )
+              {
+                  drv_EnableCTSFileterFunction();
+              }
+              
+              void CheckCTSFilterFunction( void )
+              {
+                  drv_CheckCTSFilterFunction();
+              }
+              #endif
+ 407          #endif
+ 408          #if ENABLE_HDMI_SW_AUDCLK_CHECK   // 20080403 audio clock over spec
+              //*******************************************************************
+              // Function Name: mstar_HDMICheckAudioFreq
+              // Decscription: N/CTS = (128 fs)/(TMDS_Clk)
+              //*******************************************************************
+              AudioFreqType mstar_HDMICheckAudioFreq( void )
+              //BYTE mstar_HDMICheckAudioFreq(void)
+              {
+                  return drv_mstar_HDMICheckAudioFreq();
+              }
+              
+              void mstar_SetAudioClockLock( Bool bLock )
+              {
+                  drv_mstar_SetAudioClockLock(bLock);
+              }
+              #endif // #if EN_HDMI_SW_AUDCLK_CHECK
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 8   
+
+ 424          
+ 425          #if ENABLE_AUDIO_AUTO_MUTE || ENABLE_AUDIO_AUTO_FADING || ENABLE_CTSN_FILTER
+ 426          
+ 427          ///////////////////////////////////////////////////////////////////////////////
+ 428          //     Audio mute/fading events:
+ 429          //     [0]: HDMI audio sample error.
+ 430          //     [1]: HDMI audio sample parity error.
+ 431          //     [2]: HDMI non-PCM.
+ 432          //     [3]: HDMI AVMUTE.
+ 433          //     [4]: HDMI CTS/N over range.
+ 434          //     [5]: HDMI no input clock.
+ 435          //     [6]: HDMI video clock big change.
+ 436          //     [7]: HDMI audio sample channel status information changes.
+ 437          //     [8]: HDMI 2-channel audio sample present bit error.
+ 438          //     [9]: HDMI audio sample flat bit is set.
+ 439          ///////////////////////////////////////////////////////////////////////////////
+ 440          void CheckAudioErrorStatus( void )
+ 441          {
+ 442   1          drv_CheckAudioErrorStatus();
+ 443   1      }
+ 444          
+ 445          #endif // #if ENABLE_AUDIO_AUTO_MUTE || ENABLE_AUDIO_AUTO_FADING || ENABLE_CTSN_FILTER
+ 446          #if ENABLE_HDMI_1_4
+              // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+              //                                HDMI 1.4 new feature:
+              //                                1. 3D format
+              //                                2. 4K x 2K format
+              // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+              
+              // HDMI_Video_Format: Vendor Specifc Info-frame, PB4[7:5]
+              //   000: No additional HDMI video format is presented in this packet
+              //   001: Extended resolution format (e.g. 4Kx2K video) present
+              //   010: 3D format indication present
+              //   011~111: Reserved
+              E_HDMI_ADDITIONAL_VIDEO_FORMAT msHDMI_Check_Additional_Format(void)
+              {
+                  return drv_msHDMI_Check_Additional_Format();
+              }
+              
+              
+              // 3D_Structure: Vendor Specifc Info-frame, PB5[7:4]
+              //   0000: Frame packing
+              //   0001: Field alternative
+              //   0010: Line alternative
+              //   0011: Side-by-Side(Full)
+              //   0100: L+depth
+              //   0101: L+depth+graphics+graphics-depth
+              //   0110: Top-and-Bottom
+              //   0111: Reserved
+              //   1000: Side-by-Side(Half)
+              //   1001 ~ 1111: Reserved
+              E_HDMI_3D_INPUT_MODE msHDMI_Get_3D_Structure(void)
+              {
+                  return drv_msHDMI_Get_3D_Structure();
+              }
+              
+              #if  0
+              // 3D_Ext_Data: Vendor Specifc Info-frame, PB6[7:4]
+              //   0000 ~ 0011 : Horizontal sub-sampling
+              //   0100: Quincunx matrix - Odd/Left  picture, Odd/Right  picture
+              //   0101: Quincunx matrix - Odd/Left  picture, Even/Right picture
+              //   0110: Quincunx matrix - Even/Left picture, Odd/Right  picture
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 9   
+
+              //   0111: Quincunx matrix - Even/Left picture, Even/Right picture
+              //   1000 ~ 1111: Reserved
+              E_HDMI_3D_EXT_DATA_T msHDMI_Get_3D_Ext_Data(void)
+              {
+                  return drv_msHDMI_Get_3D_Ext_Data();
+              }
+              
+              
+              // 3D_Meta_Field: Vendor Specifc Info-frame, PB5[3], PB7 ~ PB7+N
+              //   - 3D_Meta_Present: PB5[3]
+              //   - 3D_Metadata_Type: PB7[7:5]
+              //       000: parallax information defined in ISO23002-3
+              //       001 ~ 111: reserved
+              //   - 3D_Metadata_Length(N, N <= 31-8 = 23): PB7[4:0]
+              //   - 3D_Metadata[] : PB8 ~ PB7+N
+              void msHDMI_Get_3D_Meta_Field(sHDMI_3D_META_FIELD *ptr)
+              {
+                  drv_msHDMI_Get_3D_Meta_Field(*ptr);
+              }
+              
+              
+              // VIC_CODE: Auxiliary Video Information Info-frame, PB4[6:0]
+              BYTE msHDMI_Get_VIC_Code(void)
+              {
+                  return drv_msHDMI_Get_VIC_Code();
+              }
+              
+              
+              // 4Kx2K VIC code: Vendor Specifc Info-frame, PB5[7:0]
+              //   0x01: 1920(x2)x1080(x2) @ 29.97/30Hz
+              //   0x02: 1920(x2)x1080(x2) @ 25Hz
+              //   0x03: 1920(x2)x1080(x2) @ 23.976/24Hz
+              //   0x04: 2048(x2)x1080(x2) @ 24Hz
+              //   0x00, 0x05 ~ 0xFF: Reserved
+              E_HDMI_VIC_4Kx2K_CODE msHDMI_Get_4Kx2K_VIC_Code(void)
+              {
+                  return drv_msHDMI_Get_4Kx2K_VIC_Code();
+              }
+              #endif
+              
+              void msHDMI_Check_3D_Mode_Chg(BYTE SetTimingChg)
+              {
+                  BYTE ucSCFmtIn =SC_FMT_IN_NORMAL;
+              
+                  gScInfo.NoVsPktCnt++;
+                  if( gScInfo.InputPacketStatus & BIT7 )
+                  {
+                      if( msHDMI_Check_Additional_Format() == E_HDMI_3D_FORMAT )
+                      {
+                          switch( msHDMI_Get_3D_Structure() )
+                          {
+                              case E_HDMI_3D_INPUT_FRAME_PACKING:
+                                  ucSCFmtIn = SC_FMT_IN_3D_FP;
+                                  break;
+                              case E_HDMI_3D_INPUT_TOP_BOTTOM:
+                                  ucSCFmtIn = SC_FMT_IN_3D_TB;
+                                  break;
+                              case E_HDMI_3D_INPUT_SIDE_BY_SIDE_HALF:
+                                  ucSCFmtIn = SC_FMT_IN_3D_SBSH;
+                                  break;
+                              case E_HDMI_3D_INPUT_LINE_ALTERNATIVE:
+                                  ucSCFmtIn = SC_FMT_IN_3D_LA;
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 10  
+
+                                  break;
+                              case E_HDMI_3D_INPUT_SIDE_BY_SIDE_FULL:
+                                  ucSCFmtIn = SC_FMT_IN_3D_SBSF;
+                                  break;
+                              case E_HDMI_3D_INPUT_FIELD_ALTERNATIVE:
+                                  ucSCFmtIn = SC_FMT_IN_3D_FA;
+                                  break;
+                              case E_HDMI_3D_INPUT_L_DEPTH:
+                              case E_HDMI_3D_INPUT_L_DEPTH_GRAPHICS_GRAPHICS_DEPTH:
+                              default:
+                                  ucSCFmtIn = SC_FMT_IN_NORMAL;
+                                  break;
+                          }
+                          gScInfo.NoVsPktCnt = 0;
+                      }
+                  }
+              
+                  if( ((ucSCFmtIn != g_SetupPathInfo.ucSCFmtIn) && ( (gScInfo.NoVsPktCnt==0) || (gScInfo.NoVsPktCnt >= N
+             -oVsPktBound))) )
+                  {
+                      HDMI_printData("HDMI 3D FMT CHG : %d", ucSCFmtIn);
+                    HDMI_printData("g_SetupPathInfo.ucSCFmtIn : %d", g_SetupPathInfo.ucSCFmtIn);
+              
+                      gScInfo.NoVsPktCnt = 0;
+                      if(!g_SetupPathInfo.bOverrideSCFmtIn)
+                      {
+                        g_SetupPathInfo.ucSCFmtIn = ucSCFmtIn;
+                        if ( SetTimingChg )
+                      {
+                            HDMI_printData("HDMI 3D do mode setup CHG : %d", SetTimingChg);
+                      Set_DoModeSettingFlag();
+                          //Set_InputTimingChangeFlag();
+                        }
+                    }
+                }
+              }
+              #endif // #if EN_HDMI_1_4
+ 584          
+ 585          #else
+              #define HDMI_DEBUG  0
+              #endif //#if ENABLE_HDMI
+ 588          
+ 589          #if (!(ENABLE_DEBUG &&HDMI_DEBUG)) || (!ENABLE_HDMI)
+              BYTE code HDMINullData[1] = {0};
+              
+              void HDMIDummy(void)
+              {
+                  BYTE xdata i = HDMINullData[0];
+              }
+              #endif
+ 597          
+ 598          #if ENABLE_CTS_HPD_PD100K  
+              //*******************************************************************
+              // Function Name: msHDMI_EnHPDPD100K
+              // Decscription: HPD pin setting  to CBUS pad for CTS
+              //*******************************************************************
+              void msHDMI_EnHPDPD100K( BYTE InputType )
+              {
+                  drv_mstar_HDMIEnHPDPD100K(InputType);
+              }
+              #endif
+ 608          #endif
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 11  
+
+ 609          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    470    ----
+   CONSTANT SIZE    =     34    ----
+   XDATA SIZE       =     32    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       1
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

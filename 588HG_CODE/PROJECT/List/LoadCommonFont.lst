@@ -1,0 +1,366 @@
+C51 COMPILER V9.60.0.0   LOADCOMMONFONT                                                    12/22/2020 19:50:36 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LOADCOMMONFONT
+OBJECT MODULE PLACED IN .\Obj\LoadCommonFont.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\UI\LoadCommonFont.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM\
+                    -INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\INC
+                    -;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\LoadCommonFont.lst) TABS(2) OBJECT(.\Obj\Lo
+                    -adCommonFont.obj)
+
+line level    source
+
+   1          #include "board.h"
+   2          #include "types.h"
+   3          #include "CommonFont.h"
+   4          #include "msOSD.h"
+   5          #include "global.h"
+   6          #include "ms_reg.h"
+   7          #include "ms_rwreg.h"
+   8          #include "common.h"
+   9          
+  10          #include "Menudef.h"
+  11          //#include "extlib.h"
+  12          #include "colorpalette.h"
+  13          #if CHIP_ID == CHIP_TSUMU
+              #include "colorpalettetbl.h"
+              #endif
+  16          #include "loadpropfont1218.h"
+  17          
+  18          #include "drvOSD.h"
+  19          #include "LoadCommonFont.h"
+  20          
+  21          extern void LoadCompressColorFont(BYTE *pu8FontTbl, WORD *pu16MapPtr, BYTE countu8Count);
+  22          extern void mStar_LoadCompressedFont(BYTE u8Addr, WORD *pu16FontPtr, WORD u16Count);
+  23          
+  24          extern xdata BYTE MenuPageIndex;
+  25          extern xdata BYTE MenuItemIndex;
+  26          
+  27          
+  28          
+  29          void LoadCommonFontUncall(void);
+  30          
+  31          //8 color font raw data
+  32          void Osd_Load8ColorFont(BYTE u8Addr, BYTE *pu8Font, WORD u16Num)
+  33          {
+  34   1          #if CHIP_ID>=CHIP_TSUMV
+  35   1          DWORD xdata u32Data;
+  36   1          BYTE xdata u8FontData0,u8FontData1,u8FontData2;
+  37   1          BYTE xdata u8PixelBit;
+  38   1          BYTE xdata i;
+  39   1          #if CHIP_ID==CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID==CHIP_TSUMD||CHIP_ID==CHIP_TSUMJ || CHIP_ID == C
+             -HIP_TSUM9 || CHIP_ID == CHIP_TSUMF
+  40   1          msWriteByteMask(OSD1_6D, BIT6,BIT7|BIT6);   //00: for 1/2Bpp; 01: for 3Bpp; 10:for 4Bpp;
+  41   1          #elif  CHIP_ID==CHIP_TSUM2||CHIP_ID==CHIP_TSUMV
+                  msWriteByteMask(OSD1_6D, 0x00,BIT7);  //0: for 1/2/3Bpp; 1: for 4Bpp;
+                  #endif
+  44   1      
+  45   1          WRITE_CAFSRAM_ADDR();
+  46   1          msWrite2Byte(PORT_FONT_ADDR, GET_FONT_RAM_ADDR(u8Addr));
+  47   1          WRITE_FONT();
+  48   1          // handle 2 lines, 8 pixels each time, 2 lines x 12 pixels = 8 pixels x 3 times
+  49   1          while(u16Num)
+  50   1          {
+  51   2              for (i=0;i<3;i++)
+C51 COMPILER V9.60.0.0   LOADCOMMONFONT                                                    12/22/2020 19:50:36 PAGE 2   
+
+  52   2              {
+  53   3              //    0        1        2        3        4        5        6        7        8
+  54   3              //11110000 00000000 11111111 00002222 22222222 00000000 22221111 11111111 22222222 //line 0/1
+  55   3                  if (i==0)
+  56   3                  {
+  57   4                      u8FontData0=((*(pu8Font))<<4)+((*(pu8Font+1))>>4);
+  58   4                      u8FontData1=((*(pu8Font))&0xF0)+((*(pu8Font+2))>>4);
+  59   4                      u8FontData2=((*(pu8Font+3))<<4)+((*(pu8Font+4))>>4);
+  60   4                  }
+  61   3                  else if (i==1)
+  62   3                  {
+  63   4                      u8FontData0=((*(pu8Font+1))<<4)+((*(pu8Font+3))>>4);
+  64   4                      u8FontData1=((*(pu8Font+2))<<4)+((*(pu8Font+6))&0x0F);
+  65   4                      u8FontData2=((*(pu8Font+4))<<4)+((*(pu8Font+6))>>4);
+  66   4                  }
+  67   3                  else
+  68   3                  {
+  69   4                      u8FontData0=(*(pu8Font+5));
+  70   4                      u8FontData1=(*(pu8Font+7));
+  71   4                      u8FontData2=(*(pu8Font+8));
+  72   4                  }
+  73   3                  u8PixelBit=BIT7;
+  74   3                  u32Data=0;
+  75   3                  while(u8PixelBit)
+  76   3                  {
+  77   4                      u32Data<<=3;
+  78   4                      if (u8FontData0&u8PixelBit) //color bit0
+  79   4                          u32Data|=BIT0;
+  80   4                      if (u8FontData1&u8PixelBit) //color bit1
+  81   4                          u32Data|=BIT1;
+  82   4                      if (u8FontData2&u8PixelBit) //color bit2
+  83   4                          u32Data|=BIT2;
+  84   4                      u8PixelBit>>=1;
+  85   4                  }
+  86   3                  msWriteByte(PORT_FONT_DATA, u32Data>>16);
+  87   3                  msWriteByte(PORT_FONT_DATA, u32Data>>8);
+  88   3                  msWriteByte(PORT_FONT_DATA, u32Data);
+  89   3              }
+  90   2              if (u16Num>=9)
+  91   2              {
+  92   3                  u16Num-=9;
+  93   3                  pu8Font+=9;
+  94   3              }
+  95   2              else
+  96   2                  u16Num=0;
+  97   2          }
+  98   1          #if CHIP_ID==CHIP_TSUMC||CHIP_ID==CHIP_TSUMK||CHIP_ID==CHIP_TSUMD||CHIP_ID==CHIP_TSUMJ || CHIP_ID==CHI
+             -P_TSUM9 || CHIP_ID==CHIP_TSUMF
+  99   1            msWriteByteMask(OSD1_6D, 0x00,BIT7|BIT6);    //00: for 1/2Bpp; 01: for 3Bpp; 10:for 4Bpp;
+ 100   1          #elif  CHIP_ID==CHIP_TSUM2||CHIP_ID==CHIP_TSUMV
+                  msWriteByteMask(OSD1_6D, 0x00,BIT7);        //0: for 1/2/3Bpp; 1: for 4Bpp;
+                  #endif
+ 103   1          #else
+                  msWriteByte(OSD2_A3, u8Addr);
+                  while (u16Num--)
+                      msWriteByte(OSD2_A4, *(pu8Font++));
+                  #endif
+ 108   1      }
+ 109          void Osd_LoadFont( BYTE addr, BYTE *fontPtr, WORD num )
+ 110          {
+ 111   1        msWriteByte( OSD2_A3, addr );
+ 112   1        while( num-- )
+C51 COMPILER V9.60.0.0   LOADCOMMONFONT                                                    12/22/2020 19:50:36 PAGE 3   
+
+ 113   1          {
+ 114   2            msWriteByte( OSD2_A4, *( fontPtr++ ) );
+ 115   2          }
+ 116   1      
+ 117   1      }
+ 118          void Osd_LoadCompressMonoFont(BYTE u8Addr, WORD *pu16FontPtr, WORD u16Count)
+ 119          {
+ 120   1        BYTE addr;
+ 121   1        #if CHIP_ID > CHIP_TSUMV 
+ 122   1        addr = GET_FONT_RAM_ADDR(u8Addr);
+ 123   1        #else// for osd edge font error, need add chip use CompFontTSUMV.LIB
+                addr = u8Addr;
+                #endif
+ 126   1        mStar_LoadCompressedFont( addr, pu16FontPtr, u16Count);
+ 127   1      }
+ 128          
+ 129          void Osd_LoadCompressColorFont( WORD addr, BYTE *fontPtr, WORD *mapPtr, BYTE count )
+ 130          {
+ 131   1          if(( addr & 0xFF00 ) == 0x100 )
+ 132   1          {
+ 133   2              OSD_FONT_HI_ADDR_SET_BIT8();
+ 134   2          }
+ 135   1          else if(( addr & 0xFF00 ) == 0x200 )
+ 136   1          {
+ 137   2              OSD_FONT_HI_ADDR_SET_BIT9();
+ 138   2          }
+ 139   1          else
+ 140   1          {
+ 141   2              OSD_FONT_HI_ADDR_CLR_TO_0();
+ 142   2          }
+ 143   1        OSD_WRITE_FONT_ADDRESS(LOBYTE(addr));
+ 144   1        LoadCompressColorFont( fontPtr, mapPtr, count );
+ 145   1        OSD_FONT_HI_ADDR_CLR_TO_0();
+ 146   1      }
+ 147          
+ 148          void Osd_Write4ColorFontStartAddr( WORD wAddr )
+ 149          {
+ 150   1        #if CHIP_ID>=CHIP_TSUMV
+ 151   1        msWrite2ByteMask(OSD1_0A,wAddr,0x03FF); // 4 color start
+ 152   1        #else
+                if(( wAddr & 0xFF00 ) == 0x100 )
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT3 | BIT2 ) ) ) | BIT3 );
+                else if(( wAddr & 0xFF00 ) == 0x200 )
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT3 | BIT2 ) ) ) | BIT2 );
+                else if(( wAddr & 0xFF00 ) == 0x300 )
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT3 | BIT2 ) ) ) | BIT3 | BIT2 );
+                else
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT3 | BIT2 ) ) ) );
+                msWriteByte( OSD1_11, ( BYTE )wAddr ); // color font start address
+                #endif
+ 163   1      }
+ 164          
+ 165          void Osd_Write8ColorFontStartAddr( WORD wAddr )
+ 166          {
+ 167   1        #if CHIP_ID>=CHIP_TSUMV
+ 168   1        msWrite2ByteMask(OSD1_0C,wAddr,0x03FF); // 8 color start
+ 169   1        #else
+                if(( wAddr & 0xFF00 ) == 0x100 )
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT7 | BIT6 ) ) ) | BIT7 );
+                else if(( wAddr & 0xFF00 ) == 0x200 )
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT7 | BIT6 ) ) ) | BIT6 );
+                else if(( wAddr & 0xFF00 ) == 0x300 )
+C51 COMPILER V9.60.0.0   LOADCOMMONFONT                                                    12/22/2020 19:50:36 PAGE 4   
+
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT7 | BIT6 ) ) ) | BIT7 | BIT6 );
+                else
+                msWriteByte( OSD1_41, ( msReadByte( OSD1_41 )&( ~( BIT7 | BIT6 ) ) ) );
+                msWriteByte( OSD1_3B, ( BYTE )wAddr );
+                #endif
+ 180   1      }
+ 181          
+ 182          #if DisplayLogo!=NoBrand
+ 183          void Osd_LoadLogoFontCP( void )
+ 184          {
+ 185   1      
+ 186   1      #if DisplayLogo == TERRA
+              MonoColorSetting();
+              Osd_LoadCompressMonoFont(1, &tOSDLogoFont, sizeof(tOSDLogoFont));
+              
+              #else 
+ 191   1        Osd_Write4ColorFontStartAddr( Logo_4C );
+ 192   1        Osd_Write8ColorFontStartAddr( 0x3FF );
+ 193   1      
+ 194   1        Osd_LoadCompressColorFont( Logo_4C, &tLogo_4C, NULL, Logo_Size);
+ 195   1        
+ 196   1      #endif
+ 197   1      }
+ 198          #endif
+ 199          
+ 200          #if 1
+ 201          //vs add ccflag
+ 202          void Osd_LoadNormalFontTable_LG2005_WordByLanguage(void)
+ 203          {
+ 204   1       #if CHIP_ID==CHIP_TSUMV
+                        if (UserPrefLanguage==LANG_SimChinese)
+                          mStar_LoadCompressedFont((FONT_DYNIC_START),    &tOSDFont_SimChiness, sizeof(tOSDFont_SimChiness
+             -));      
+                    #if Language_TraChinese 
+                        else if (UserPrefLanguage==LANG_TraChinese)
+                               mStar_LoadCompressedFont((FONT_DYNIC_START),    &tOSDFont_TraChiness, sizeof(tOSDFont_TraCh
+             -iness));       
+                    #endif  
+                    #if Language_Russian
+                        else if (UserPrefLanguage==LANG_Russian)
+                               mStar_LoadCompressedFont((FONT_DYNIC_START),    &tOSDFont_Russia, sizeof(tOSDFont_Russia));
+             -       
+                    #endif  
+                    #if Language_Korean
+                        else if (UserPrefLanguage==LANG_Korean)
+                               mStar_LoadCompressedFont((FONT_DYNIC_START),    &tOSDFont_Korean, sizeof(tOSDFont_Korean));
+             -     
+                    #endif  
+                        else
+                               mStar_LoadCompressedFont((FONT_DYNIC_START),    &tOSDFont_English, sizeof(tOSDFont_English)
+             -);       
+                #else
+ 222   1            if (UserPrefLanguage==LANG_SimChinese)
+ 223   1              mStar_LoadCompressedFont(GET_FONT_RAM_ADDR(FONT_DYNIC_START),    &tOSDFont_SimChiness, sizeof(tOSDF
+             -ont_SimChiness));      
+ 224   1          #if Language_TraChinese 
+                    else if (UserPrefLanguage==LANG_TraChinese)
+                           mStar_LoadCompressedFont(GET_FONT_RAM_ADDR(FONT_DYNIC_START),    &tOSDFont_TraChiness, sizeof(
+             -tOSDFont_TraChiness));       
+                  #endif  
+ 228   1          #if Language_Russian
+ 229   1            else if (UserPrefLanguage==LANG_Russian)
+C51 COMPILER V9.60.0.0   LOADCOMMONFONT                                                    12/22/2020 19:50:36 PAGE 5   
+
+ 230   1                   mStar_LoadCompressedFont(GET_FONT_RAM_ADDR(FONT_DYNIC_START),    &tOSDFont_Russia, sizeof(tOSD
+             -Font_Russia));       
+ 231   1          #endif  
+ 232   1          #if Language_Korean
+                    else if (UserPrefLanguage==LANG_Korean)
+                           mStar_LoadCompressedFont(GET_FONT_RAM_ADDR(FONT_DYNIC_START),    &tOSDFont_Korean, sizeof(tOSD
+             -Font_Korean));     
+                  #endif  
+ 236   1            else
+ 237   1                   mStar_LoadCompressedFont(GET_FONT_RAM_ADDR(FONT_DYNIC_START),    &tOSDFont_English, sizeof(tOS
+             -DFont_English));       
+ 238   1        #endif
+ 239   1      }
+ 240          #endif
+ 241          
+ 242          
+ 243          void LoadCommonFont( void )
+ 244          {
+ 245   1          BYTE i=0;
+ 246   1          if(i)
+ 247   1          {
+ 248   2            LoadCommonFontUncall();
+ 249   2          }
+ 250   1      #if 0 
+              //Load 4 COLOR Font
+              Osd_LoadCompressColorFont( SmallLogo_4C, &tSmallLogo_4C, NULL, SmallLogo_Size);
+              #else
+ 254   1        Osd_Write4ColorFontStartAddr( 0x100+FONT_4COLOR_ICON_START );
+ 255   1        Osd_Write8ColorFontStartAddr( 0x100+FONT_8COLOR_ICON_START );
+ 256   1        msWrite2ByteMask(OSD1_0E,0x03FF,0x03FF);  // 16 color start
+ 257   1        
+ 258   1        Osd_LoadCompressMonoFont( MonoFontStart, tOSDFont_Base, sizeof(tOSDFont_Base));
+ 259   1      
+ 260   1      #if EN_HotKeyXINGZHUN 
+                //Osd_LoadCompressMonoFont(MonoFontXZStart, tXZ_JSIconFont, sizeof(tXZ_JSIconFont) );
+              #else
+ 263   1        #if (DisplayLogo==TERRA)
+                  Osd_LoadCompressMonoFont(MonoFontSmallLogoStart, tOSDFont_SmallLogoTerra, sizeof(tOSDFont_SmallLogoTerr
+             -a) );  
+                #else  //planar
+ 266   1          Osd_LoadCompressMonoFont(MonoFontSmallLogoStart, tOSDFont_SmallLogoPLANAR, sizeof(tOSDFont_SmallLogoPLA
+             -NAR) );
+ 267   1        #endif
+ 268   1      #endif
+ 269   1        
+ 270   1           Osd_LoadNormalFontTable_LG2005_WordByLanguage();
+ 271   1        
+ 272   1          
+ 273   1          OSD_FONT_HI_ADDR_SET_BIT8();//0x100~0x1FF
+ 274   1          //OSD_WRITE_FONT_ADDRESS(FONT_4COLOR_ICON_START);
+ 275   1          //LoadCompressColorFont(&Main_4ColorIcon,  NULL, 18);
+ 276   1          //Load 4 COLOR Font
+ 277   1          //OSD_FONT_HI_ADDR_SET_BIT8();//0x100~0x1FF
+ 278   1          //Load 8 COLOR Font
+ 279   1          OSD_WRITE_FONT_ADDRESS(FONT_8COLOR_ICON_START);
+ 280   1          Osd_Load8ColorFont( FONT_8COLOR_ICON_START, &tMainMenuIcon8ColorFont, sizeof( tMainMenuIcon8ColorFont ) 
+             -); 
+ 281   1          
+ 282   1           OSD_FONT_HI_ADDR_CLR_TO_0();
+ 283   1      #endif  
+ 284   1          Osd_LoadColorPalette256(); // load osd color
+ 285   1      
+C51 COMPILER V9.60.0.0   LOADCOMMONFONT                                                    12/22/2020 19:50:36 PAGE 6   
+
+ 286   1      }
+ 287          
+ 288          void LoadCommonFontUncall(void)
+ 289          {
+ 290   1          //OSDLoadFontData(0, 0);
+ 291   1         // Osd_Load291Font(0, 0, 0);
+ 292   1          #if DisplayLogo != TERRA
+ 293   1        MonoColorSetting();
+ 294   1        #endif
+ 295   1          Osd_LoadFont(0,0,0);
+ 296   1        
+ 297   1          Osd_Load8ColorFont(0,0,0);
+ 298   1         
+ 299   1         //Load 4 COLOR Font
+ 300   1         Osd_LoadCompressColorFont( 0, NULL, NULL, 0);
+ 301   1      }
+ 302          
+ 303          
+ 304          
+ 305          
+ 306          
+ 307          
+ 308          
+ 309          
+ 310          
+ 311          
+ 312          
+ 313          
+ 314          
+ 315          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   1099    ----
+   CONSTANT SIZE    =  10858    ----
+   XDATA SIZE       =   ----       9
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----      27
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

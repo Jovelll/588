@@ -1,0 +1,1124 @@
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MAIN
+OBJECT MODULE PLACED IN .\Obj\main.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\main.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTEM
+                    -\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\IN
+                    -C;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\main.lst) TABS(2) OBJECT(.\Obj\main.obj)
+
+line level    source
+
+   1          #include "types.h"
+   2          #include "board.h"
+   3          #include "global.h"
+   4          #include "mcu.h"
+   5          #include "detect.h"
+   6          #include "menu.h"
+   7          #include "ms_reg.h"
+   8          #include "power.h"
+   9          #include "debug.h"
+  10          #include "Common.h"
+  11          #include "ms_rwreg.h"
+  12          #include "msosd.h"
+  13          #include "misc.h"
+  14          #include "NVRam.h"
+  15          #include "mstar.h"
+  16          #include "UserPref.h"
+  17          #include "keypad.h"
+  18          //#include "Panel.h"
+  19          #include "msflash.h"  //2006-03-20
+  20          #include "ddc2bi.h"
+  21          #include "gpio_def.h"
+  22          #if ENABLE_RTE
+              #include "drvmsovd.h"
+              #endif
+  25          #if ENABLE_DP_INPUT
+              #include "drvDPRxApp.h"
+              #endif
+  28          
+  29          #if (MS_PM)
+  30          #include "Ms_PM.h"
+  31          #endif
+  32          #if DDCCI_ENABLE||AudioFunc
+  33          #include "adjust.h"
+  34          #endif
+  35          #include "MsDLC.h"
+  36          #include "MsACE.h"
+  37          
+  38          #if ENABLE_HDMI
+  39          #include "MsHDMI.h"
+  40          #if ENABLE_CEC
+              #include "apiCEC.h"
+              #endif
+  43          #endif
+  44          #if ENABLE_EDP_OUTPUT
+              #include "DPTxApp.h"
+              #endif
+  47          
+  48          #if MS_DAC
+              #include "drvDAC.h"
+              #endif
+  51          
+  52          #if ENABLE_LED_CONTROLLER
+              #include "LEDControl.h"
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 2   
+
+              #endif
+  55          
+  56          #include "DDC.h"
+  57          
+  58          ////////////////////////////////////
+  59          //#include "drvMcu.h"
+  60          ///////////////////////////////////
+  61          
+  62          #if ENABLE_DPS
+  63          #include "msDPS_Handler.h"
+  64          #include "userprefdef.h"
+  65          #include "msdps_setting.h"
+  66          #endif
+  67          #if ENABLE_DSC
+  68          #include "msDSC_Handler.h"
+  69          //#include "userprefdef.h"
+  70          #include "msdsc_setting.h"
+  71          #endif
+  72          
+  73          #define Main_DEBUG    1
+  74          #if ENABLE_DEBUG&&Main_DEBUG
+  75              #define Main_printData(str, value)   printData(str, value)
+  76              #define Main_printMsg(str)           printMsg(str)
+  77          #else
+                  #define Main_printData(str, value)
+                  #define Main_printMsg(str)
+              #endif
+  81          #if EN_HotKeyTimes
+              extern BYTE xdata HotKeyTimes_Minutes;
+              extern BYTE xdata HotKeyTimes_Second;
+              
+              #endif
+  86          #if ENABLE_FACTORY_AUTOTEST
+  87          extern bit BFactoryAutoTest;
+  88          #endif
+  89          
+  90          void Init_Device( void );
+  91          void Main_SlowTimerHandler(void);
+  92          #if EarphoneDet_Enable
+              void HarphoneDetFunc(void);
+              #endif
+  95          
+  96          
+  97          extern void Init_GlobalVariables( void );
+  98          extern void i2C_Intial( void ); //2006/03/20
+  99          #if ENABLE_HDCP&&HDCPKEY_IN_Flash
+ 100          extern void msInitHDCPProductionKey( void );
+ 101          #endif
+ 102          extern Bool ResetAllSetting( void );
+ 103          
+ 104          extern BYTE xdata PowerDownCounter;
+ 105          
+ 106          BYTE xdata mainloop = 0;
+ 107          
+ 108          typedef unsigned int  __u16;    // 2 bytes
+ 109          typedef unsigned char   __u8;     // 1 byte
+ 110          
+ 111          #ifndef U8
+ 112          #define U8    BYTE
+ 113          #endif
+ 114          
+ 115          #ifndef U32
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 3   
+
+ 116          #define U32    DWORD
+ 117          #endif
+ 118          
+ 119          #ifndef BOOLEAN
+ 120          #define BOOLEAN    BYTE
+ 121          #endif
+ 122          //extern __u8*  MDrv_Get_HID_Report_Raw_Data(void);
+ 123          //extern U8 drvUSBHost_HID_Initial(void);
+ 124          extern U8 drvUSBHost_HID_Initial_Port2(U8 u8Interface);
+ 125          extern void MDrv_USB_Init(DWORD USBAdr);
+ 126          extern void MDrv_USB_Init_Port2(DWORD USBAdr);
+ 127          extern BOOLEAN  MDrv_Usb_Device_Enum(void);
+ 128          extern BOOLEAN  MDrv_Usb_Device_Enum_Port2(void);
+ 129          extern BOOLEAN MDrv_UsbDeviceConnect(void);
+ 130          extern BOOLEAN MDrv_UsbDeviceConnect_Port2(void);
+ 131          extern void drvUSBHost_UTMIInitial();
+ 132          extern void  MDrv_Get_Keyboard_Staus(U8 u8Interface);
+ 133          extern void  MDrv_Get_Mouse_Staus(U8 u8Interface);
+ 134          extern void  MDrv_Get_Mouse_Staus_Port2(U8 u8Interface);
+ 135          extern void  MDrv_Get_Keyboard_Staus_Port2(U8 u8Interface);
+ 136          #if CHIP_ID == CHIP_TSUMU
+              extern void msInitInternalEDID(void);
+              #endif
+ 139          
+ 140          #define PORT
+ 141          #define PORT2
+ 142          #define HOST20_INTERFACE_NUM_MAX    5
+ 143          extern U8 xdata PORT_DEVICE[HOST20_INTERFACE_NUM_MAX];//support 5 interface
+ 144          extern U8 xdata PORT2_DEVICE[HOST20_INTERFACE_NUM_MAX];
+ 145          
+ 146          #if ENABLE_FREESYNC
+              extern xdata Bool bHDMIFreesyncChk;
+              #endif
+ 149          
+ 150          BYTE code msMainNullData[] = {0};
+ 151          #if ENABLE_POWER_PORTECT
+               static unsigned int max_current;
+              float xdata  voltmp[256]={
+                 0.000,0.005,0.008,0.013,0.015,0.020,0.025,0.028,0.030,0.035,0.038,0.043,0.045,0.051,0.056,0.058,
+                 0.063,0.066,0.071,0.073,0.076,0.081,0.083,0.088,0.091,0.096,0.098,0.104,0.106,0.111,0.116,0.119,
+                 0.124,0.126,0.131,0.134,0.139,0.141,0.146,0.149,0.154,0.159,0.162,0.167,0.169,0.174,0.177,0.182,
+                 0.184,0.189,0.194,0.197,0.202,0.205,0.210,0.212,0.217,0.222,0.225,0.230,0.232,0.237,0.240,0.245,
+                 0.250,0.253,0.258,0.260,0.265,0.268,0.273,0.275,0.280,0.283,0.288,0.290,0.295,0.301,0.303,0.308,
+                 0.311,0.316,0.321,0.323,0.328,0.333,0.336,0.341,0.343,0.348,0.351,0.356,0.361,0.364,0.369,0.374,
+                 0.376,0.381,0.384,0.389,0.391,0.396,0.399,0.404,0.409,0.412,0.417,0.422,0.424,0.429,0.432,0.437,
+                 0.439,0.444,0.447,0.455,0.457,0.460,0.465,0.470,0.472,0.477,0.480,0.485,0.487,0.492,0.497,0.500,
+                 0.505,0.508,0.513,0.515,0.520,0.525,0.528,0.533,0.538,0.540,0.545,0.548,0.553,0.558,0.561,0.566,
+                 0.571,0.573,0.578,0.581,0.586,0.588,0.593,0.596,0.601,0.606,0.609,0.614,0.619,0.621,0.626,0.631,
+                 0.634,0.636,0.641,0.644,0.649,0.654,0.657,0.662,0.664,0.669,0.674,0.677,0.682,0.684,0.687,0.692,
+                 0.697,0.699,0.705,0.707,0.712,0.717,0.720,0.725,0.727,0.732,0.737,0.740,0.742,0.747,0.753,0.755,
+                 0.760,0.763,0.768,0.770,0.775,0.778,0.783,0.788,0.790,0.795,0.798,0.803,0.806,0.811,0.813,0.816,
+                 0.821,0.826,0.828,0.833,0.838,0.841,0.846,0.848,0.854,0.856,0.861,0.864,0.869,0.871,0.876,0.879,
+                 0.884,0.886,0.889,0.894,0.896,0.902,0.907,0.909,0.914,0.917,0.919,0.922,0.929,0.932,0.934,0.939,
+                 0.944,0.947,0.952,0.955,0.960,0.962,0.965,0.970,0.972,0.977,0.980,0.985,0.987,0.992,0.995,1.000,
+               
+                };
+              U8 getCurrentPWM(unsigned int RealCurrent)
+                   {
+                     U8 i;
+                     
+                     if (RealCurrent > MAX_CURRENT_VALUE)
+                     {
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 4   
+
+                       RealCurrent = MAX_CURRENT_VALUE;
+                     }
+                     for (i = 0; i < 255; i++)
+                     {
+                       if (RealCurrent < (unsigned int)(voltmp[i]*MAX_CURRENT_VALUE)) //
+                       {
+                         break;
+                       }
+                     }
+                   
+                     return i;  
+                   }
+                             
+               unsigned int getRealCurrent(U8 pwm)
+                  {
+                  
+                  return (unsigned int)(MAX_CURRENT_VALUE* voltmp[pwm]); // 
+                }
+                            
+              
+              unsigned int getVoltage(void)
+              {
+                  U8 i;
+                  U8 adc = 0;
+                  U32 voltage = 0;
+                  U32 sum = 0;
+              
+                  // 平均法滤波
+                  for (i = 0; i < 16; i++)
+                  {
+                      adc=LED_ADC_C;
+                      sum += adc;
+                  }
+                  sum = sum >> 4;
+                
+                     voltage = (1086 * sum) >> 8;
+                  
+                  return (unsigned int)voltage;
+              }
+              
+              
+              void PowerProtectInit(void)
+              {
+                  U8 init_current_pwm = 0;
+              
+                if(UserPrefBrightness>50) //DefBrightness
+                   {
+                    // brightness=((DWORD)(brightness-DefBrightness)*(MaxDutyValue-MidDutyValue))/(MaxBrightnessValue-DefBr
+             -ightness)+MidDutyValue;
+                     
+                    init_current_pwm=((DWORD)(UserPrefBrightness-50)*(MaxDutyValue-MidDutyValue))/50+MidDutyValue;
+                   }
+                 else
+                   {
+                    // brightness=((DWORD)(brightness)*(MidDutyValue-MinDutyValue))/DefBrightness+MinDutyValue;     
+                    init_current_pwm=((DWORD)(UserPrefBrightness)*(MidDutyValue-MinDutyValue))/50+MinDutyValue;
+                   }
+                 max_current = getRealCurrent(init_current_pwm);
+              }
+              
+              void PowerProtectTask(void)
+                {
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 5   
+
+                  unsigned int voltage;
+                  BYTE Backlightpwm = 128;//U8 i;
+                  U32 max_watts = 0;
+                  Bool b_BLchange=FALSE;
+                
+                    voltage = getVoltage();
+                    
+                  //  printData("\n voltage is %d \n",voltage);
+                    
+                    #ifdef PowerProtect_v4      
+                         if(voltage>PowerProtect_v4* 10)
+                          {
+                       max_watts=PowerProtect_w4;
+                          }else 
+                   #endif
+                  #ifdef PowerProtect_v3    
+                    if(voltage>PowerProtect_v3* 10)
+                          {
+                       max_watts=PowerProtect_w3;
+                          }else
+                  #endif
+                 #ifdef PowerProtect_v2   
+                    if(voltage>PowerProtect_v2* 10)
+                          {
+                       max_watts=PowerProtect_w2;
+                          }else
+                  #endif
+                #ifdef PowerProtect_v1    
+                    if(voltage>PowerProtect_v1* 10)
+                          {
+                       max_watts=PowerProtect_w1;
+                          }else
+                 #endif
+                    if(voltage>PowerProtect_v0* 10)
+                          {
+                       max_watts=PowerProtect_w0;
+                          } 
+              
+                  //  printData("\n max_watts is %d \n",max_watts);
+                    // 电压放大10倍   电流放大1000倍
+                
+                
+                     if(voltage==0)
+                      {
+                      // printf("error voltage shoule not 0,pleas check it ");
+                       return;
+                
+                      }
+                     
+                    while (max_current > ((unsigned long)(max_watts * 10000) / voltage))
+                    {
+                      max_current--;
+                      b_BLchange=TRUE;
+                    }
+                
+                
+                    //printData("\n max_current is %d \n",max_current);
+                    //printData("\n UserPrefBrightness is %d \n",UserPrefBrightness);
+                    if(b_BLchange==TRUE)
+                      {
+                  Backlightpwm=getCurrentPWM((unsigned int)((max_current * UserPrefBrightness) / 100));
+                   //printData("\n BacklightNow is %d \n",Backlightpwm);
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 6   
+
+              
+                     #if BRIGHTNESS_INVERSE //+Duty power
+                          drvGPIO_SetBacklightDuty(BrightnessPWM, 0xFF-Backlightpwm);
+                     #else              //-Duty power
+                          drvGPIO_SetBacklightDuty(BrightnessPWM, Backlightpwm);
+                     #endif
+                      }
+                  
+                }
+              #endif
+ 311          
+ 312          void msMainDummy(void)
+ 313          {
+ 314   1          BYTE xdata i = msMainNullData[0];
+ 315   1      }
+ 316          
+ 317          
+ 318          
+ 319          void main( void )
+ 320          {
+ 321   1          BYTE UsbConnect = 0, UsbConnect_Port2 = 0;
+ 322   1      
+ 323   1      #if (CHIP_ID == CHIP_TSUM9 ||CHIP_ID == CHIP_TSUMF)
+ 324   1          drvmStar_PowerOnInit();
+ 325   1      #if (CHIP_ID == CHIP_TSUMF)
+                  MPLL_CLOCK_ADC(TRUE);
+              #endif
+ 328   1      Main_printMsg("!!!!!!1111");
+ 329   1      #else
+                  #if (MS_PM)
+                  msPM_Exit();    // for WDT reset in PM mode
+                  #endif
+              #endif
+ 334   1      
+ 335   1      #if ENABLE_DP_INPUT
+                  g_bDoDPInit = TRUE;
+              #endif
+ 338   1          Init_MCU();
+ 339   1      Main_printMsg("!!!!!!2222");
+ 340   1      #if (CHIP_ID == CHIP_TSUM9||CHIP_ID == CHIP_TSUMF)
+ 341   1        if (!g_bFROTrimResult)
+ 342   1          Main_printMsg("FRO trim failed!");
+ 343   1      #endif
+ 344   1      
+ 345   1      #if( ENABLE_WATCH_DOG )
+ 346   1          WDT_CLEAR();
+ 347   1      #endif
+ 348   1      Main_printMsg("!!!!!!3333");
+ 349   1          ScalerReset();
+ 350   1          mcuSetSystemSpeed(SPEED_NORMAL_MODE);
+ 351   1          ForceDelay1ms( 100 );
+ 352   1          g_ucFlashID = ReadFlashID();
+ 353   1      
+ 354   1      #if !USEFLASH
+                  i2C_Intial();
+              #endif
+ 357   1      Main_printMsg("!!!!!!4444");
+ 358   1          ReadMonitorSetting();
+ 359   1      #ifdef Internal_EDID_Write_To_24C02
+                    if(!LoadHDMIEDIDFlag)
+                    Mstar_Init_VGA_DVI_HDMI_24C02_EDID();
+              #endif
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 7   
+
+ 363   1      Main_printMsg("!!!!!!5555");
+ 364   1          mStar_Init();
+ 365   1          mStar_ACOnInit();
+ 366   1      #if  (MS_PM)
+ 367   1          msPM_Init();
+ 368   1      #endif
+ 369   1      Main_printMsg("!!!!!!6666");
+ 370   1      #ifdef ENABLE_INTERNAL_HDMIEDID
+                msInitInternalEDID();
+              #endif
+ 373   1      
+ 374   1          Init_GlobalVariables();
+ 375   1          Menu_InitVariable();
+ 376   1          Init_Device();
+ 377   1          DDC2Bi_Init();
+ 378   1      
+ 379   1          Main_printData("  g_u8SystemSpeedMode:%d", g_u8SystemSpeedMode);
+ 380   1        
+ 381   1      #if ENABLE_USB_INPUT
+              #ifdef PORT
+                  MDrv_USB_Init(HK_USB_XDATA_ADDR);
+              #endif
+              #ifdef PORT2
+                  MDrv_USB_Init_Port2(HK_USB_XDATA_ADDR_PORT2);
+              #endif
+              #endif
+ 389   1      
+ 390   1      #if ENABLE_POWER_PORTECT
+              
+                PowerProtectInit();
+              #endif
+ 394   1          while( 1 )
+ 395   1          {
+ 396   2          
+ 397   2      #if ENABLE_POWER_PORTECT
+                  if((Second%2) == 0)
+                    {
+                      PowerProtectTask();
+                    }
+              #endif
+ 403   2      #if (MS_PM)
+ 404   2              msPM_Handler();
+ 405   2              if(!msPM_IsState_IDLE())
+ 406   2                  continue;
+ 407   2      #endif
+ 408   2      
+ 409   2              Main_SlowTimerHandler();
+ 410   2      
+ 411   2              DebugHandler();
+ 412   2      
+ 413   2      #if( ENABLE_WATCH_DOG )
+ 414   2              WDT_CLEAR();
+ 415   2      #endif
+ 416   2      
+ 417   2      #if ENABLE_DEBUG
+ 418   2              if( DebugOnlyFlag )
+ 419   2                  continue;
+ 420   2      #endif
+ 421   2      
+ 422   2              DDC2Bi_CommandHandler();
+ 423   2      
+ 424   2      #if ENABLE_HDCP&&HDCPKEY_IN_Flash
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 8   
+
+ 425   2              if( WriteHDCPcodeFlag )
+ 426   2                  continue;
+ 427   2      #endif
+ 428   2      
+ 429   2      #if ENABLE_HDCP&&HDCPKEY_IN_Flash
+ 430   2              if( LoadHDCPKeyFlag )
+ 431   2              {
+ 432   3                  msInitHDCPProductionKey();
+ 433   3                  Clr_LoadHDCPKeyFlag();
+ 434   3              }
+ 435   2      #endif
+ 436   2      
+ 437   2      #if ENABLE_LED_CONTROLLER
+                      msLED_Hander();
+              #endif
+ 440   2      
+ 441   2      #if ENABLE_DP_INPUT
+                      DPRxHandle();             // DP hander
+              #endif
+ 444   2      
+ 445   2              Power_PowerHandler();
+ 446   2      #if (MS_PM)
+ 447   2              if(!msPM_IsState_IDLE())
+ 448   2                  continue;
+ 449   2      #endif
+ 450   2      
+ 451   2              if( !ModeDetectCounter || InputTimingChangeFlag )
+ 452   2              {
+ 453   3                  mStar_MonitorInputTiming();
+ 454   3                  ModeDetectCounter = 20;
+ 455   3              }
+ 456   2      
+ 457   2              mStar_ModeHandler();
+ 458   2      
+ 459   2      #if (ENABLE_HDMI || ENABLE_DVI)
+ 460   2      #if(CHIP_ID==CHIP_TSUM9)
+ 461   2              drv_TMDS_DATA_ALIGN();
+ 462   2      #endif
+ 463   2      #endif
+ 464   2      
+ 465   2      #if ENABLE_HDMI
+ 466   2              mstar_HDMIHandler();
+ 467   2      #if ENABLE_CEC
+                      api_CEC_Handler();
+              #endif
+ 470   2      #endif
+ 471   2      
+ 472   2      #if ENABLE_DPS
+ 473   2              if(bRunToolFlag)
+ 474   2                  continue;
+ 475   2              //printMsg( "msDPS_Handler" );
+ 476   2              msDPS_Handler();
+ 477   2      #endif
+ 478   2      #if ENABLE_DSC
+ 479   2      #if !DEBUG_DSC_withoutInterrupt
+ 480   2              //printMsg( "msDSC_Handler" );
+ 481   2              msDSC_Handler();
+ 482   2              //ForceDelay1ms(1000);
+ 483   2      #endif
+ 484   2      #endif
+ 485   2      #if ENABLE_DLC
+                  xx    msDlcHandler();
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 9   
+
+              #endif
+ 488   2      
+ 489   2      #if AudioFunc
+ 490   2      #if ((CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMD || CHIP_ID==CHIP_TSUM9|| CHIP_ID==CHIP_TSUMF) && MS_DAC)
+                      msDACInitStep();
+              #endif
+ 493   2      #if (MS_DAC)
+                      msAudioGainToggle();
+                  #if ENABLE_DAC_DEPOP
+                      msAudioDACHandler();
+                  #endif
+              #endif
+ 499   2      #if EarphoneDet_Enable
+                     HarphoneDetFunc();
+              #endif
+ 502   2      #if AudioIC_CS8003_Enable
+                msAudioDPGA_SetVolume ( E_AUDIO_LEFT_RIGHT_CH, 0x00);
+                msWrite2ByteMask(  REG_2CA4, 0xFF76    , 0xFF7F);  //[15:8] DPGA_1_TIMEOUT_N; [6:4] DPGA_1_STEP=3'd7->N=1
+             -;  [2] DPGA_1_ZERO_DET_EN; [1] DPGA_1_FADING_EN;   [0] DPGA_1_DPGA_EN;
+              #endif
+ 506   2      
+ 507   2      #endif
+ 508   2      
+ 509   2              Menu_OsdHandler();
+ 510   2      #if ENABLE_EDP_OUTPUT
+                  //if( !SyncLossState() )
+                  DPTxHandle();
+              #endif
+ 514   2      
+ 515   2      #if (MS_PM)
+ 516   2              if(!msPM_IsState_IDLE())
+ 517   2                  continue;
+ 518   2      #endif
+ 519   2      
+ 520   2      #if MWEFunction
+                      if(( ColorAutoDetectFlag || UserPrefDcrMode ) && PowerOnFlag && !SyncLossState() && InputTimingSta
+             -bleFlag && ( !DisplayLogoFlag ) )
+              #else
+ 523   2              if(( UserPrefDcrMode ) && PowerOnFlag && !SyncLossState() && InputTimingStableFlag && ( !DisplayLo
+             -goFlag ) )
+ 524   2      #endif
+ 525   2              {
+ 526   3                  msDlcHandler();
+ 527   3                  msDCRHandler();
+ 528   3              }
+ 529   2      
+ 530   2      #if ENABLE_MHL
+              #if(MHL_HW_RTERM_SUPPORT)
+                      mapi_mhl_RtermControlHWMode(FALSE);
+              #endif
+              
+                      mapi_mhl_handler();
+              
+              #if(MHL_HW_RTERM_SUPPORT)
+                      mapi_mhl_RtermControlHWMode(TRUE);
+              #endif
+              #endif
+ 541   2      
+ 542   2      #if ENABLE_TOUCH_PANEL||ENABLE_TOUCH_PANEL_CTRL_OSD
+                      TouchPanelHandler();
+              #endif
+ 545   2      
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 10  
+
+ 546   2      #if USEFLASH
+ 547   2              UserPref_FlashDataSaving();
+ 548   2      #endif
+ 549   2      #if ENABLE_USB_INPUT
+              #ifdef PORT
+                      if (MDrv_UsbDeviceConnect()==1)
+                      {
+                          if (UsbConnect == 0)  // do usb device enumeration
+                          {
+                              Main_printMsg("USB device plug-in!!\n");
+                              if (MDrv_Usb_Device_Enum() == 1)
+                              {
+                                  UsbConnect = 1;
+                                  Main_printMsg("1111 USB enumeration success!!\n");
+                              }
+                              else
+                                  Main_printMsg("1111 USB enumeration fail!!\n");
+                          }
+                          else    // polling usb device input data, ex. move mouse, press buttoms
+                          {
+                              U8 i;
+                              for(i=0;i<HOST20_INTERFACE_NUM_MAX;i++)
+                              {
+                                  if(PORT_DEVICE[i]==1)  //Keyboard
+                                      MDrv_Get_Keyboard_Staus(i);
+                                  else if(PORT_DEVICE[i]==2) //Mouse
+                                      MDrv_Get_Mouse_Staus(i);
+                              }
+                          }
+                      }
+                      else
+                      {
+                          if (UsbConnect == 1)
+                              Main_printMsg("USB device plug-out!!\n");
+                          UsbConnect = 0;
+                      }
+              #endif
+              #ifdef PORT2
+                      if (MDrv_UsbDeviceConnect_Port2()==1)
+                      {
+                          if (UsbConnect_Port2 == 0)  // do usb device enumeration
+                          {
+                              Main_printMsg("USB device plug-in!!\n");
+                              if (MDrv_Usb_Device_Enum_Port2() == 1)
+                              {
+                                  UsbConnect_Port2 = 1;
+                                  Main_printMsg("2222 USB enumeration success!!\n");
+                  }
+                              else
+                                  Main_printMsg("2222 USB enumeration fail!!\n");
+                          }
+                          else    // polling usb device input data, ex. move mouse, press buttoms
+                          {
+                              U8 j;
+                              for(j=0;j<HOST20_INTERFACE_NUM_MAX;j++)
+                              {
+                                  if(PORT2_DEVICE[j]==1)  //Keyboard
+                                      MDrv_Get_Keyboard_Staus_Port2(j);
+                                  else if(PORT2_DEVICE[j]==2) //Mouse
+                                      MDrv_Get_Mouse_Staus_Port2(j);
+                              }
+                          }
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 11  
+
+                      }
+                      else
+                      {
+                          if (UsbConnect_Port2 == 1)
+                              Main_printMsg("USB device plug-out!!\n");
+                          UsbConnect_Port2 = 0;
+                      }
+              #endif
+              #endif
+ 617   2          }
+ 618   1      
+ 619   1      }
+ 620          
+ 621          void Init_Device()
+ 622          {
+ 623   1      #if ENABLE_USB_INPUT
+                  hw_USB_HI();
+              #endif
+ 626   1      
+ 627   1      #if ENABLE_TOUCH_KEY
+                  TouchKeyRestortCounter = TouchKey_Init();
+              #endif
+ 630   1      
+ 631   1      #if AudioFunc
+ 632   1          mStar_AdjustVolume( 0 );
+ 633   1      #endif
+ 634   1      
+ 635   1      #if ENABLE_TOUCH_PANEL||ENABLE_TOUCH_PANEL_CTRL_OSD
+                  TPL_InitSetting();
+              #endif
+ 638   1      
+ 639   1          if( PowerOnFlag )
+ 640   1          {
+ 641   2            #if Enable_LED
+                    Power_TurnOnAmberLed();
+                  #else
+ 644   2            Power_TurnOnGreenLed();//�̵�
+ 645   2          #endif
+ 646   2              
+ 647   2          }
+ 648   1          else
+ 649   1          {
+ 650   2          
+ 651   2          Power_TurnOffLed();      
+ 652   2          }
+ 653   1      }
+ 654          
+ 655          void Main_SlowTimerHandler(void)
+ 656          {
+ 657   1          if(ms10Flag)
+ 658   1          {
+ 659   2              if(ModeDetectCounter)
+ 660   2              {
+ 661   3                  if(ModeDetectCounter > 10)
+ 662   3                      ModeDetectCounter -= 10;
+ 663   3                  else
+ 664   3                      ModeDetectCounter = 0;
+ 665   3              }
+ 666   2      
+ 667   2              if(TPDebunceCounter)
+ 668   2              {
+ 669   3                  if(TPDebunceCounter > 10)
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 12  
+
+ 670   3                  {
+ 671   4                      TPDebunceCounter -= 10;
+ 672   4                  }
+ 673   3                  else
+ 674   3                  {
+ 675   4                      TPDebunceCounter = 0;
+ 676   4                      Set_StartScanKeyFlag();
+ 677   4                  }
+ 678   3              }
+ 679   2      
+ 680   2      #if ENABLE_HDMI
+ 681   2              if(HdmiPollingCounter)
+ 682   2              {
+ 683   3                  if( HdmiPollingCounter > 10)
+ 684   3                      HdmiPollingCounter -= 10;
+ 685   3                  else
+ 686   3                      HdmiPollingCounter = 0;
+ 687   3              }
+ 688   2      
+ 689   2              if( gScInfo.InputTmdsType == TMDS_HDMI && ( !( SrcFlags&( SyncLoss | bUnsupportMode ) ) ) )
+ 690   2              {
+ 691   3                  if( gScInfo.wAviPktLossCnt < AviPktLossBound )
+ 692   3                      gScInfo.wAviPktLossCnt += 10;
+ 693   3              }
+ 694   2      #endif
+ 695   2      
+ 696   2              if(!FreeRunModeFlag)
+ 697   2              {
+ 698   3      #if ENABLE_TOUCH_PANEL || ENABLE_TOUCH_PANEL_CTRL_OSD
+                          if(TPL_PollingCounter)
+                          {
+                              if(TPL_PollingCounter > 10)
+                                  TPL_PollingCounter -= 10;
+                              else
+                                  TPL_PollingCounter = 0;
+                          }
+              #endif
+ 707   3              }
+ 708   2      
+ 709   2      #if ENABLE_MHL
+                  #if ((CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || (CHIP_ID == CHIP_T
+             -SUM9)|| (CHIP_ID == CHIP_TSUMF))
+                      mapi_mhl_PollingTimerhandler();
+                  #endif
+              #endif
+ 714   2      
+ 715   2      #if MS_DAC && ((CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || (CHIP_ID == 
+             -CHIP_TSUM9)|| (CHIP_ID == CHIP_TSUMF))
+              #if (!InitialDACByISR)
+                  if( w16DAC_DePopCounter )
+                  {
+                      if(w16DAC_DePopCounter > 10)
+                      {
+                          w16DAC_DePopCounter -= 10;
+                      }
+                      else
+                      {
+                          w16DAC_DePopCounter = 0;
+                          bDAC_DePopFlag = 1;
+                      }
+                  }
+              #endif
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 13  
+
+              #endif
+ 731   2      
+ 732   2          #if ENABLE_LED_CONTROLLER
+                      LEDProcess_10mS();
+                  #endif
+ 735   2      
+ 736   2        #if ENABLE_DAC_DEPOP
+                if ( ucDePOP4SecCounter )
+                {
+                  if ( --ucDePOP4SecCounter == 0 )
+                  {
+                    EARDePopFlag = 1;
+                  }
+                }
+                #endif
+ 745   2      
+ 746   2              Clr_ms10Flag();
+ 747   2          }
+ 748   1      
+ 749   1          if(ms50Flag)
+ 750   1          {
+ 751   2      #if 0//MS_DAC && (CHIP_ID==CHIP_TSUMC ||CHIP_ID==CHIP_TSUMD)
+              #if CheckInitialDACTime
+                  Main_printData("w16DAC_DePopStep==%d",w16DAC_DePopStep);
+                  Main_printData("w16DAC_DePopCounter==%d",w16DAC_DePopCounter);
+              
+                  //TIME_MEASURE_END();
+              #endif
+              #endif
+ 759   2      
+ 760   2      #if MS_DAC
+                      if( ToggleGainCntr )
+                      {
+                          if(ToggleGainCntr > 50)
+                              ToggleGainCntr -= 50;
+                          else
+                          {
+                              ToggleGainCntr = 0;
+                              bToggleGainFlag = 1;
+                          }
+                      }
+              #endif
+ 772   2      
+ 773   2      #if ENABLE_TOUCH_KEY
+                      if(TouchKeyRestortCounter)
+                      {
+                          TouchKeyRestortCounter--;
+                          if(!TouchKeyRestortCounter && (TouchKey_InitStatus() == PRE_RESTORT))
+                              TouchKey_Restort_Reg();
+              
+                      }
+              
+              #if ENABLE_LOW_CONTACT
+                      if(TouchKeyLowContactDelay)
+                      {
+                          TouchKeyLowContactDelay--;
+                          if(!TouchKeyLowContactDelay && (TouchKey_InitStatus() == PRE_RESTORT))
+                          {
+                              TouchKey_Restort_Reg();
+                              TouchKeyLowContactDetectCntr = 0;
+                          }
+                      }
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 14  
+
+              #endif
+              
+              #if TOUCH_KEY_POWER_KEY_DEBOUNCE
+                      if( bPowerKeyPressed )
+                      {
+                          if( PowerKeyDebounceCntr < POWER_KEY_DEBOUNCE_PEROID )
+                              PowerKeyDebounceCntr++;
+                      }
+              #endif
+              #endif
+ 802   2      
+ 803   2      #if ENABLE_FREESYNC
+                      if(IS_HDMI_FREESYNC())
+                      {
+                          if(bHDMIFreesyncChk)
+                              msWriteByte(SC0_E8,(msReadByte(SC0_E8)&(~BIT1))|BIT0);    //Enable force P mode
+                          bHDMIFreesyncChk = FALSE;
+                      }
+              #endif
+ 811   2      
+ 812   2              Clr_ms50Flag();
+ 813   2          }
+ 814   1      
+ 815   1          if(SecondFlag)
+ 816   1          {
+ 817   2          #if ENABLE_DEBUG && 0
+                      if(Second%1 == 0)
+                      {
+                      #if  ENABLE_WATCH_DOG_INT
+                          BYTE  final_status;                 // use idata to speedup
+                          final_status = msRegs[REG_2B10];
+                          msRegs[REG_2B08]=0x00;
+                          if( final_status & _BIT1 )
+                              Main_printMsg("WDT interrupt");
+              
+                          Main_printData("u8WDT_Status==%x",u8WDT_Status);
+                          //u8WDT_Status=0;
+                      #endif
+                      }
+                      if(Second%5 == 0)
+                       Main_printData("Second==%d",Second);
+                  #endif
+ 834   2              Second++;
+ 835   2      #if ENABLE_FACTORY_AUTOTEST
+ 836   2         if(BFactoryAutoTest==1)
+ 837   2          {
+ 838   3          
+ 839   3          if(Second==6)
+ 840   3            {
+ 841   4                  #if InputType_HDMI
+ 842   4               UserPrefSelectInputType=Input_HDMI;
+ 843   4                  #endif
+ 844   4      
+ 845   4            }
+ 846   3            else if(Second==10)
+ 847   3            {
+ 848   4              BFactoryAutoTest=0;
+ 849   4      
+ 850   4            }
+ 851   3        
+ 852   3          
+ 853   3            if (SrcInputType!= UserPrefSelectInputType)
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 15  
+
+ 854   3              {
+ 855   4              
+ 856   4            SrcInputType=UserPrefSelectInputType;  
+ 857   4            //UserPrefInputType=SrcInputType = Input_Analog1; 
+ 858   4            //Set_SaveSettingFlag();
+ 859   4            mStar_SetupInputPort();
+ 860   4            Set_InputTimingChangeFlag();
+ 861   4            SrcFlags |= SyncLoss;
+ 862   4              }
+ 863   3            
+ 864   3          }
+ 865   2      
+ 866   2      #endif
+ 867   2      
+ 868   2      #if EN_HotKeyTimes
+              //if(MenuPageIndex==HotKeyShowTimes)
+              {
+                if(HotKeyTimes_Second>0)
+                {
+                  HotKeyTimes_Second--;
+                }
+                else if(HotKeyTimes_Minutes>0)
+                {
+                  HotKeyTimes_Minutes--;
+                  HotKeyTimes_Second=59;
+                }
+              
+              }
+              
+              #endif
+ 884   2      #if USEFLASH
+ 885   2              UserPref_FlashSaveFlagCheck();
+ 886   2      #endif
+ 887   2      
+ 888   2      #if  ENABLE_LED_CONTROLLER
+                      LEDProcess_1S();
+              #endif
+ 891   2      
+ 892   2      #if ENABLE_BURNIN_MENU
+                if( BurninModeFlag && !PowerSavingFlag )
+                  {
+                    if( BurninTime < 0xFFFFFFFFul )
+                    {
+                      BurninTime += 1;
+                    }
+                    else
+                      BurninTime = 0;
+                
+                    if( BurninTime > 0 && ( BurninTime % 1800 ) == 0)
+                      SaveBurninTimeFlag = 1;
+                  }
+                else
+              #endif
+ 907   2      
+ 908   2              if( PowerOnFlag && !PowerSavingFlag )
+ 909   2              {
+ 910   3                  if( BlacklitTime < 0xFFFFFFFFul )
+ 911   3                  {
+ 912   4                      BlacklitTime += 1;
+ 913   4                  }
+ 914   3                  else
+ 915   3                      BlacklitTime = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 16  
+
+ 916   3      
+ 917   3                  if( BlacklitTime > 0 && ( BlacklitTime % 1800 ) == 0 )
+ 918   3                      SaveBlacklitTimeFlag = 1;
+ 919   3              }
+ 920   2      
+ 921   2              if( OsdCounter )
+ 922   2              {
+ 923   3                  if( --OsdCounter == 0 )
+ 924   3                  {
+ 925   4                      Set_OsdTimeoutFlag();
+ 926   4                  }
+ 927   3              }
+ 928   2      
+ 929   2      #if HotInputSelect
+ 930   2              if( HotKeyCounter )
+ 931   2              {
+ 932   3                  if( --HotKeyCounter == 0 )
+ 933   3                  {
+ 934   4                      if( PressExitFlag )
+ 935   4                          Set_EnableShowAutoFlag();
+ 936   4                  }
+ 937   3              }
+ 938   2      #endif
+ 939   2      
+ 940   2              if( PowerDownCounter )
+ 941   2              {
+ 942   3                  if( --PowerDownCounter == 0 )
+ 943   3                  {
+ 944   4                      Set_ForcePowerSavingFlag();
+ 945   4                  }
+ 946   3              }
+ 947   2              Set_ChangePatternFlag();
+ 948   2      
+ 949   2          if (g_SwitchSec && g_CountSwitchPortTimeFlag)
+ 950   2          {
+ 951   3                  if( --g_SwitchSec == 0 )
+ 952   3                  {
+ 953   4                      g_CountSwitchPortTimeFlag=FALSE;
+ 954   4              g_SwitchSec=DEF_FORCE_DPMS;
+ 955   4                      Set_ForcePowerSavingFlag();
+ 956   4                  }
+ 957   3          }
+ 958   2      
+ 959   2      #if ENABLE_TOUCH_KEY
+              
+              #if ENABLE_LOW_CONTACT
+                      if(TouchKeyLowContactDetectCntr)
+                          TouchKeyLowContactDetectCntr--;
+              #endif
+              
+                      if((Second%2) == 0)
+                      {
+                          if(!TouchKeyRestortCounter) // 120417 coding addition
+                              TouchKeyRestortCounter = TouchKey_Check_ESD();
+                      }
+              #endif
+ 972   2              Clr_SecondFlag();
+ 973   2          }
+ 974   1      
+ 975   1          if( SaveBlacklitTimeFlag )
+ 976   1          {
+ 977   2              SaveBlacklitTimeFlag = 0;
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 17  
+
+ 978   2      #if USEFLASH
+ 979   2              UserprefBacklighttime = BlacklitTime;
+ 980   2              UserPref_EnableFlashSaveBit( bFlashForceSaveMonitor2Bit );
+ 981   2      #else
+                      SaveBlacklitTime();
+              #endif
+ 984   2          }
+ 985   1      
+ 986   1      #if ENABLE_BURNIN_MENU
+                else if( SaveBurninTimeFlag )
+                {
+                SaveBurninTimeFlag = 0;
+                UserprefBurnintime=BurninTime;
+                UserPref_EnableFlashSaveBit( bFlashForceSaveMonitor2Bit );
+                
+                }
+              #endif
+ 995   1      
+ 996   1      
+ 997   1      #if 0//ENABLE_TOUCH_KEY
+              #if TOUCH_KEY_CTRL_LED
+                  if(TouchKey_GetLEDStatus() != TouchKeySetLEDStatus)
+                      TouchKey_CtrlLED(TouchKeySetLEDStatus);
+              #endif
+              #endif
+1003   1      
+1004   1      }
+1005          
+1006          #if EarphoneDet_Enable
+              void HarphoneDetFunc(void)
+              {
+              
+                 if((!InputTimingChangeFlag)&&InputTimingStableFlag&&(!SyncLossState())&&(!PowerSavingFlag)&&bPanelOnFla
+             -g)
+                  ;
+                 else
+                  return;
+              
+              
+                  if(PowerOnFlag&&!UserOSDMuteOnFlag)   
+                  {
+                               if(HarphoneDet_Pin)//Ear Push In
+                               {
+                                  if((!HarphoneDetHighFlag))
+                                {
+                          
+                                      msAudioLineEarSwitch(E_EAR_OUT_);
+                  #if AudioIC_CS8003_Enable
+              
+                     if (UserPrefVolume==0)
+                      msAudioDPGA_Mute();
+                       else
+                       {
+              
+                        msAudioDPGA_SetVolume ( E_AUDIO_LEFT_RIGHT_CH, 0xFF-UserPrefEarVolume);//*/
+                        msWrite2ByteMask(  REG_2CA4, 0xFF77    , 0xFF7F);  //[15:8] DPGA_1_TIMEOUT_N; [6:4] DPGA_1_STEP=3'd
+             -7->N=1;  [2] DPGA_1_ZERO_DET_EN; [1] DPGA_1_FADING_EN;   [0] DPGA_1_DPGA_EN;
+                                         }
+                  
+                  #endif
+                               Set_HarphoneDetHighFlag(); 
+                                }
+C51 COMPILER V9.60.0.0   MAIN                                                              12/22/2020 19:50:26 PAGE 18  
+
+                               }
+                     else
+                     {
+                        if(HarphoneDetHighFlag)
+                      {
+                                         msAudioLineEarSwitch(E_LINE_OUT_);
+                                       #if AudioIC_CS8003_Enable
+                                       msAudioDPGA_SetVolume ( E_AUDIO_LEFT_RIGHT_CH, 0x00);
+                                       msWrite2ByteMask(  REG_2CA4, 0xFF76    , 0xFF7F);  //[15:8] DPGA_1_TIMEOUT_N; [6:
+             -4] DPGA_1_STEP=3'd7->N=1;  [2] DPGA_1_ZERO_DET_EN; [1] DPGA_1_FADING_EN;   [0] DPGA_1_DPGA_EN;
+                                       #endif
+                    
+                         Clr_HarphoneDetHighFlag(); 
+                      }
+                     }
+                   }
+              
+              }
+              #endif
+1056          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    799    ----
+   CONSTANT SIZE    =    109    ----
+   XDATA SIZE       =      1       1
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----       2
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)

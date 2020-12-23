@@ -1,0 +1,96 @@
+C51 COMPILER V9.60.0.0   NVRAM                                                             12/22/2020 19:50:29 PAGE 1   
+
+
+C51 COMPILER V9.60.0.0, COMPILATION OF MODULE NVRAM
+OBJECT MODULE PLACED IN .\Obj\NVRam.obj
+COMPILER INVOKED BY: C:\Keil_v5\C51\BIN\C51.EXE ..\kernel\System\NVRam.c OPTIMIZE(9,SPEED) BROWSE INCDIR(..\KERNEL\SYSTE
+                    -M\INC;..\KERNEL\SCALER\INC;..\DRIVER\extDEVICE\INC;..\LIB\INC;..\PANEL\INC;..\UI\BOARD;..\UI\INC;..\UI\MODEL;..\DRIVER\I
+                    -NC;..\Customer) DEFINE(ModelName=TSUMXX9_DEMO) DEBUG OBJECTEXTEND PRINT(.\List\NVRam.lst) TABS(2) OBJECT(.\Obj\NVRam.obj
+                    -)
+
+line level    source
+
+   1          #include "types.h"
+   2          #include "i2cdef.h"
+   3          #include "i2c.h"
+   4          #include "board.h"
+   5          #include "global.h"
+   6          #include "mstar.h"
+   7          #include "ms_reg.h"
+   8          #include "Ms_rwreg.h"
+   9          #include "gpio_def.h"
+  10          #if !USEFLASH
+              #define NVRAM_DEVICE    0xA0
+              void NVRam_WriteByte( WORD addr, BYTE value )
+              {
+                  Clr_EEPROM_WP(); //wumaozhong 20050331
+                  i2c_WriteTBL( NVRAM_DEVICE, addr, &value, 1 );
+                  Set_EEPROM_WP(); //wumaozhong 20050331
+              }
+              
+              /*
+              void NVRam_WriteWord(WORD addr, WORD value)
+              { i2c_WriteTBL(NVRAM_DEVICE, addr, (BYTE*)&value, 2);
+              }
+               */
+              void NVRam_ReadByte( WORD addr, BYTE *value )
+              {
+                  i2c_ReadTBL( NVRAM_DEVICE, addr, value, 1 );
+              }
+              
+              void NVRam_WriteTbl( WORD addr, BYTE *buffer, BYTE count )
+              {
+                  Clr_EEPROM_WP(); //wumaozhong 20050331
+                  i2c_WriteTBL( NVRAM_DEVICE, addr, buffer, count );
+                  Set_EEPROM_WP(); //wumaozhong 20050331
+              }
+              
+              void NVRam_ReadTbl( WORD addr, BYTE *buffer, BYTE count )
+              {
+                  i2c_ReadTBL( NVRAM_DEVICE, addr, buffer, count );
+              }
+              
+              #if 0
+              void Device_WriteByte( BYTE deviceAddr, WORD addr, BYTE value )
+              {
+                  i2c_WriteTBL( NVRAM_DEVICE, addr, &value, 1 );
+              }
+              void Device_ReadByte( BYTE deviceAddr, WORD addr, BYTE *value )
+              {
+                  i2c_ReadTBL( deviceAddr, addr, value, 1 );
+              }
+              #endif
+              #endif
+  52          
+C51 COMPILER V9.60.0.0   NVRAM                                                             12/22/2020 19:50:29 PAGE 2   
+
+  53          #ifdef Internal_EDID_Write_To_24C02
+              #define NVRAM_DEVICE    0xA0
+              void NVRam_WriteByte( WORD addr, BYTE value )
+              {
+                  Clr_EEPROM_WP(); //wumaozhong 20050331
+                  NVRAM_i2c_WriteTBL(NVRAM_DEVICE, addr, &value, 1);
+                  Set_EEPROM_WP(); //wumaozhong 20050331
+              }
+              
+              void NVRam_ReadByte( WORD addr, BYTE *value )
+              {
+                  NVRAM_i2c_ReadTBL(NVRAM_DEVICE, addr, value, 1);
+              }
+              
+              #endif
+  68          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =   ----    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  0 WARNING(S),  0 ERROR(S)
