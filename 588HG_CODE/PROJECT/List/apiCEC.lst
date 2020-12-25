@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 1   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE APICEC
@@ -62,7 +62,7 @@ line level    source
               //                  api_CEC_init()
               //  [Description]:ce
               //                  CEC initial sequence
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 2   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 2   
 
               //  [Arguments]:
               //                  none
@@ -126,7 +126,7 @@ line level    source
                   gStCECInfo.bTxBuf[0] = gStCECInfo.enMyPwrStatus;
                   //ret = drv_CEC_ProcessTX(dst_addr, CEC_OPCODE_REPORT_POWER_STATUS, gStCECInfo.bTxBuf, 1);
                   ret = api_CEC_SendMessage(dst_addr, CEC_OPCODE_REPORT_POWER_STATUS, gStCECInfo.bTxBuf, 1);
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 3   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 3   
 
               
                   return ret;
@@ -190,7 +190,7 @@ line level    source
               
                   switch (opcode)
                   {
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 4   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 4   
 
                       #if (CECMSG_SUP_ONE_TOUCH_PLAY == 1)
                           //----- One Touch Play ----------------------------
@@ -254,7 +254,7 @@ line level    source
                               break;
                           case CEC_OPCODE_TIMER_STATUS:
                               break;
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 5   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 5   
 
                       #endif
               
@@ -318,7 +318,7 @@ line level    source
                               break;
                       #endif
               
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 6   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 6   
 
                       #if (CECMSG_SUP_OSD_DISPLAY == 1)
                           //----- OSD Display --------------------------------
@@ -382,7 +382,7 @@ line level    source
                               break;
                           case CEC_OPCODE_SYSTEM_AUDIO_MODE_STATUS:
                               break;
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 7   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 7   
 
                           case CEC_OPCODE_SET_AUDIO_RATE:
                               break;
@@ -446,7 +446,7 @@ line level    source
               //  [Arguments]:
               //                  none
               //  [Return]:
-C51 COMPILER V9.60.0.0   APICEC                                                            12/22/2020 19:50:47 PAGE 8   
+C51 COMPILER V9.60.0.0   APICEC                                                            12/25/2020 09:25:08 PAGE 8   
 
               //                  none
               //

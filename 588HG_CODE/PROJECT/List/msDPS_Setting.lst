@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 1   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDPS_SETTING
@@ -62,7 +62,7 @@ line level    source
   47           {143,131,120,109, 98, 87, 76, 65, 54, 43, 32,},
   48           {118,108, 99, 90, 81, 72, 63, 54, 44, 35, 26,},
   49           { 96, 88, 81, 74, 66, 59, 51, 44, 36, 29, 22,},
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 2   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 2   
 
   50           { 76, 70, 64, 58, 52, 47, 41, 35, 29, 23, 17,},
   51           { 60, 55, 50, 46, 41, 36, 32, 27, 23, 18, 13,},
@@ -126,7 +126,7 @@ line level    source
  107          xdata BYTE  ISR_preLoopCount = 0;
  108          xdata BYTE  ISR_curLoopCount = 0;
  109          ///// DPS /////////////////////////////////////////////////////////////////////////
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 3   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 3   
 
  110          xdata BYTE  ucWin = 0;
  111          xdata BYTE  Flag_DPS_Latch_Busy = 0;
@@ -190,7 +190,7 @@ line level    source
  168          //////////////////////////////////////////////////////////////////////////////////
  169          ///// Gen Output Interface ///////////////////////////////////////////////////////////
  170          ///// 1. Backlight adjust /////////////////////////////////////////////////////////////
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 4   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 4   
 
  171          ///// 2. Y-gain adjust ///////////////////////////////////////////////////////////////
  172          //////////////////////////////////////////////////////////////////////////////////
@@ -254,7 +254,7 @@ line level    source
              -// ratio: 0~3.99x
  230   2      }
  231   1      
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 5   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 5   
 
  232   1      #if DEBUG_Ygain
               if (CurYgain != YgainValue)
@@ -318,7 +318,7 @@ line level    source
  283   2              scWriteByte(SC0_00, 0x07);
  284   2      #endif
  285   2              ISR_HistogramTotalPix = ((DWORD)PANEL_WIDTH * (DWORD)PANEL_HEIGHT) >> 6 ;//( ( ( WORD ) scReadByte
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 6   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 6   
 
              - ( REG_ADDR_HISTOGRAM_TOTAL_COUNT_H ) ) << 8 ) + scReadByte ( REG_ADDR_HISTOGRAM_TOTAL_COUNT_L ); //(((WORD)scRegs[0x35]
              -) << 8) + scRegs[0x34];
@@ -382,7 +382,7 @@ line level    source
  333   1          scWriteByte(SC0_00, 0x03);
  334   1          #endif
  335   1          scWriteByte ( REG_ADDR_HSLU_AP, ( scReadByte( REG_ADDR_HSLU_AP ) & 0xFE ) | ( ( wVStart / 8 ) >> 8 ) )
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 7   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 7   
 
              -;
  336   1          #if CHIP_ID == CHIP_TSUMV ||CHIP_ID == CHIP_TSUMU||CHIP_ID == CHIP_TSUM2||CHIP_ID == CHIP_TSUMC||CHIP_
@@ -446,7 +446,7 @@ line level    source
  389   1          REG_DPS_AggressiveGainRange = 255;// apply AggressiveGain when ImgYmax < Range
  390   1      #else
                   REG_DPS_UserBrightLimitGain = 256;
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 8   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 8   
 
                   REG_DPS_AggressiveYgainGain = 256;
                   REG_DPS_AggressivePdutyGain = 256;
@@ -510,7 +510,7 @@ line level    source
  449   1          {
  450   2              msWriteByteMask ( REG_ADDR_DLC_HANDSHAKE, BIT2 | BIT0, BIT2 | BIT1 | BIT0 );
  451   2          }
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 9   
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 9   
 
  452   1          msWriteByte ( SC0_00, 0x00 );
  453   1          msWriteByteMask ( REG_ADDR_INTENB, BIT3, BIT3 ); // Vsync int enable
@@ -574,7 +574,7 @@ line level    source
              -_ID == CHIP_TSUMD||CHIP_ID == CHIP_TSUMJ||CHIP_ID == CHIP_TSUM9||CHIP_ID == CHIP_TSUMF
  506   2              msWriteByte ( SC0_00, 0x07);
  507   2              msWriteBit ( SC7_40, 1, BIT2 );
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 10  
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 10  
 
  508   2              #endif
  509   2          }
@@ -638,7 +638,7 @@ line level    source
               {
                   BYTE xdata i = msDPSSettingNullData[0];
               }
-C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/22/2020 19:50:45 PAGE 11  
+C51 COMPILER V9.60.0.0   MSDPS_SETTING                                                     12/25/2020 09:25:04 PAGE 11  
 
               
               #endif // #if EnableDPS

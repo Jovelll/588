@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 1   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDPS_HANDLER
@@ -62,7 +62,7 @@ line level    source
   48          //========================================================================================================
              -===========================================================:
   49          //////////////////////////////////////////////////////////////////////////////////
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 2   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 2   
 
   50          ///// Main Code ///////////////////////////////////////////////////////////////////
   51          ///// Input Interface ///////////////////////////////////////////////////////////////
@@ -126,7 +126,7 @@ line level    source
  109   1          xdata BYTE  PdutyLimit = 0;
  110   1          xdata BYTE  LumiMap = 0;
  111   1          xdata BYTE  YMaxIndex = 0;
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 3   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 3   
 
  112   1          xdata BYTE  LevelIndex = 0;
  113   1          xdata WORD  Ygain_tar = 0;
@@ -190,7 +190,7 @@ line level    source
  170   1          TempVariable1 = MIN2 ( TempVariable1, 255 );
  171   1          HistDataAvg = TempVariable1;
  172   1          RefSection = HistDataAvg >> 3;
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 4   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 4   
 
  173   1          TempVariable2 = 0;
  174   1          for ( i = 32; i > 0; i-- )
@@ -254,7 +254,7 @@ line level    source
                                           (HistogramWeight_L31 >= REG_DPS_WindowSaveHisWeight_31_Up)&&
                                           (HistogramWeight_L31 <= REG_DPS_WindowSaveHisWeight_31_Down))||
                                           (Flag_PureColorPattern &&(curPixelMax == TempVariable2 )&& (curPixelMin == Tem
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 5   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 5   
 
              -pVariable2) )*/;
               
@@ -318,7 +318,7 @@ line level    source
  293   1                                  ( HistDiffWeight >= REG_DPS_SceChgHistWgtThd ) &&
  294   1                                  ( HistDiffCount >= REG_DPS_SceChgHistCntThd );
  295   1      #if DPS_YminForWindowSave_EN
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 6   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 6   
 
                   Flag_SceneChangeValid = Flag_SceneChangeValid || Flag_OutWindowSavePat;
               #endif
@@ -382,7 +382,7 @@ line level    source
  354   2          }
  355   1      
  356   1      #if 0
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 7   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 7   
 
                   DPS_printData ( "HistImgYMax_tar=%d", HistImgYMax_tar );
               #endif
@@ -446,7 +446,7 @@ line level    source
  415   4                  }
  416   3                  else
  417   3                  {
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 8   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 8   
 
  418   4                      TempVariable1 = 1024UL * 16 * ( 16UL - RowStart ) / HistImgYMax_tar;
  419   4                  }
@@ -510,7 +510,7 @@ line level    source
                   #endif
  476   1          //#endif
  477   1          Ygain_tar = MIN2 ( Ygain_tar,       2047 ); //--Max. Ygain = 1.99x
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 9   
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 9   
 
  478   1          Ygain_tar = MAX2 ( Ygain_tar,       1024 ); //--min. Ygain = 1.00x
  479   1          Pduty_tar = MIN2 ( Pduty_tar,        255 ); //--HW Limitation
@@ -574,7 +574,7 @@ line level    source
  537   2              {
  538   3                  Pduty_sign = ( Pduty_tar > Pduty_ISR ) ? 1 : 0;
  539   3                  if ( Pduty_sign )
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 10  
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 10  
 
  540   3          {
  541   4                      TempVariable1 = Pduty_ISR + Pduty_diff;
@@ -638,7 +638,7 @@ line level    source
  599   1          Pduty_nxt = MIN2 ( Pduty_nxt,        255 ); //--HW Limitation
  600   1          Pduty_nxt = MAX2 ( Pduty_nxt, PdutyLimit ); //--HW Limitation
  601   1      
-C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/22/2020 19:50:45 PAGE 11  
+C51 COMPILER V9.60.0.0   MSDPS_HANDLER                                                     12/25/2020 09:25:04 PAGE 11  
 
  602   1          Ygain_ISR = Ygain_nxt;
  603   1          Pduty_ISR = Pduty_nxt;

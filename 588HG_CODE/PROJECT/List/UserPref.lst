@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 1   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE USERPREF
@@ -62,7 +62,7 @@ line level    source
   50   1          FUserPrefBrightnessWarm1 = DefBrightness;
   51   1          FUserPrefContrastWarm1 = DefContrast;
   52   1          UserPrefRedColorWarm1 = DefWarm_RedColor;
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 2   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 2   
 
   53   1          UserPrefGreenColorWarm1 = DefWarm_GreenColor;
   54   1          UserPrefBlueColorWarm1 = DefWarm_BlueColor;
@@ -126,7 +126,7 @@ line level    source
               #endif
  113   1      
  114   1      #endif
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 3   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 3   
 
  115   1      
  116   1      
@@ -190,7 +190,7 @@ line level    source
                 #endif
               #endif
  176   1          UserPrefVolume = 50;
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 4   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 4   
 
  177   1          UserPrefOsdHStart = 50;
  178   1          UserPrefOsdVStart = 50;
@@ -254,7 +254,7 @@ line level    source
  236   1      #if LowBlueLight
               UserPrefLowBlueMode=BlueLight_Off;
               #endif
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 5   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 5   
 
  239   1      #if USEFLASH
  240   1          MonitorSetting.Ident = FLASH_IDENTDATA;
@@ -318,7 +318,7 @@ line level    source
  298   1              UserPrefOsdTime < 5 ||
  299   1              UserPrefOsdTime % 5 != 0 ||
  300   1              UserPrefDcrMode > 2 ||
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 6   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 6   
 
  301   1              UserPrefHue > 100 ||
  302   1      #if MWEFunction
@@ -382,7 +382,7 @@ line level    source
                       return TRUE;
               #endif
  362   1      
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 7   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 7   
 
  363   1          if(
  364   1              FUserPrefBrightnessWarm1 != FUserPrefBrightnessCool1 ||
@@ -446,7 +446,7 @@ line level    source
  422   1          return FALSE;
  423   1      }
  424          
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 8   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 8   
 
  425          void CheckModeSettingRange( void )
  426          {
@@ -510,7 +510,7 @@ line level    source
  484   2              USERP_printMsg("Flash--SaveMonitorSetting");
  485   2              Clr_FlashForceSaveMonitorFlag();
  486   2              SaveMonitorSetting();
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 9   
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 9   
 
  487   2          }
  488   1          if( FlashForceSaveModeFlag )
@@ -574,7 +574,7 @@ line level    source
  546   2              ModeSetting.Index = SaveIndex | BIT7; //|= 0x80;
  547   2              ModeSetting.HorFreq = HFreq( SrcHPeriod ); //HFreq(tempHperiod);
  548   2              ModeSetting.VerFreq = VFreq( HFreq( SrcHPeriod ), SrcVTotal );
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 10  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 10  
 
  549   2              ModeSetting.Flags = ( SrcFlags & 0x13 );
  550   2      
@@ -638,7 +638,7 @@ line level    source
  608   1          SPI_CTRL0       = SPI_CTRL_VALUE; //ctrl en FSP/reset
  609   1          SPI_CTRL1       = (EN_2ND_CMD|RDSR_IN_2ND|EN_AUTO_CHECK);
  610   1          SET_WBF_SIZE( (SPI_MODE == SPI_MODE_FR) ? 5:4, 1, 0);
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 11  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 11  
 
  611   1          SET_WBF_SIZE( 5, 1, 0);
  612   1          SET_RBF_SIZE(1, 1, 0);
@@ -702,7 +702,7 @@ line level    source
  670   2              USERP_printMsg( " CheckFactorySettingOutOfRange initial" );
  671   2              Init_FactorySetting();
  672   2              SaveFactorySetting();
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 12  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 12  
 
  673   2          }
  674   1      
@@ -766,7 +766,7 @@ line level    source
  731   2          }
  732   1          return bFound;
  733   1      }
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 13  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 13  
 
  734          
  735          void ReadModeSetting( void )
@@ -830,7 +830,7 @@ line level    source
               {
                   BYTE tempValue, i;
               
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 14  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 14  
 
                   if( IsEEPRomEmpty( 0xFF ) || IsEEPRomEmpty( 0x00 ) )
                   {
@@ -894,7 +894,7 @@ line level    source
                   if( CheckMonitorSettingOutOfRange() )
                   {
                       Init_MonitorSetting();
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 15  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 15  
 
                       SaveMonitorSetting();
                   }
@@ -958,7 +958,7 @@ line level    source
                   {
                       SaveIndex = i;
                   }
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 16  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 16  
 
               }
               void ReadModeSetting( void )
@@ -1022,7 +1022,7 @@ line level    source
               ReadBlacklitTime();
               }
                ************/
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 17  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 17  
 
               void CheckBoard( void )
               {
@@ -1086,7 +1086,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    XDATA SIZE       =      2       1
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----      14
-C51 COMPILER V9.60.0.0   USERPREF                                                          12/22/2020 19:50:30 PAGE 18  
+C51 COMPILER V9.60.0.0   USERPREF                                                          12/25/2020 09:24:32 PAGE 18  
 
    IDATA SIZE       =   ----    ----
    BIT SIZE         =   ----    ----

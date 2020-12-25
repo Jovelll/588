@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 1   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LOADPROPFONT1218
@@ -62,7 +62,7 @@ line level    source
   50   1          else
   51   1              u8ShiftUp=0;
   52   1      
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 2   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 2   
 
   53   1          if(u8ShiftUp)
   54   1          {
@@ -126,7 +126,7 @@ line level    source
  112          /// Clear a font char(12x18) buffer.
  113          void ClearFontBuf(WORD* pu16SN)
  114          {   BYTE  i;
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 3   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 3   
 
  115   1      
  116   1      #if 0
@@ -190,7 +190,7 @@ line level    source
  173   2          }
  174   1          u16PixelLen%=FONT_WIDTH;
  175   1      #if 0
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 4   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 4   
 
                   u16PixelLen=FONT_WIDTH-u16PixelLen;
                   return (BYTE)(u16PixelLen ? FONT_WIDTH-u16PixelLen : 0);
@@ -254,7 +254,7 @@ line level    source
  233   2              //u16StrIndex=GET_FONT_RAM_ADDR(u8Addr); //get real address in cafram, ((font base entry)+unit*(un
              -it size))*4 addr/entry
  234   2          }
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 5   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 5   
 
  235   1          WRITE_CAFSRAM_ADDR();
  236   1          msWrite2Byte(PORT_FONT_ADDR, u16StrIndex);
@@ -318,7 +318,7 @@ line level    source
  291   4                                  /// Retrieve the first font of string and copy to a blank buffer.
  292   4                      CopySubFontBuf(tSN, pstFontData->tLineData, (pstFontData->u8SpaceWidth & 0xF0)>>4, u8BufW)
              -;
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 6   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 6   
 
  293   4                  }
  294   3                  else
@@ -382,7 +382,7 @@ line level    source
  350   8                                      u8BufW=FONT_WIDTH-(SP_BETWEEN_FONT-u8BufW);
  351   8                                      SET_LOAD_SINGLE_FONT_FLAG();
  352   8                                  }
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 7   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 7   
 
  353   7                              }
  354   6      
@@ -446,7 +446,7 @@ line level    source
  410   7                                  pstPropFontSet1218=tPropFontSet1;
  411   7                                  pstFontData = pstPropFontSet1218+*(pu8Strings+u16StrIndex)-SecondTblAddr;
  412   7                              }
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 8   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 8   
 
  413   6                              else if ( LanguageIndex == 2 )
  414   6                              {
@@ -510,7 +510,7 @@ line level    source
  470   4                      {
  471   5                          if (*(pu8Strings1+u16StrIndex1)>=SecondTblAddr)
  472   5                          {
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 9   
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 9   
 
  473   6                              if ( LanguageIndex == 1 )
  474   6                              {
@@ -574,7 +574,7 @@ line level    source
  526   3                  if(u8BufW1==0)
  527   3                  {
  528   4                      u8BufW1=FONT_WIDTH;
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 10  
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 10  
 
  529   4                      SET_LOAD_SINGLE_FONT1_FLAG();
  530   4                  }
@@ -638,7 +638,7 @@ line level    source
  586   4                      #else
                               if (((pstPropFontSet1218+*(pu8Strings1+u16StrIndex1+1)+(u8ExtFontIndex1<<8))->u8SpaceWidth
              - & 0xF0)!=0xF0)
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 11  
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 11  
 
                               {
               
@@ -702,7 +702,7 @@ line level    source
  645   5                          {
  646   6                              SET_LOAD_SINGLE_FONT1_FLAG();
  647   6                          }
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 12  
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 12  
 
  648   5                          SET_STR1_1ST_CHAR_FLAG();
  649   5                          u16StrIndex1++;
@@ -766,7 +766,7 @@ line level    source
  707   2      
  708   2          }
  709   1          //msWriteByte(OSDIOA, OWEND_B|OSBM_B|ORBW_B);
-C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/22/2020 19:50:21 PAGE 13  
+C51 COMPILER V9.60.0.0   LOADPROPFONT1218                                                  12/25/2020 09:24:12 PAGE 13  
 
  710   1          return u8FontCnt;
  711   1      }

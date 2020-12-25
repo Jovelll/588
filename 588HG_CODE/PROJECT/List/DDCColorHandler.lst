@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/22/2020 19:50:37 PAGE 1   
+C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/25/2020 09:24:47 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DDCCOLORHANDLER
@@ -62,7 +62,7 @@ line level    source
                           case MS_AutoGamma_OnOff :
                           {
                               if ( DDCBuffer[3] == 0x00 )
-C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/22/2020 19:50:37 PAGE 2   
+C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/25/2020 09:24:47 PAGE 2   
 
                               {
                                   //Off
@@ -126,7 +126,7 @@ line level    source
                                   WordAddr = BGammaTblAddr + GmaChannel*GammaTblSize + addr;
                               }
                           else if(GmaMode == 1)  //dicom
-C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/22/2020 19:50:37 PAGE 3   
+C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/25/2020 09:24:47 PAGE 3   
 
                         {
                           WordAddr = DicomGammaTblAddr + GmaChannel*DicomGammaTblSize + addr;
@@ -190,7 +190,7 @@ line level    source
                           break;
               
                           case MS_WR_BLOCK :
-C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/22/2020 19:50:37 PAGE 4   
+C51 COMPILER V9.60.0.0   DDCCOLORHANDLER                                                   12/25/2020 09:24:47 PAGE 4   
 
                           {
                               bToolWriteGamma = DDCBuffer[3] ;

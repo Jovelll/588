@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 1   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DDC
@@ -62,7 +62,7 @@ line level    source
                       msWriteByte( BK0_B7, dd );
                   }
                   #endif
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 2   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 2   
 
                   #endif
                   // VGA set B8h[5], enable iic write protection.
@@ -126,7 +126,7 @@ line level    source
                   {
                       msWriteByte( BK0_B6, BIT7 );
                       for( i = 0; i < 8; i++ )
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 3   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 3   
 
                       {
                           DDC1[i] = msReadByte( BK0_B7 );
@@ -190,7 +190,7 @@ line level    source
               #endif
                   temp = msReadByte( BK0_B8 );
                   temp2 = msReadByte( BK0_B4 );
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 4   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 4   
 
               
               #if INPUT_TYPE!=INPUT_1A
@@ -254,7 +254,7 @@ line level    source
                           
                       }
               #if INPUT_TYPE!=INPUT_1A
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 5   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 5   
 
                       #ifndef DVI_EDID_OnlyINEEPROM  //DVI in eeprom ,VGA in flash  //AMY 2008/5/13
                       if( WriteDVIEDID ) //CheckEDIDData(DVI_EDID))
@@ -318,7 +318,7 @@ line level    source
                 msWriteByte(REG_3E48, Default_EDID_HDMI[i]);
                 msWriteByteMask( REG_3E43, BIT7, BIT7);    //ADC sram write data pulse gen when cpu write
                      while(msReadByte(REG_3E7B) & 0x08);
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 6   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 6   
 
                 }
                 msWriteBit(REG_3E43, 1,BIT1);
@@ -382,7 +382,7 @@ line level    source
               BYTE code Default_EDID_VGA[128]=
               {
               //--terra   2016//  2462--vga
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 7   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 7   
 
               0x00,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0x00,0x5D,0xF2,0x62,0x24,0x81,0x38,0x01,0x00,
               0x05,0x1A,0x01,0x03,0x00,0x34,0x1D,0x78,0x2A,0xA1,0x95,0xA7,0x55,0x52,0x9F,0x27,
@@ -446,7 +446,7 @@ line level    source
               //----VGA-------------------------------------
               #if VGA_EDID_Write_To_24C02
                 if(LoadVGAEDIDFlag)
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 8   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 8   
 
                 {
               #if ENABLE_DEBUG
@@ -510,7 +510,7 @@ line level    source
                   printMsg("Check VGA DDC Fail");
                  #endif
                  
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 9   
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 9   
 
                         EnableReadDDCType=I2C_EEPROM;
                   Delay1ms(2);   
@@ -574,7 +574,7 @@ line level    source
                   if(CheckDVIDoubleFlag)
                   {
                   EnableReadDDCType=I2C_EEPROM;
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 10  
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 10  
 
                   Clr_LoadDVIEDIDFlag();
                   //Flash_Write_Factory_KeySet(FLASH_KEY_DDCD, 0, DDCDKEY_SIZE, DDC1, DDCDKEY_SIZE);
@@ -638,7 +638,7 @@ line level    source
                 }
               
               
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 11  
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 11  
 
                   for(i=0;i<256;i++)
                   {
@@ -702,7 +702,7 @@ line level    source
               
               
               
-C51 COMPILER V9.60.0.0   DDC                                                               12/22/2020 19:50:33 PAGE 12  
+C51 COMPILER V9.60.0.0   DDC                                                               12/25/2020 09:24:38 PAGE 12  
 
               
               

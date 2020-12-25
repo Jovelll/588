@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 1   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MENU
@@ -62,7 +62,7 @@ line level    source
   51          #define CurrentMenuItemFunc     CurrentMenuItem.KeyFunction
   52          #define KeyEvent                    CurrentMenuItem.KeyEvents[KeypadButton]
   53          #if EN_HotKeyTimes
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 2   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 2   
 
               extern BYTE xdata HotKeyTimes_Minutes;
               extern BYTE xdata HotKeyTimes_Second;
@@ -126,7 +126,7 @@ line level    source
               void Draw_setimesMenu(void);
               #endif
  115          //======================================================================================
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 3   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 3   
 
  116          #if DisplayLogo!=NoBrand
  117          #if DisplayLogo ==MstarLOGO
@@ -190,7 +190,7 @@ line level    source
                  Log(0xB2), Log(0xB3), Log(0xB4), Log(0xB5), Log(0xB6), Log(0xB7), Log(0x3D), Log(0xB8),
                  Log(0xB9), Log(0xBA), Log(0xBB), Log(0x3D), Log(0xBC), Log(0xBD), Log(0xBE), Log(0xBF),
                  Log(0xC0), Log(0xC1), Log(0xC2), Log(0xC3), Log(0xC4), Log(0xBA), Log(0xC5), Log(0xC6),
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 4   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 4   
 
                  Log(0xC7), Log(0xC8), Log(0xC9), Log(0xCA), Log(0xCB), Log(0x3D), Log(0xCC), Log(0xC0),
                  Log(0xCD), Log(0xCE), Log(0xCF), Log(0xD0), Log(0xD1), Log(0xD2), Log(0xD3), Log(0xD4),
@@ -254,7 +254,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x3A), MS
              -TAR_2BCODE(0x3B), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x3C), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 5   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 5   
 
              -TAR_2BCODE(0x3D), MSTAR_2BCODE(0x3E), MSTAR_2BCODE(0x3F), MSTAR_2BCODE(0x40), MSTAR_2BCODE(0x40), MSTAR_2BCODE(0x41), MS
              -TAR_2BCODE(0x07), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x42), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -318,7 +318,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x93), MSTAR_2BCODE(0x94), MSTAR_2BCODE(0x95), MS
              -TAR_2BCODE(0x96), MSTAR_2BCODE(0x97), MSTAR_2BCODE(0x98), MSTAR_2BCODE(0x98), MSTAR_2BCODE(0x99), MSTAR_2BCODE(0x71), MS
              -TAR_2BCODE(0x9A), MSTAR_2BCODE(0x9B), MSTAR_2BCODE(0x9C), MSTAR_2BCODE(0x9D), MSTAR_2BCODE(0x9E), MSTAR_2BCODE(0x9F), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 6   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 6   
 
              -TAR_2BCODE(0xA0), MSTAR_2BCODE(0x61), 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0xA1), MSTAR_2BCODE(0xA2), MSTAR_2BCODE(0xA3), MSTAR_2BCODE(0xA4), MS
@@ -382,7 +382,7 @@ line level    source
              -TAR_2BCODE(0x45), MSTAR_2BCODE(0x46), MSTAR_2BCODE(0x47), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
                   MSTAR_2BCODE(0x48), MSTAR_2BCODE(0x49), MSTAR_2BCODE(0x4A), MSTAR_2BCODE(0x4B), MSTAR_2BCODE(0x4C), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 7   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 7   
 
              -TAR_2BCODE(0x4D), MSTAR_2BCODE(0x4E), MSTAR_2BCODE(0x4F), MSTAR_2BCODE(0x34), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x50), MS
              -TAR_2BCODE(0x51), MSTAR_2BCODE(0x52), MSTAR_2BCODE(0x53), MSTAR_2BCODE(0x54), MSTAR_2BCODE(0x37), MSTAR_2BCODE(0x55), MS
@@ -446,7 +446,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 8   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 8   
 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -510,7 +510,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 9   
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 9   
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
@@ -574,7 +574,7 @@ line level    source
              -TAR_2BCODE(0x29), MSTAR_2BCODE(0x2A), MSTAR_2BCODE(0x2B), MSTAR_2BCODE(0x2C), MSTAR_2BCODE(0x2D), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x2E), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x2F), MSTAR_2BCODE(0x30), MSTAR_2BCODE(0x31), MSTAR_2BCODE(0x32), MS
              -TAR_2BCODE(0x33), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x34), MSTAR_2BCODE(0x35), MSTAR_2BCODE(0x36), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 10  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 10  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x37), MSTAR_2BCODE(0x38), MSTAR_2BCODE(0x39), MSTAR_2BCODE(0x3A), MS
              -TAR_2BCODE(0x3B), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x3C), MSTAR_2BCODE(0x3D), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -638,7 +638,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 11  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 11  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -702,7 +702,7 @@ line level    source
              -TAR_2BCODE(0x40), MSTAR_2BCODE(0x41), MSTAR_2BCODE(0x42), MSTAR_2BCODE(0x43), MSTAR_2BCODE(0x44), MSTAR_2BCODE(0x45), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x46), MSTAR_2BCODE(0x47), MSTAR_2BCODE(0x48), MSTAR_2BCODE(0x49), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 12  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 12  
 
              -TAR_2BCODE(0x4A), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x4B), MSTAR_2BCODE(0x4C), MSTAR_2BCODE(0x4D), MSTAR_2BCODE(0x28), MSTAR_2BCODE(0x4E), MSTAR_2BCODE(0x4F), MS
@@ -766,7 +766,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 13  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 13  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
@@ -830,7 +830,7 @@ line level    source
              -TAR_2BCODE(0x0B), MSTAR_2BCODE(0x0C), MSTAR_2BCODE(0x0D), MSTAR_2BCODE(0x0E), MSTAR_2BCODE(0x08), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 14  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 14  
 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x0F), MS
              -TAR_2BCODE(0x10), MSTAR_2BCODE(0x11), MSTAR_2BCODE(0x12), MSTAR_2BCODE(0x13), MSTAR_2BCODE(0x14), MSTAR_2BCODE(0x15), MS
@@ -894,7 +894,7 @@ line level    source
              -TAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MS
              -TAR_2BCODE(0x01), MSTAR_2BCODE(0x0A), MSTAR_2BCODE(0x0B), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x0C), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x0D), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 15  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 15  
 
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x0E), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x01), MS
              -TAR_2BCODE(0x0F), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
@@ -958,7 +958,7 @@ line level    source
              -TAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x67), MSTAR_2BCODE(0x68), MS
              -TAR_2BCODE(0x1F), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x20), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x69), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x6A), MSTAR_2BCODE(0x23), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 16  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 16  
 
              -TAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MS
              -TAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x6B), MSTAR_2BCODE(0x6C), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x6D), MS
@@ -1022,7 +1022,7 @@ line level    source
              -TAR_2BCODE(0xDE), MSTAR_2BCODE(0xDF), MSTAR_2BCODE(0xE0), MSTAR_2BCODE(0xCA), MSTAR_2BCODE(0xCA), MSTAR_2BCODE(0xCA), MS
              -TAR_2BCODE(0xCB), MSTAR_2BCODE(0xE1), MSTAR_2BCODE(0xE2), MSTAR_2BCODE(0x04), 
                   MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 17  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 17  
 
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
@@ -1086,7 +1086,7 @@ line level    source
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x42), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x43), MS
              -TAR_2BCODE(0x1F), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x20), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
              -TAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x21), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x22), MSTAR_2BCODE(0x23), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 18  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 18  
 
              -TAR_2BCODE(0x1C), MSTAR_2BCODE(0x44), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
              -TAR_2BCODE(0x45), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x46), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x04), MS
@@ -1150,7 +1150,7 @@ line level    source
              -TAR_2BCODE(0x1C), MSTAR_2BCODE(0xAB), MSTAR_2BCODE(0xAC), MSTAR_2BCODE(0xAD), MSTAR_2BCODE(0xAE), MSTAR_2BCODE(0xAF), MS
              -TAR_2BCODE(0xB0), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0xB1), 
                   MSTAR_2BCODE(0x1B), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 19  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 19  
 
              -TAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0xB2), MS
              -TAR_2BCODE(0xB3), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MSTAR_2BCODE(0x1C), MS
@@ -1214,7 +1214,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 20  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 20  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -1278,7 +1278,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 21  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 21  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -1342,7 +1342,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 22  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 22  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x01), MSTAR_2BCODE(0x02), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -1406,7 +1406,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x4B), MSTAR_2BCODE(0x4C), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 23  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 23  
 
              -TAR_2BCODE(0x4D), MSTAR_2BCODE(0x4E), MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x4F), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x50), MSTAR_2BCODE(0x51), MSTAR_2BCODE(0x52), MSTAR_2BCODE(0x43), MSTAR_2BCODE(0x05), MS
@@ -1470,7 +1470,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 24  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 24  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
@@ -1534,7 +1534,7 @@ line level    source
              -TAR_2BCODE(0x37), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x38), MSTAR_2BCODE(0x39), MSTAR_2BCODE(0x3A), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x3B), MSTAR_2BCODE(0x3C), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x3D), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x3E), MSTAR_2BCODE(0x3F), MSTAR_2BCODE(0x40), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x41), MSTAR_2BCODE(0x42), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 25  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 25  
 
              -TAR_2BCODE(0x43), MSTAR_2BCODE(0x44), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x45), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x46), MS
              -TAR_2BCODE(0x47), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x48), MSTAR_2BCODE(0x49), MSTAR_2BCODE(0x4A), MSTAR_2BCODE(0x00), MS
@@ -1598,7 +1598,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x02), MSTAR_2BCODE(0x03), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 26  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 26  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -1662,7 +1662,7 @@ line level    source
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x9A), MS
              -TAR_2BCODE(0x9B), MSTAR_2BCODE(0x9B), MSTAR_2BCODE(0x9B), MSTAR_2BCODE(0x9B), MSTAR_2BCODE(0x9B), MSTAR_2BCODE(0x9B), MS
              -TAR_2BCODE(0x9C), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x9D), MSTAR_2BCODE(0x9E), MSTAR_2BCODE(0x9B), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 27  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 27  
 
              -TAR_2BCODE(0x9F), MSTAR_2BCODE(0xA0), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0xA1), MSTAR_2BCODE(0xA2), MSTAR_2BCODE(0xA3), MSTAR_2BCODE(0xA4), MSTAR_2BCODE(0xA5), MSTAR_2BCODE(0x00), MS
@@ -1726,7 +1726,7 @@ line level    source
                   MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x06), MSTAR_2BCODE(0x07), MSTAR_2BCODE(0x08), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x0A), MSTAR_2BCODE(0x0B), MSTAR_2BCODE(0x0C), MSTAR_2BCODE(0x0D), MS
              -TAR_2BCODE(0x0E), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x0F), MSTAR_2BCODE(0x0D), MSTAR_2BCODE(0x10), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 28  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 28  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x11), MSTAR_2BCODE(0x12), MSTAR_2BCODE(0x13), MSTAR_2BCODE(0x13), MSTAR_2BCODE(0x13), MS
              -TAR_2BCODE(0x13), MSTAR_2BCODE(0x14), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x15), MSTAR_2BCODE(0x16), MSTAR_2BCODE(0x03), MS
@@ -1790,7 +1790,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 29  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 29  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -1854,7 +1854,7 @@ line level    source
              -TAR_2BCODE(0x2A), MSTAR_2BCODE(0x2B), MSTAR_2BCODE(0x2C), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x2D), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 30  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 30  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
@@ -1918,7 +1918,7 @@ line level    source
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x97), MSTAR_2BCODE(0x98), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 31  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 31  
 
              -TAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MSTAR_2BCODE(0x09), MS
              -TAR_2BCODE(0x99), MSTAR_2BCODE(0x9A), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
@@ -1982,7 +1982,7 @@ line level    source
              -TAR_2BCODE(0x00), 
               };
               
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 32  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 32  
 
               #elif DisplayLogo ==INFORCE
  468          #define MSTAR_2BCODE(x) (x)
@@ -2046,7 +2046,7 @@ line level    source
              -TAR_2BCODE(0x86), MSTAR_2BCODE(0x87), MSTAR_2BCODE(0x88), MSTAR_2BCODE(0x89), MSTAR_2BCODE(0x5F), MSTAR_2BCODE(0x8A), MS
              -TAR_2BCODE(0x8B), MSTAR_2BCODE(0x8C), MSTAR_2BCODE(0x8D), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), 
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 33  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 33  
 
  480              MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x8E), MSTAR_2BCODE(0x8F), MSTAR_2BCODE(0x90), MS
              -TAR_2BCODE(0x91), MSTAR_2BCODE(0x92), MSTAR_2BCODE(0x93), MSTAR_2BCODE(0x94), MSTAR_2BCODE(0x8F), MSTAR_2BCODE(0x95), MS
@@ -2110,7 +2110,7 @@ line level    source
              -_2BCODE(0x0F), MSTAR_2BCODE(0x10), MSTAR_2BCODE(0x11), MSTAR_2BCODE(0x12), MSTAR_2BCODE(0x13), MSTAR_2BCODE(0x14), MSTAR
              -_2BCODE(0x15), MSTAR_2BCODE(0x16), MSTAR_2BCODE(0x17), MSTAR_2BCODE(0x18), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR
              -_2BCODE(0x00), 
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 34  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 34  
 
  493            MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x19), MSTAR_2BCODE(0x1A), MSTAR
              -_2BCODE(0x1B), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR
@@ -2174,7 +2174,7 @@ line level    source
              -_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR
              -_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR
              -_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 35  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 35  
 
              -_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR
              -_2BCODE(0x00), 
@@ -2238,7 +2238,7 @@ line level    source
                    MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x6D), MSTAR_2BCODE(0x6E), MSTAR_2BCODE(0x6F), MSTAR_2BCODE(0x08), MS
              -TAR_2BCODE(0x08), MSTAR_2BCODE(0x70), MSTAR_2BCODE(0x71), MSTAR_2BCODE(0x72), MSTAR_2BCODE(0x73), MSTAR_2BCODE(0x74), MS
              -TAR_2BCODE(0x75), MSTAR_2BCODE(0x76), MSTAR_2BCODE(0x77), MSTAR_2BCODE(0x78), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 36  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 36  
 
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x2E), MSTAR_2BCODE(0x50), MSTAR_2BCODE(0x79), MSTAR_2BCODE(0x7A), MS
              -TAR_2BCODE(0x7B), MSTAR_2BCODE(0x7C), MSTAR_2BCODE(0x7D), MSTAR_2BCODE(0x7E), MSTAR_2BCODE(0x7F), MSTAR_2BCODE(0x80), MS
@@ -2302,7 +2302,7 @@ line level    source
               #elif DisplayLogo ==DRAZILPC
               #define MSTAR_2BCODE(x) (x)
               BYTE code strLogWindow[11][59-1]= 
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 37  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 37  
 
               // Logo string format 0: 
               {
@@ -2366,7 +2366,7 @@ line level    source
              -TAR_2BCODE(0x75), MSTAR_2BCODE(0x0B), MSTAR_2BCODE(0x76), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x77), MSTAR_2BCODE(0x0B), MS
              -TAR_2BCODE(0x78), MSTAR_2BCODE(0x79), MSTAR_2BCODE(0x7A), MSTAR_2BCODE(0x7B), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MS
              -TAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), 
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 38  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 38  
 
                   MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x00), MSTAR_2BCODE(0x7C), MS
              -TAR_2BCODE(0x0B), MSTAR_2BCODE(0x7D), MSTAR_2BCODE(0x7E), MSTAR_2BCODE(0x7F), MSTAR_2BCODE(0x80), MSTAR_2BCODE(0x0B), MS
@@ -2430,7 +2430,7 @@ line level    source
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 39  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 39  
 
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
@@ -2494,7 +2494,7 @@ line level    source
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), 
                   MSTAR_2BCODE(0x04), MSTAR_2BCODE(0x6C), MSTAR_2BCODE(0x6D), MSTAR_2BCODE(0x6E), MSTAR_2BCODE(0x6F), MS
              -TAR_2BCODE(0x70), MSTAR_2BCODE(0x71), MSTAR_2BCODE(0x72), MSTAR_2BCODE(0x73), MSTAR_2BCODE(0x74), MSTAR_2BCODE(0x75), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 40  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 40  
 
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x2C), MSTAR_2BCODE(0x05), MSTAR_2BCODE(0x76), MSTAR_2BCODE(0x77), MSTAR_2BCODE(0x78), MS
              -TAR_2BCODE(0x05), MSTAR_2BCODE(0x79), MSTAR_2BCODE(0x41), MSTAR_2BCODE(0x31), MSTAR_2BCODE(0x2C), MSTAR_2BCODE(0x7A), MS
@@ -2558,7 +2558,7 @@ line level    source
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MS
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 41  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 41  
 
              -TAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), MSTAR_2BCODE(0x03), 
               };
@@ -2622,7 +2622,7 @@ line level    source
                             WRITE_CODE();
                   while( dispChar = *( str + dispPtr ) )        // display string font index
                   {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 42  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 42  
 
                     msWriteByte(PORT_CODE_DATA, dispChar);
                     dispPtr++;
@@ -2686,7 +2686,7 @@ line level    source
  662   1          //printMsg("Draw Logo Frame ");
  663   1          Osd_LoadLogoFontCP();
  664   1      
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 43  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 43  
 
  665   1      #if DisplayLogo ==MstarLOGO
               
@@ -2750,7 +2750,7 @@ line level    source
               #endif
                   OsdFontColor = 0x90;
                   for( i = 0; i < 11; i++ )
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 44  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 44  
 
                       for( k = 0; k < 75; k++ )
                           Osd_DrawCharDirect( k, i, Logo_4C+(strLogWindow[i][k])*2 );
@@ -2814,7 +2814,7 @@ line level    source
                        mStar_WaitForDataBlanking();
                          drvOSD_FrameColorRGB(0x00, 0x00, 0x00);
                          drvOSD_FrameColorEnable(TRUE);
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 45  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 45  
 
               #endif
                   OsdFontColor = 0x90;
@@ -2878,7 +2878,7 @@ line level    source
                   for( i = 0; i < 11; i++ )
                       for( k = 0; k < 58; k++ )
                           Osd_DrawCharDirect( k, i, Logo_4C+(strLogWindow[i][k])*2 );
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 46  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 46  
 
                   
               #elif DisplayLogo ==DRAZILPC
@@ -2942,7 +2942,7 @@ line level    source
  910   1          {
  911   2              MenuPageIndex = PowerOffMenu;
  912   2          }
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 47  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 47  
 
  913   1      }
  914          
@@ -3006,7 +3006,7 @@ line level    source
  972   1            #endif  
  973   1      
  974   1              //  else if (UnsupportedModeFlag)
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 48  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 48  
 
  975   1              //      MenuPageIndex=UnsupportedModeMenu;
  976   1              /******For PE Request*********
@@ -3070,7 +3070,7 @@ line level    source
 1034   3              OsdCounter = 0;
 1035   3              Clr_OsdTimeoutFlag();
 1036   3              return;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 49  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 49  
 
 1037   3            }
 1038   2          }
@@ -3134,7 +3134,7 @@ line level    source
 1096   1      #else
                    if (menuAction==MIA_Power)
               #endif
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 50  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 50  
 
 1099   1            {
 1100   2            PRO_menuAction=menuAction;
@@ -3198,7 +3198,7 @@ line level    source
 1158   3              #if AudioFunc
 1159   3              ||(menuAction==MIA_HotVolume)
 1160   3            #endif
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 51  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 51  
 
 1161   3              #if  LowBlueLight
                         ||(menuAction==MIA_HotLowBlueLightKey)
@@ -3262,7 +3262,7 @@ line level    source
 1219   4      
 1220   4                      ResetOsdTimer();
 1221   4                  }
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 52  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 52  
 
 1222   3                  Clr_OsdTimeoutFlag();
 1223   3              }
@@ -3326,7 +3326,7 @@ line level    source
                   drvOSD_FrameColorEnable(FALSE); 
                 #endif
 1283   3                  Power_TurnOffPanel();  //xhq
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 53  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 53  
 
 1284   3             Clr_DisplayLogoFlag();
 1285   3      
@@ -3390,7 +3390,7 @@ line level    source
 1343   3            #if Customer_Type_Sel==Customer_GUANRONG 
                             if(PatternNo==0)
                               {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 54  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 54  
 
                         PatternNo=6;
                         }
@@ -3454,7 +3454,7 @@ line level    source
                        moveX ++;
                     }
                   else
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 55  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 55  
 
                     {
                     moveX=0;
@@ -3518,7 +3518,7 @@ line level    source
 1467   4                  }
 1468   3                  else
 1469   3                  {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 56  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 56  
 
 1470   4                      moveX++;
 1471   4                  }
@@ -3582,7 +3582,7 @@ line level    source
 1529   1        
 1530   1      #if  ENABLE_SUPERRESOLUTION
               #if ENABLE_LED_CONTROLLER //121105 Modify
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 57  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 57  
 
                 if( !ColorSuperResolutionOff && !FreeRunModeFlag) // 120531 coding, needs to modify
               #else
@@ -3646,7 +3646,7 @@ line level    source
 1590   4                        if (CurrentMenuItemFunc.AdjustFunction)
 1591   4                        {
 1592   5                          if (CurrentMenuItemFunc.AdjustFunction(menuAction))
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 58  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 58  
 
 1593   5                            {
 1594   6                  
@@ -3710,7 +3710,7 @@ line level    source
 1652   7                    #if Enable_AdjustDCR
                             else if(CurrentMenuItemFunc.AdjustFunction==AdjustDcrMode)
                             {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 59  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 59  
 
                               Osd_SetTextMonoColor(0x0C,0x0E);
                               DrawOsdMenuItemSubValue(MenuItemIndex, &CurrentMenuItems[mEcoSelectItem].DisplayValue);
@@ -3774,7 +3774,7 @@ line level    source
 1713   6                if(MenuPageIndex==FactoryMenu)
 1714   6                  {
 1715   7                  SaveFactorySetting();
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 60  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 60  
 
 1716   7                  }
 1717   6                
@@ -3838,7 +3838,7 @@ line level    source
 1775   6                        menuAction= MIA_Nothing;
 1776   6                                   #else
                             menuAction=MIA_GotoPrevL1;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 61  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 61  
 
                              #endif
 1779   6                                                       processEvent=TRUE;
@@ -3902,7 +3902,7 @@ line level    source
 1837   4                #endif
 1838   4              #if Audio_Switch
                         else if((MenuPageIndex==OSD_MiscMenu)&&((SrcInputType==Input_DVI)||(SrcInputType==Input_Analog1)))
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 62  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 62  
 
                         {
                           if((tempValue==mVolumeTextItem)&&(menuAction==MIA_NextItem))
@@ -3966,7 +3966,7 @@ line level    source
                       else
                         MenuPageIndex=HotXINGZHUN3;
                       
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 63  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 63  
 
                      }
                    else if(MenuPageIndex==HotXINGZHUN5)
@@ -4030,7 +4030,7 @@ line level    source
                       {
                    menuAction=MIA_RedrawMenu;
                    KeypadButton=BTN_Repeat;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 64  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 64  
 
                    MenuItemIndex=0;
                    processEvent=TRUE;
@@ -4094,7 +4094,7 @@ line level    source
 2023   6              Osd_SetTextMonoColor(0x00, CPC_HKCBlackColor);
 2024   6              
 2025   6          
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 65  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 65  
 
 2026   6              Osd_DrawContinuesChar( 10 , 1 , SpaceFont , 0x19);
 2027   6              //Osd_DrawContinuesChar( 2 , 1 , SpaceFont , 0x27);
@@ -4158,7 +4158,7 @@ line level    source
 2082   5                UserPref_EnableFlashSaveBit( bFlashSaveMonitorBit );
 2083   5                #else 
                                                NVRam_WriteByte( nvrMonitorAddr( ColorTemp ), UserPrefColorTemp );
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 66  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 66  
 
                                                //NVRam_WriteByte(nvrMonitorAddr(ColorTempPre), UserPrefColorTempPre);   
                          #endif
@@ -4222,7 +4222,7 @@ line level    source
 2143   3            }//*/ 
 2144   3            
 2145   3                    break;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 67  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 67  
 
 2146   3      
 2147   3                  case MIA_GotoNext:
@@ -4286,7 +4286,7 @@ line level    source
                     printData("MIA_RedrawMenu=%d",MenuPageIndex);
                     #endif   
 2207   3          
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 68  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 68  
 
 2208   3            DrawOsdMenu();
 2209   3            #if Los_Select
@@ -4350,7 +4350,7 @@ line level    source
 2267   4            if(UserPrefLanguage==LANG_SimChinese||UserPrefLanguage==LANG_TraChinese||UserPrefLanguage==LANG_Russian
              -||UserPrefLanguage==LANG_Korean)
 2268   4              Osd_LoadNormalFontTable_LG2005_WordByLanguage();
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 69  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 69  
 
 2269   4      
 2270   4                          if (processEvent==TRUE)
@@ -4414,7 +4414,7 @@ line level    source
 2328   5                                   processEvent=TRUE;
 2329   5                                   break;
 2330   5            }
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 70  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 70  
 
 2331   4          
 2332   4            #if (1)//FactoryAuto_AutoColor
@@ -4478,7 +4478,7 @@ line level    source
 2390   3                      {
 2391   4                          if (!FactoryModeFlag)
 2392   4                              UserPrefLastMenuIndex = MenuItemIndex;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 71  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 71  
 
 2393   4                      }
 2394   3                      if (SaveSettingFlag)
@@ -4542,7 +4542,7 @@ line level    source
 2452   3                                break;
 2453   3              MenuPageIndex=HotKeyMuteMenu;
 2454   3              menuAction=MIA_RedrawMenu;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 72  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 72  
 
 2455   3              KeypadButton=BTN_Repeat;
 2456   3              MenuItemIndex=0;
@@ -4606,7 +4606,7 @@ line level    source
                   case MIA_HotCross:
                     #if DEBUG_PRINTDATA
                     printData("MIA_HotCross333", 2);
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 73  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 73  
 
                     #endif
                          if (TurboKeyCounter>0 && TurboKeyCounter<12)
@@ -4670,7 +4670,7 @@ line level    source
                           else
                           #endif
 2578   5                     #if InputType_HDMI
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 74  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 74  
 
 2579   5                    if(UserPrefSelectInputType==Input_HDMI)
 2580   5                    MenuItemIndex=mHDMITextItem;
@@ -4734,7 +4734,7 @@ line level    source
                         
                       processEvent=TRUE;
                       break;      
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 75  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 75  
 
               #endif
 2642   3      
@@ -4798,7 +4798,7 @@ line level    source
                         KeypadButton=BTN_Repeat;
                         MenuItemIndex=0;
                       processEvent=TRUE;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 76  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 76  
 
                       break;    
               
@@ -4862,7 +4862,7 @@ line level    source
 2762   3              if (PowerLockFlag)
 2763   3              { 
 2764   4                #if 0//DEBUG_MSG  
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 77  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 77  
 
                         printMsg("---0---powerUnLockedMenu");
                         #endif
@@ -4926,7 +4926,7 @@ line level    source
 2824   5                    }
 2825   4      
 2826   4                        MenuItemIndex = 0;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 78  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 78  
 
 2827   4                        menuAction = MIA_RedrawMenu;
 2828   4                        processEvent = TRUE;
@@ -4990,7 +4990,7 @@ line level    source
                         DrawOsdMenuItemSubValue(0, &tblMenus[menupage].MenuItems[mVPositionGuageItem].DisplayValue);
                         
                         DrawOsdMenuItemText(0,&tblMenus[menupage].MenuItems[mClockTextItem]);
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 79  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 79  
 
                         DrawOsdMenuItemSubValue(0, &tblMenus[menupage].MenuItems[mClockGuageItem].DisplayValue);
                         DrawOsdMenuItemText(0,&tblMenus[menupage].MenuItems[mPhaseTextItem]);
@@ -5054,7 +5054,7 @@ line level    source
 2947   6                                           Osd_SetTextMonoColor(0x0C,0x0E);
 2948   6                                           
 2949   6                                           DrawOsdMenuItemText(0,&tblMenus[menupage].MenuItems[mAutoAdjTextItem]
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 80  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 80  
 
              -);
 2950   6                #if _AUTOCOLOR_IN_SETTING_MENU_ENABLE          
@@ -5118,7 +5118,7 @@ line level    source
 3008   1          if (CurrentMenu.Flags &mpbInvisible)
 3009   1          {
 3010   2            Osd_Hide();
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 81  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 81  
 
 3011   2          }
 3012   1          else
@@ -5182,7 +5182,7 @@ line level    source
 3070   3          #if AudioFunc
 3071   3                || MenuPageIndex==HotKeyVolumeMenu
 3072   3                || MenuPageIndex==HotKeyMuteMenu
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 82  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 82  
 
 3073   3          #endif    
 3074   3      #if  LowBlueLight 
@@ -5246,7 +5246,7 @@ line level    source
                       DynamicLoad_2CrossFont(MenuPageIndex);
                       #if ( CHIP_ID==CHIP_TSUMV) 
                       DrawLogoDoubleSize();
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 83  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 83  
 
                       #endif
                     }
@@ -5310,7 +5310,7 @@ line level    source
 3194   4              //Osd_DrawContinuesChar( 2 , 1 , SpaceFont , 0x27);
 3195   4              
 3196   4            }
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 84  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 84  
 
 3197   3                      DrawOsdMenuItem( MenuItemIndex, &CurrentMenu.MenuItems[MenuItemIndex] );
 3198   3          if(MenuPageIndex==MainMenu)
@@ -5374,7 +5374,7 @@ line level    source
 3256   3                    if(MenuPageIndex==LanguageMenu||MenuPageIndex==OsdMenu)                
 3257   3                  {
 3258   4              for(i=SubMenu_DrawStarYPos;i<0x0D;i++,i++)
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 85  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 85  
 
 3259   4              {
 3260   5                Osd_SetTextMonoColor(0x00, 0x07);
@@ -5438,7 +5438,7 @@ line level    source
 3318   1        if (valueItem->DrawNumber)
 3319   1        { 
 3320   2              DrawOsdMenuItemNumber(itemIndex, valueItem->DrawNumber);
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 86  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 86  
 
 3321   2        }
 3322   1        if (valueItem->DrawRadioGroup)
@@ -5502,7 +5502,7 @@ line level    source
 3380   2          DrawOsd_MainMenuItemFrame(itemIndex);
 3381   2         }  
 3382   1      
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 87  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 87  
 
 3383   1             if (menuItem->DisplayValue)
 3384   1             {
@@ -5566,7 +5566,7 @@ line level    source
 3442   1        //  yPos&=0x3F;//~(BIT7|BIT6);
 3443   1        #ifdef NewOSDEngine 
                   yPos&=0x7F;
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 88  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 88  
 
               #else
 3446   1        yPos&=0x3F;//~(BIT7|BIT6);
@@ -5630,7 +5630,7 @@ line level    source
 3504   1          {
 3505   2              Osd_Draw3x2Icon_2(menuItem->XPos, menuItem->YPos, menuItem->DisplayText()); //*/
 3506   2          }
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 89  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 89  
 
 3507   1            else if (menuItem->DrawItemMethod==DWI_4x3Icon)
 3508   1          {
@@ -5694,7 +5694,7 @@ line level    source
 3566   2          {
 3567   3            if(MenuPageIndex==BurninMenu)
 3568   3            Osd_SetTextMonoColor(0x08, 0x01);//修改老化 菜单字体的颜色
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 90  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 90  
 
 3569   3            else
 3570   3            Osd_SetTextMonoColor(0x0F, 0x0E);
@@ -5758,7 +5758,7 @@ line level    source
 3628          //=========================================================================
 3629          // draw number
 3630          void DrawOsdMenuItemNumber(BYTE itemIndex, DrawNumberType *numberItem)
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 91  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 91  
 
 3631          {
 3632   1          itemIndex = 0;
@@ -5822,7 +5822,7 @@ line level    source
                       }
                       else
                       {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 92  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 92  
 
                           Osd_DrawNum(numberItem->XPos, numberItem->YPos, numberItem->GetValue());
                       }
@@ -5886,7 +5886,7 @@ line level    source
                   #endif
 3753   1      }
 3754          
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 93  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 93  
 
 3755          //=========================================================================
 3756          // draw radio
@@ -5950,7 +5950,7 @@ line level    source
 3813   2      #undef drawItem
 3814   2          } 
 3815   1      }
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 94  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 94  
 
 3816          void DrawTimingInfo(void)
 3817          {
@@ -6014,7 +6014,7 @@ line level    source
                   #else
                  vDisplay= scRead2Byte(SPRVDC_L); //Alex  20071011
                 #endif
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 95  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 95  
 
               
                 if(abs(vDisplay-STD_MODE_HEIGHT)<5)
@@ -6078,7 +6078,7 @@ line level    source
 3937   2              {
 3938   3              if (menuItem[i].Flags&mibDVIDisable && ((SrcInputType == Input_DVI)||(SrcInputType == Input_HDMI)|
              -|(SrcInputType == Input_Displayport)))
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 96  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 96  
 
 3939   3                  continue;
 3940   3                 if (menuItem[i].Flags&mibFactoryItem && !FactoryModeFlag)
@@ -6142,7 +6142,7 @@ line level    source
 3995   1          if (MenuPageIndex==MainMenu)
 3996   1        {
 3997   2      
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 97  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 97  
 
 3998   2          if (PrevItemIndex>=6)
 3999   2          {
@@ -6206,7 +6206,7 @@ line level    source
 4057   1        BYTE i;
 4058   1        BYTE j;
 4059   1        if (menupageindex==MainMenu)
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 98  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 98  
 
 4060   1        {
 4061   2        //Clear Frame
@@ -6270,7 +6270,7 @@ line level    source
 4119   2           {
 4120   2            Osd_SetTextColor(7,8);
 4121   2              Osd_DrawRealStr(26, (CurrentMenu.YSize-2), "BURN IN");
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 99  
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 99  
 
 4122   2           }
 4123   2          #endif
@@ -6334,7 +6334,7 @@ line level    source
 4181   1      
 4182   1          )
 4183   1        {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 100 
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 100 
 
 4184   2          //Clear Frame   
 4185   2           Osd_SetTextMonoColor(0x00, 0x0E);  
@@ -6398,7 +6398,7 @@ line level    source
                     Osd_DrawCharDirect(5+i, 6, MonoFontXZStart+i);      
                     }
                     for(i=0;i<2;i++)
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 101 
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 101 
 
                     {
                       Osd_DrawCharDirect(5+i, 7, MonoFontXZStart+2+i);      
@@ -6462,7 +6462,7 @@ line level    source
                           Osd_DrawContinuesChar( 0 , i , SpaceFont , OsdWindowWidth);   
                         }
               
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 102 
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 102 
 
                       //  { 
                       //  CP_WhiteColor=0x08,
@@ -6526,7 +6526,7 @@ line level    source
                           
                           for(i=0;i<6;i++)
                           {
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 103 
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 103 
 
                           Osd_DrawCharDirect( i, 2, MonoFontXZStart+8+i);     
                           }
@@ -6590,7 +6590,7 @@ line level    source
 4429   2          Osd_DrawCharDirect(0, 0, MenuFrame_LeftTop);
 4430   2          Osd_DrawCharDirect(CurrentMenu.XSize-1, 0, MenuFrame_RightTop);
 4431   2          Osd_DrawCharDirect(0, CurrentMenu.YSize-1, MenuFrame_LeftBottom);
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 104 
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 104 
 
 4432   2          Osd_DrawCharDirect(CurrentMenu.XSize-1, CurrentMenu.YSize-1, MenuFrame_RightBottom);
 4433   2          
@@ -6654,7 +6654,7 @@ line level    source
                 // BlacklitTimeOn_M = (BlacklitTime%3600)/60;
                 // BlacklitTimeOn_S = BlacklitTime%60;
                 if(HotKeyTimes_Minutes==0&&HotKeyTimes_Second==0)
-C51 COMPILER V9.60.0.0   MENU                                                              12/22/2020 19:50:19 PAGE 105 
+C51 COMPILER V9.60.0.0   MENU                                                              12/25/2020 09:24:08 PAGE 105 
 
                   Osd_SetTextMonoColor(0x0F,0x0C);  
                 else

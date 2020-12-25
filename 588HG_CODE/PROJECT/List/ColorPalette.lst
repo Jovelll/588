@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 1   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE COLORPALETTE
@@ -62,7 +62,7 @@ line level    source
   50              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 1
   51              {0x30, 0x90, 0xE0,  CP_COLORKEY_F},  // 2
   52              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 3
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 2   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 2   
 
   53          
   54              {0x80, 0xC0, 0xF0,  CP_COLORKEY_F},  // 4
@@ -126,7 +126,7 @@ line level    source
  112              {0xF0, 0x00, 0x00,  CP_COLORKEY_F},  // 0
  113              {0x00, 0x80, 0x00,  CP_COLORKEY_F},  // 0
  114            //========8 COLOR ============0x30
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 3   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 3   
 
  115              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
  116              {0xF0, 0xF0, 0x00,  CP_COLORKEY_F},  // 0
@@ -190,7 +190,7 @@ line level    source
  174          //===========hotkeyMenu color Palette=//
  175          //HotKeyDCROnMenu   //0x60
  176              {0xF0, 0xF0, 0xF0,  CP_COLORKEY_F},  // 0
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 4   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 4   
 
  177              {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
  178              {0x00, 0x50, 0xA0,  CP_COLORKEY_F},  // 0
@@ -254,7 +254,7 @@ line level    source
  236          #if DisplayLogo!=NoBrand
  237          #if DisplayLogo ==NANCHANG
               //NANCAHNG          //0x90
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 5   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 5   
 
                   {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
                   {0x21, 0x8C, 0xFF,  CP_COLORKEY_F},  // 0
@@ -318,7 +318,7 @@ line level    source
               //foxin           
                 {0x00, 0x00, 0x00,  CP_COLORKEY_F},  // 0
                   {0xFF, 0xFF, 0xFF,  CP_COLORKEY_F},  // 0
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 6   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 6   
 
                   {NULL, NULL, NULL,  CP_COLORKEY_F},  // 0
                   {NULL, NULL, NULL, CP_COLORKEY_F},  // 
@@ -382,7 +382,7 @@ line level    source
  359   2              msWriteByte(OSD1_66, ((colorPtr+i)->u8Blue));
  360   2              msWriteByte(OSD1_66, ((colorPtr+i)->u8Green));
  361   2              msWriteByte(OSD1_66, ((colorPtr+i)->u8Red));
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 7   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 7   
 
  362   2          }
  363   1      
@@ -446,7 +446,7 @@ line level    source
                   msWriteByte(OSD2_AC, u8Addr);
                   while (u16Num--)
                   {
-C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/22/2020 19:50:32 PAGE 8   
+C51 COMPILER V9.60.0.0   COLORPALETTE                                                      12/25/2020 09:24:37 PAGE 8   
 
                       msWriteByte(OSD2_AD, (colorPtr->u8Red));
                       msWriteByte(OSD2_AD, (colorPtr->u8Green));

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 1   
+C51 COMPILER V9.60.0.0   POWER                                                             12/25/2020 09:24:35 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE POWER
@@ -62,7 +62,7 @@ line level    source
   50          
   51          
   52          void Power_TurnOffLed( void );
-C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 2   
+C51 COMPILER V9.60.0.0   POWER                                                             12/25/2020 09:24:35 PAGE 2   
 
   53          void Power_TurnOffPanel( void );
   54          void Power_PowerOffSystem( void );
@@ -126,7 +126,7 @@ line level    source
  112   1          gBoolVisualKey = 0;
  113   1          gByteVisualKey = 0xff;
  114   1          Power_TurnOffPanel(); //modify by smc.lmw 20160617 for solution DC can not wake up
-C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 3   
+C51 COMPILER V9.60.0.0   POWER                                                             12/25/2020 09:24:35 PAGE 3   
 
  115   1          mStar_PowerUp();
  116   1          Clr_PowerSavingFlag();
@@ -190,7 +190,7 @@ line level    source
  174          {
  175   1      #if ENABLE_TOUCH_KEY
                   #if TOUCH_KEY_CTRL_LED
-C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 4   
+C51 COMPILER V9.60.0.0   POWER                                                             12/25/2020 09:24:35 PAGE 4   
 
                   //TouchKeySetLEDStatus = TouchKeyLEDStatus_GREEN_ON;
                   TouchKey_CtrlLED(TouchKeyLEDStatus_GREEN_ON);
@@ -254,7 +254,7 @@ line level    source
  236   1      
  237   1          ForceDelay1ms( PanelOnTiming2 );
  238   1      
-C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 5   
+C51 COMPILER V9.60.0.0   POWER                                                             12/25/2020 09:24:35 PAGE 5   
 
  239   1          mStar_BlackWhiteScreenCtrl(BW_SCREEN_OFF);
  240   1      
@@ -318,7 +318,7 @@ line level    source
               #else              //-Duty power
  297   1               drvGPIO_SetBacklightDuty(BrightnessPWM, 0);
  298   1      #endif
-C51 COMPILER V9.60.0.0   POWER                                                             12/22/2020 19:50:31 PAGE 6   
+C51 COMPILER V9.60.0.0   POWER                                                             12/25/2020 09:24:35 PAGE 6   
 
  299   1      
  300   1      

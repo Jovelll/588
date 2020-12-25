@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 1   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE FACTORYALIGNAPP
@@ -62,7 +62,7 @@ line level    source
   49          extern Bool xdata bFlashWriteFactory;
   50          extern void DDC2Bi_MessageReady( void );
   51          
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 2   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 2   
 
   52          //BYTE xdata LoadEDIDSelectPort = 0xFF ;
   53          #if 0
@@ -126,7 +126,7 @@ line level    source
               {
                   if( wData > MaxColorValue )
                       UserPrefGreenColor = MaxColorValue;
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 3   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 3   
 
                   else if( wData < MinColorValue )
                       UserPrefGreenColor = MinColorValue;
@@ -190,7 +190,7 @@ line level    source
               WORD appFactoryGetAdcBlueOffset( void )
               {
                   return UserPrefAdcBlueOffset;
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 4   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 4   
 
               }
               
@@ -254,7 +254,7 @@ line level    source
                           break;
               
                       case FACTORY_COLOR_SAVE:
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 5   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 5   
 
                           SaveFactorySetting();
                           break;
@@ -318,7 +318,7 @@ line level    source
                           mStar_AdjustContrast( UserPrefContrast );
                           break;
               
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 6   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 6   
 
                       case FACTORY_COLOR_USER:
               
@@ -382,7 +382,7 @@ line level    source
                       UserPrefLanguage = LANG_Japanese;
                   else if( ucLanguage == LanRussianCode )
                       UserPrefLanguage = LANG_Russia;
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 7   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 7   
 
                   else if( ucLanguage == LanSwedishCode )
                       UserPrefLanguage = LANG_Swedish;
@@ -446,7 +446,7 @@ line level    source
                   else if( ucLanguage == LanSChineseCode )
                       UserPrefLanguage = LANG_SChina;
                   else if( ucLanguage == LanPortugueseBrazilCode )
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 8   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 8   
 
                       UserPrefLanguage = LANG_Portugues;
                   else if( ucLanguage == LanCzechCode )
@@ -510,7 +510,7 @@ line level    source
               }
               
               Bool appFactoryAutoSetup( void )
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 9   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 9   
 
               {
                   Bool result = FALSE;
@@ -574,7 +574,7 @@ line level    source
                   NVRam_WriteByte( nvrMonitorAddr( MonitorFlag ), MonitorFlags );
               #else
                   //SaveMonitorSetting();
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 10  
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 10  
 
                   Set_FlashForceSaveMonitorFlag();
               #endif
@@ -638,7 +638,7 @@ line level    source
                   Clr_ForcePowerSavingFlag(); // clear force power saving flag
               
                   if( !PowerSavingFlag )
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 11  
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 11  
 
                   {
                       //SET_DFM_POWERSAVING_FLAG();
@@ -702,7 +702,7 @@ line level    source
                           #endif            
                       }
               
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 12  
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 12  
 
                       TCRCCounter++;
               
@@ -766,7 +766,7 @@ line level    source
               #elif (INPUT_TYPE==INPUT_1A1H1DP ||INPUT_TYPE == INPUT_1A1D1H1DP)
                   ucInputEDID  = VGA1_EDID | HDMI1_EDID | DP1_EDID;
               #elif INPUT_TYPE==INPUT_1A1D1H
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 13  
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 13  
 
                   ucInputEDID  = VGA1_EDID | DVI1_EDID | HDMI1_EDID;
               #elif INPUT_TYPE==INPUT_1A2D
@@ -830,7 +830,7 @@ line level    source
                   {
                       ucType = FLASH_KEY_HDCP;
                       Flash_WriteTbl( TRUE, HDCPKEYSET_START + wAddr, buf, ucLen );
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 14  
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 14  
 
                   }
                   else if( ucDevice == DP1 || ucDevice == DP2)    ////111005 Rick add write DP edid condition - A020
@@ -894,7 +894,7 @@ line level    source
                       ReadDevice( ucDevice, wAddr, ucLen ); //Read EDID or HDCP KEY
                       for( i = 0; i < ucLen; i++ )
                       {
-C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/22/2020 19:50:34 PAGE 15  
+C51 COMPILER V9.60.0.0   FACTORYALIGNAPP                                                   12/25/2020 09:24:41 PAGE 15  
 
                           *(buf+1) = SIORxBuffer[i];
                       }

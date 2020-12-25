@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 1   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MCU
@@ -62,7 +62,7 @@ line level    source
   50          /*
   51          #if( ENABLE_WATCH_DOG )
   52          void ClearWDT( void )
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 2   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 2   
 
   53          {
   54              msWriteBit( REG_3C66, 1, _BIT1 );
@@ -126,7 +126,7 @@ line level    source
  111   1      
  112   1      #if !USEFLASH
                   Set_EEPROM_WP();
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 3   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 3   
 
                   Init_hwI2C_SCL_Pin();
                   Init_hwI2C_SDA_Pin();
@@ -190,7 +190,7 @@ line level    source
                   Clr_SPI_SEL();
                   Init_SPI_SEL_Pin();
               #endif
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 4   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 4   
 
  176   1      
  177   1      #if ENABLE_MHL
@@ -254,7 +254,7 @@ line level    source
  235   1      
  236   1          //INT1
  237   1      #if UseINT
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 5   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 5   
 
  238   1          INT_SYNC_CHANGE_TRIGGER_TYPE();//msWriteByteMask( SC0_CA, _BIT1 | _BIT0, _BIT1 | _BIT0); // BIT0 for l
              -evel trigger, BIT1 for active high
@@ -318,7 +318,7 @@ line level    source
  295   1        TH0 = g_ucTimer0_TH0;
  296   1        TL0 = g_ucTimer0_TL0; // timer 0 counter
  297   1        TF0=0; // timer 1 flag
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 6   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 6   
 
  298   1      
  299   1       /* -------------initialize Timer 1 -----------------------------*/
@@ -382,7 +382,7 @@ line level    source
  357   1          TI = 0;                     // clear transfer flag
  358   1          RI = 0;
  359   1      
-C51 COMPILER V9.60.0.0   MCU                                                               12/22/2020 19:50:27 PAGE 7   
+C51 COMPILER V9.60.0.0   MCU                                                               12/25/2020 09:24:25 PAGE 7   
 
  360   1        #if ENABLE_DEBUG
  361   1      

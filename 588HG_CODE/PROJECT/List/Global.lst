@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 1   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE GLOBAL
@@ -62,7 +62,7 @@ line level    source
   50          #if ENABLE_DPS||ENABLE_DSC
   51          BOOL idata bRunToolFlag = 0;
   52          #endif
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 2   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 2   
 
   53          BYTE g_ucTimer0_TH0;
   54          BYTE g_ucTimer0_TL0;
@@ -126,7 +126,7 @@ line level    source
               BYTE xdata w16DAC_DePopStep = 0;
               bit bDAC_DePopFlag = 0;
               #endif
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 3   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 3   
 
  114          
  115          BYTE xdata TPDebunceCounter = 0;
@@ -190,7 +190,7 @@ line level    source
  173          #if ENABLE_HDCP&&HDCPKEY_IN_Flash
  174          BYTE xdata HDCPDataBuffer[6]; //[6];
  175          #endif
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 4   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 4   
 
  176          
  177          BYTE xdata InputColorFormat = 0; // indicate input color space is RGB or YUV
@@ -254,7 +254,7 @@ line level    source
  235          BYTE xdata LastMenuPage = 0;
  236          
  237          //bit PowerGoodExistFlag = 0;
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 5   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 5   
 
  238          
  239          extern void msdrvDPRxAppDummy(void);
@@ -318,7 +318,7 @@ line level    source
  297          
  298          #if !ENABLE_LED_CONTROLLER
  299              msLEDControllerDummy();
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 6   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 6   
 
  300          #endif
  301          #if  !ENABLE_3DLUT
@@ -382,7 +382,7 @@ line level    source
  358   2              msdrvDPRxAppDummy();
  359   2          #endif
  360   2      
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 7   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 7   
 
  361   2          #if !ENABLE_DEBUG
                       msDebugDummy();
@@ -446,7 +446,7 @@ line level    source
  420   2              msLEDControllerDummy();
  421   2          #endif
  422   2      
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 8   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 8   
 
  423   2          #if  !ENABLE_3DLUT
  424   2              ms3DLUT_Dummy();
@@ -510,7 +510,7 @@ line level    source
  481   2          msDpTxDummy();
  482   2        #endif
  483   2          msAdjustXVYccVideoHue( MAIN_WINDOW, 50 );
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 9   
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 9   
 
  484   2          msAdjustXVYCCVideoContrastRGB(MAIN_WINDOW, 0x80, 0x80, 0x80, 0x80);
  485   2          msAdjustXVYccVideoSaturation( MAIN_WINDOW, 128 );
@@ -574,7 +574,7 @@ line level    source
  543   2              Set_DoBurninModeFlag();
  544   2          }
  545   1          else
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 10  
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 10  
 
  546   1          {
  547   2              Clr_DoBurninModeFlag();
@@ -638,7 +638,7 @@ line level    source
                       SecondTblAddr = 0xFF;
                   }
               #elif LANGUAGE_TYPE == EUROPE
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 11  
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 11  
 
                   LanguageIndex = 0;
                   SecondTblAddr = 0xFF;
@@ -702,7 +702,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =    341    ----
    PDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.0.0   GLOBAL                                                            12/22/2020 19:50:25 PAGE 12  
+C51 COMPILER V9.60.0.0   GLOBAL                                                            12/25/2020 09:24:22 PAGE 12  
 
    DATA SIZE        =      9       9
    IDATA SIZE       =      1    ----

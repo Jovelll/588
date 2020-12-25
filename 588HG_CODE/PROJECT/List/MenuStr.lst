@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 1   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MENUSTR
@@ -62,7 +62,7 @@ line level    source
   51              FONT_8COLOR_ICON_START+12*Icon8Color_AddrShift,
   52              FONT_8COLOR_ICON_START+13*Icon8Color_AddrShift,
   53              FONT_8COLOR_ICON_START+14*Icon8Color_AddrShift,
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 2   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 2   
 
   54              FONT_8COLOR_ICON_START+15*Icon8Color_AddrShift,
   55              FONT_8COLOR_ICON_START+16*Icon8Color_AddrShift,
@@ -126,7 +126,7 @@ line level    source
                 FONT_XZ4COLOR_ICON_START+10*Icon4Color_AddrShift,
                 FONT_XZ4COLOR_ICON_START+11*Icon4Color_AddrShift,
                 FONT_XZ4COLOR_ICON_START+12*Icon4Color_AddrShift,
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 3   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 3   
 
                 FONT_XZ4COLOR_ICON_START+13*Icon4Color_AddrShift,
                 FONT_XZ4COLOR_ICON_START+14*Icon4Color_AddrShift,
@@ -190,7 +190,7 @@ line level    source
                 FONT_4COLOR_ICON_START+29*Icon4Color_AddrShift,
                 FONT_4COLOR_ICON_START+30*Icon4Color_AddrShift,
                 FONT_4COLOR_ICON_START+31*Icon4Color_AddrShift,
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 4   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 4   
 
                 FONT_4COLOR_ICON_START+32*Icon4Color_AddrShift,
                 FONT_4COLOR_ICON_START+33*Icon4Color_AddrShift,
@@ -254,7 +254,7 @@ line level    source
               }
               #endif
  239          //--------------------------------------
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 5   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 5   
 
  240          BYTE* MainMenu_BrightText(void) 
  241          { 
@@ -318,7 +318,7 @@ line level    source
  299   1          else
  300   1          {
  301   2              return strStandardM1[UserPrefLanguage];
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 6   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 6   
 
  302   2          }
  303   1      }
@@ -382,7 +382,7 @@ line level    source
  361          
  362          //--------------
  363          BYTE* HPositionText(void)
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 7   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 7   
 
  364          { return strImage_HPositionM9[UserPrefLanguage];
  365   1      }
@@ -446,7 +446,7 @@ line level    source
  423   1          return strColorTemp_6500k[UserPrefLanguage];
  424   1        #endif
  425   1        
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 8   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 8   
 
  426   1        #if  FactoryAuto_9300K
  427   1        if (UserPrefColorTemp==CTEMP_9300K)
@@ -510,7 +510,7 @@ line level    source
  485          { 
  486   1        return strLanguage[4];
  487   1      }
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 9   
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 9   
 
  488          #endif
  489          #if Language_Spanish
@@ -574,7 +574,7 @@ line level    source
               {
                 return strRst_ColorAdjM12[UserPrefLanguage];
               }
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 10  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 10  
 
               #endif
  551          BYTE *RST_ResetText(void)
@@ -638,7 +638,7 @@ line level    source
                   {
                     return strLineIn[UserPrefLanguage];
                   }
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 11  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 11  
 
                 }
               }
@@ -702,7 +702,7 @@ line level    source
  671          #endif
  672          #if InputType_Digital
               BYTE* HotKeyInputDVIText(void)
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 12  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 12  
 
               { 
                  return strHotKeyInputType_DVI[UserPrefLanguage];   
@@ -766,7 +766,7 @@ line level    source
                  return strHotKeyTimes_90[UserPrefLanguage];    
               }
               
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 13  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 13  
 
               BYTE* HotKeyShowTimesText(void)
               { 
@@ -830,7 +830,7 @@ line level    source
  795          { return strOutOfRange[UserPrefLanguage];
  796   1      }
  797          
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 14  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 14  
 
  798          //-------------------------------------------
  799          BYTE *FactoryAutoColorText(void)
@@ -894,7 +894,7 @@ line level    source
  857   1        return strExit1Text;
  858   1      }
  859          BYTE *SelectText1 (void)
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 15  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 15  
 
  860          {
  861   1        return strSelect1Text;
@@ -958,7 +958,7 @@ line level    source
  919          {
  920   1        return strFactoryExitText;
  921   1      }
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 16  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 16  
 
  922          
  923          //--------
@@ -1022,7 +1022,7 @@ line level    source
               BYTE *EDIDText(void)
               {
                 return strEDID_SText;
-C51 COMPILER V9.60.0.0   MENUSTR                                                           12/22/2020 19:50:21 PAGE 17  
+C51 COMPILER V9.60.0.0   MENUSTR                                                           12/25/2020 09:24:13 PAGE 17  
 
               }
               

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 1   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DRVADC
@@ -62,7 +62,7 @@ line level    source
   50          #define   AUTO_GAIN_RGB_MINVAL              (AUTO_GAIN_RGB_TARGET_CODE-AUTO_GAIN_TOLERANCE_CODE )
   51          #define   DADCMISMATCHLOOP                  5  // ADC mismatch calibration loop
   52          
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 2   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 2   
 
   53          #define drvADC_Write2BytesMask  msWrite2ByteMask
   54          #define drvADC_ReadByte         msReadByte
@@ -126,7 +126,7 @@ line level    source
  112          typedef struct
  113          {
  114              BYTE AVG_Rch;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 3   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 3   
 
  115              BYTE AVG_Gch;
  116              BYTE AVG_Bch;
@@ -190,7 +190,7 @@ line level    source
  173          static void drvADC_SetPGAGainCode(BYTE ucAdcPgaGain);  //Steven110329, Solve check PGA gain issue.
  174          
  175          #if DADCPLLPROTECTION
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 4   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 4   
 
  176          static void drvADC_IsEnableFreeRun(Bool bflag);
  177          static void drvADC_SetAutoProst(Bool bflag);
@@ -254,7 +254,7 @@ line level    source
  234   1      
  235   1      #if ((CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD)|| (CHIP_ID==CHIP_TSUMJ) |
              -| (CHIP_ID == CHIP_TSUM9)|| (CHIP_ID == CHIP_TSUMF))
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 5   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 5   
 
  236   1      
  237   1      #ifndef FPGA
@@ -318,7 +318,7 @@ line level    source
  292          //  [Description]
  293          //                  Setup ADC source is RGB or YPbPr or SOG
  294          //  [Arguments]:
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 6   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 6   
 
  295          //                  inputsrc_type: RGB / YPbPr / SOG
  296          //  [Return]:
@@ -382,7 +382,7 @@ line level    source
  354   1          drvADC_LoadTable(&Tab_info);
  355   1      #if (CHIP_ID == CHIP_TSUM9) && ENABLE_XTAL_LESS
                       gADCBackupSetting.BWCoef = drvADC_ReadByte(REG_ADC_DTOP_02_L);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 7   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 7   
 
                       gADCBackupSetting.DampCoef = drvADC_ReadByte(REG_ADC_DTOP_03_L);
               #endif
@@ -446,7 +446,7 @@ line level    source
  416   1      }
  417          
  418          
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 8   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 8   
 
  419          //**************************************************************************
  420          //  [Function Name]:
@@ -510,7 +510,7 @@ line level    source
  477          //**************************************************************************
  478          //  [Function Name]:
  479          //                  drvADC_SetRGBOffsetCode()
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 9   
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 9   
 
  480          //  [Description]
  481          //                  Set ADC R/G/B offset code
@@ -574,7 +574,7 @@ line level    source
  537   1          drvADC_MismatchLinearityCal();
  538   1          drvADC_SetPGAGainCode(UserPrefAdcPgaGain);  //for ADC linearity calibration
  539   1      #endif // #if ((CHIP_ID == CHIP_TSUMD) || (CHIP_ID == CHIP_TSUMJ) || (CHIP_ID == CHIP_TSUM9)|| (CHIP_ID ==
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 10  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 10  
 
              - CHIP_TSUMF))
  540   1      
@@ -638,7 +638,7 @@ line level    source
  589   1          // if input signal less than iclamp code, iclamp engine will be charge and discharge iteratively then 
              -makes engine crash
  590   1          // so 32/512 = 0.0625, mismatch gain must be large than (1-0.0625), that is 0.94 = 0x3C2
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 11  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 11  
 
  591   1          gADCMismatchAvgVal.wGainVal_Rch0 = (gADCMismatchAvgVal.wGainVal_Rch0 > 0x3C2) ? gADCMismatchAvgVal.wGa
              -inVal_Rch0 : 0x3C2;
@@ -702,7 +702,7 @@ line level    source
  629   1          ADC_DPRINTF("R Ch1 gain code= 0x%x", gADCMismatchAvgVal.wGainVal_Rch1);
  630   1          ADC_DPRINTF("G Ch0 gain code= 0x%x", gADCMismatchAvgVal.wGainVal_Gch0);
  631   1          ADC_DPRINTF("G Ch1 gain code= 0x%x", gADCMismatchAvgVal.wGainVal_Gch1);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 12  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 12  
 
  632   1          ADC_DPRINTF("B Ch0 gain code= 0x%x", gADCMismatchAvgVal.wGainVal_Bch0);
  633   1          ADC_DPRINTF("B Ch1 gain code= 0x%x", gADCMismatchAvgVal.wGainVal_Bch1);
@@ -766,7 +766,7 @@ line level    source
                           mincksum=cksum;
                           worsePhase2=i;
                       }
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 13  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 13  
 
                       if (CheckSyncLoss())//||CheckPowerKeyStatus())
                           return FALSE;
@@ -830,7 +830,7 @@ line level    source
                   return TRUE;
               }
               #endif
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 14  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 14  
 
  756          //**************************************************************************
  757          //  [Function Name]:
@@ -894,7 +894,7 @@ line level    source
  814   1      */    
  815   1          
  816   1          msWriteByte(SC0_78, 0); // disable auto Gain
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 15  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 15  
 
  817   1      
  818   1          #if 1
@@ -958,7 +958,7 @@ line level    source
                   drvADC_Write2BytesMask(REG_ADC_ATOP_24_L, val<<4|val, 0x00FF);
               }
               #endif
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 16  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 16  
 
  879          #if DADCPLLPROTECTION
  880          //**************************************************************************
@@ -1022,7 +1022,7 @@ line level    source
  936   1          // ADC software reset for °ª·Å¥Õ«Ìissue
  937   1          drvADC_Write2BytesMask(REG_ADC_ATOP_07_L, BIT0, BIT0);
  938   1          drvADC_Write2BytesMask(REG_ADC_ATOP_07_L, 0, BIT0);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 17  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 17  
 
  939   1          Delay1ms(2);
  940   1      #if CHIP_ID == CHIP_TSUMF
@@ -1086,7 +1086,7 @@ line level    source
                           break;
                       case 0x3F: // 1.415667
                           UserPrefAdcRedGain = 1449;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 18  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 18  
 
                           UserPrefAdcGreenGain = 1449;
                           UserPrefAdcBlueGain = 1449;
@@ -1150,7 +1150,7 @@ line level    source
                   // Set R/G/B gain initial setting value at 0x0400
                   // 6. Gain calibration target value for RGB color space mode is 182 (8bit data) 255 * 0.5 / 0.7 = 182
                   // 7. Get the ADC digital output with Turn-On LDO and Set VCAL to 1.05v
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 19  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 19  
 
                   // 8. Get the ADC digital output with VCAL to 0.55v
                   // 9. Calculate the difference between 1.05V and 0.55V of these 3 channels.
@@ -1214,7 +1214,7 @@ line level    source
                   drvADC_RecoverADCSetting();
                   drvADC_RecoverScalerSetting();
               }
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 20  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 20  
 
               
               #endif
@@ -1278,7 +1278,7 @@ line level    source
               //**************************************************************************
               static BYTE drvADC_ReadByte(WORD u16regadr)
               {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 21  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 21  
 
               #if 1//CHIP_ID == CHIP_TSUMU
                   return msReadByte( u16regadr );
@@ -1342,7 +1342,7 @@ line level    source
 1244          //                 pTab_info
 1245          //  [Return]:
 1246          //
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 22  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 22  
 
 1247          //**************************************************************************
 1248          static void drvADC_LoadTable(TAB_Info* pTab_info)
@@ -1406,7 +1406,7 @@ line level    source
 1305          {
 1306   1          TAB_Info Tab_info;
 1307   1          Tab_info.pTable = (void*)MST_ADCMUX_TBL;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 23  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 23  
 
 1308   1          Tab_info.u8TabCols = REG_ADDR_SIZE+REG_MASK_SIZE+ADC_TABLE_MUX_NUMS*REG_DATA_SIZE;
 1309   1          Tab_info.u8TabRows = sizeof(MST_ADCMUX_TBL)/Tab_info.u8TabCols;
@@ -1470,7 +1470,7 @@ line level    source
 1367   1          gADCBackupSetting.LPF_Bch = drvADC_ReadByte(REG_ADC_ATOP_23_L) & 0x0F;
 1368   1          gADCBackupSetting.Blacklevel_Rch = (drvADC_ReadByte(REG_ADC_DTOP_44_H) << 8 | drvADC_ReadByte(REG_ADC_
              -DTOP_44_L)) & 0x03FF;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 24  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 24  
 
 1369   1          gADCBackupSetting.Blacklevel_Gch = (drvADC_ReadByte(REG_ADC_DTOP_47_H) << 8 | drvADC_ReadByte(REG_ADC_
              -DTOP_47_L)) & 0x03FF;
@@ -1534,7 +1534,7 @@ line level    source
 1422          //**************************************************************************
 1423          static void drvADC_SetFreeRunClock(void)
 1424          {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 25  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 25  
 
 1425   1          //drvADC_Write2BytesMask(REG_ADC_ATOP_01_L, 0x4001, 0xFFFF); // ADC enable
 1426   1          //drvADC_Write2BytesMask(REG_ADC_ATOP_04_L, 0, 0xFFFF); // Turn on analog power down
@@ -1598,7 +1598,7 @@ line level    source
              -to/Manual mode)
 1477   2              drvADC_Write2BytesMask(REG_ADC_DTOP_68_L, 0x0700, 0x0700); // [10:8]: Rising trigger for R/G/B (Au
              -to/Manual mode)
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 26  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 26  
 
 1478   2              drvADC_Write2BytesMask(REG_ADC_DTOP_68_L, 0x0000, 0x0700); // [10:8]: Rising trigger for R/G/B (Au
              -to/Manual mode)
@@ -1662,7 +1662,7 @@ line level    source
 1532   1          while ((wTimeOutCnt>0) && (!(drvADC_ReadByte(REG_ADC_ATOP_74_L) & 0x07)))
 1533   1          {
 1534   2              wTimeOutCnt--;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 27  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 27  
 
 1535   2          }
 1536   1          if(wTimeOutCnt == 0)
@@ -1726,7 +1726,7 @@ line level    source
 1594   2              wGchPivot = wGch0val;
 1595   2          }
 1596   1          // B-ch
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 28  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 28  
 
 1597   1          if(wBch0val > wBch1val)
 1598   1          {
@@ -1790,7 +1790,7 @@ line level    source
 1647   1          // 7. Turn on enable offset mismatch compensated codes
 1648   1          drvADC_Write2BytesMask(REG_ADC_ATOP_55_L, 0x0015, 0x0095); // [7]: acc low disable, [4]: B mismatch of
              -fset enable, [2]: G mismatch offset enable, [0]: R mismatch offset enable,
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 29  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 29  
 
 1649   1      
 1650   1          // 8. Turn off ADC offset calibration pulse
@@ -1854,7 +1854,7 @@ line level    source
 1706   1      
 1707   1          // 5. Select Vcal 0.55V
 1708   1      #if DADCCALBYBANDGAP
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 30  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 30  
 
                   drvADC_Write2BytesMask(REG_ADC_ATOP_54_L, 0xD800, 0xF800); // [15]:ADC VCAL force enable, [14:11]: set
              - Vcal = 0.55V, 
@@ -1918,7 +1918,7 @@ line level    source
                   wBch1Div = ((wTargetCode / wBch1val) << 10) | (WORD)(((DWORD)(wTargetCode%wBch1val)<<10)/wBch1val);
               
               #elif DADCNEWGAINCALMETHOD == 2
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 31  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 31  
 
               
                   #if (CHIP_ID == CHIP_TSUMF)
@@ -1982,7 +1982,7 @@ line level    source
               
               #else
 1831   1      
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 32  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 32  
 
 1832   1          // R-ch
 1833   1          if(wRch0val > wRch1val)
@@ -2046,7 +2046,7 @@ line level    source
 1891   2          }
 1892   1          else // wGch0val = wGch1val
 1893   1          {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 33  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 33  
 
 1894   2              wGch0Div = 0x0400;
 1895   2              wGch1Div = 0x0400;
@@ -2110,7 +2110,7 @@ line level    source
                   ADC_DPRINTF("R Ch0 gain val= 0x%x", wRch0val);
                   //ADC_DPRINTF("R Ch1 gain val= 0x%x", wRch1val);
                   ADC_DPRINTF("G Ch0 gain val= 0x%x", wGch0val);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 34  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 34  
 
                   //ADC_DPRINTF("G Ch1 gain val= 0x%x", wGch1val);
                   ADC_DPRINTF("B Ch0 gain val= 0x%x", wBch0val);
@@ -2174,7 +2174,7 @@ line level    source
 2007   2              gGain=((WORD)maxGGain+minGGain)/2;
 2008   2              bGain=((WORD)maxBGain+minBGain)/2;
 2009   2              drvADC_SetRGBGainCode(rGain, gGain, bGain);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 35  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 35  
 
 2010   2              Delay1ms(u8VSyncTime);
 2011   2              // Wait scaler auto gain is done, SC0_78[1] = 1
@@ -2238,7 +2238,7 @@ line level    source
 2069   3              }
 2070   2              else
 2071   2              {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 36  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 36  
 
 2072   3                  minGGain=gGain-1;
 2073   3                  atgFlags|=DGain_NoneOverFlow_G_ch;
@@ -2302,7 +2302,7 @@ line level    source
 2130          //**************************************************************************
 2131          static BYTE drvADC_CheckPGAGain(BYTE vsyncTime)
 2132          {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 37  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 37  
 
 2133   1          BYTE u8CurPGA, adcStatus;
 2134   1      
@@ -2366,7 +2366,7 @@ line level    source
 2192          //                  bflag: TRUE => enable, FALSE => disable
 2193          //  [Return]:
 2194          //
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 38  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 38  
 
 2195          //**************************************************************************
 2196          static void drvADC_IsEnableFreeRun(Bool bflag)
@@ -2430,7 +2430,7 @@ line level    source
 2254   1          drvADC_LoadTable(&Tab_info);
 2255   1      
 2256   1          //ADC_DPRINTF("ADC Tbl:drvADC_SetAutoProst %d\n", bflag);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 39  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 39  
 
 2257   1      }
 2258          #endif // #ifdef DADCPLLPROTECTION
@@ -2494,7 +2494,7 @@ line level    source
               //                  Mask external sync when connecting with source
               //  [Precondition]:
               //
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 40  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 40  
 
               //  [Arguments]:
               //                 bflag: TRUE: Mask, FALSE: non-Mask
@@ -2558,7 +2558,7 @@ line level    source
                           drvADC_Write2BytesMask(REG_ADC_ATOP_54_L, 0x0003, 0x0003); // set Vcal = 1.05V
                           drvADC_Write2BytesMask(REG_ADC_ATOP_54_L, 0x000C, 0x000C); // set Vcal from LDO
                           drvADC_Write2BytesMask(REG_ADC_ATOP_54_L, 0, 0xF800); // disable bandgap overwrite
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 41  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 41  
 
                       #endif // DADCCALBYBANDGAP
                           drvADC_Write2BytesMask(REG_ADC_ATOP_54_L, 0x0600, 0x0700); // turn on Gcal pulse
@@ -2622,7 +2622,7 @@ line level    source
               #elif (CHIP_ID == CHIP_TSUMV || CHIP_ID == CHIP_TSUM2) //
                   msWriteByteMask(REG_2E42, 0, 0x1F); // Rosen: [4]: No input ADC calibration enable, [3]: Enable PG's H
              -sync/Vsync/Hde/Vde to IP, [2:1]: Htotal, [0]: Pattern gen engine enable
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 42  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 42  
 
               #elif ((CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK) || (CHIP_ID == CHIP_TSUMD) || (CHIP_ID == CHIP_TSU
              -MJ) || (CHIP_ID == CHIP_TSUM9)|| (CHIP_ID == CHIP_TSUMF))
@@ -2686,7 +2686,7 @@ line level    source
               //                  SC5_35[7:0]: R0, SC5_36[7:0]: G0, SC5_37[7:0]: B0
               //                  SC5_38[7:0]: R1, SC5_39[7:0]: G1, SC5_3A[7:0]: B1
               //  [Precondition]:
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 43  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 43  
 
               //
               //  [Arguments]:
@@ -2750,7 +2750,7 @@ line level    source
                   {
                       for( i = 0; i < AvgCnt/2; i++ )
                       {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 44  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 44  
 
                           msWrite2ByteMask( SC5_31, wLineBufAddress + ( i / 2 ), 0x1FFF ); // config line buffer address
                           wAvgRdata = wAvgRdata + msReadByte( SC5_35 ) + msReadByte( SC5_38 ); //read R0+R1 line buffer 
@@ -2814,7 +2814,7 @@ line level    source
                   xdata WORD GainOffset_R = InitADCGainVal >> 1;
                   xdata WORD GainOffset_G = InitADCGainVal >> 1;
                   xdata WORD GainOffset_B = InitADCGainVal >> 1;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 45  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 45  
 
                   xdata BYTE Direction_R = 0;
                   xdata BYTE Direction_G = 0;
@@ -2878,7 +2878,7 @@ line level    source
                                       Direction_R = 1; //DownToUp
                                   }
                               }
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 46  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 46  
 
                               else   //(u16Diff>AUTO_GAIN_MAX )
                               {
@@ -2942,7 +2942,7 @@ line level    source
                               }
                               else   //(u16Diff>AUTO_GAIN_MAX )
                               {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 47  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 47  
 
                                   bGain-=GainOffset_B;
                                   if ( retry == 2)
@@ -3006,7 +3006,7 @@ line level    source
                   }
                   else
                   {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 48  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 48  
 
                       ADC_DPUTSTR("Auto gain fail !!\n");
                       ADC_DPRINTF("Rgain = 0x%x", rGain);
@@ -3070,7 +3070,7 @@ line level    source
              --pAutoAdc_val.AVG_Gch) <=2) &&
                                       (abs(pAutoAdc_preval.AVG_Bch -pAutoAdc_val.AVG_Bch) <=2) )
                       {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 49  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 49  
 
                           eqcount++;
                       }
@@ -3134,7 +3134,7 @@ line level    source
                       rGain=((WORD)maxRGain+minRGain)/2;
                       gGain=((WORD)maxGGain+minGGain)/2;
                       bGain=((WORD)maxBGain+minBGain)/2;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 50  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 50  
 
                       drvADC_SetRGBGainCode(rGain, gGain, bGain);
                       Delay1ms(20);
@@ -3198,7 +3198,7 @@ line level    source
                       {
                           maxGGain=gGain+1;
                           atgFlags |= DGain_OverFlow_G_ch;
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 51  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 51  
 
                       }
                       else
@@ -3262,7 +3262,7 @@ line level    source
 3033   1      
 3034   1          switch(tb1)
 3035   1          {
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 52  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 52  
 
 3036   2              case 0: // mismatch calibration
 3037   2                  drvADC_ADCOffsetGainMismatchCal();
@@ -3326,7 +3326,7 @@ line level    source
 3092   2      #ifdef _DGAIN_CAL_WITH_INPUT_
                       case 4:
                      drvADC_ADCAutoGainCalwithInput();
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 53  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 53  
 
                           break;
               #endif
@@ -3390,7 +3390,7 @@ line level    source
                           // 10. recover ADC and scaler related settings & turn off free run clock & turn off internal V
              -cal
                           _msADC_MaskExternalSync(FALSE);
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 54  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 54  
 
                           drvADC_RecoverADCSetting();
                           drvADC_RecoverScalerSetting();
@@ -3454,7 +3454,7 @@ line level    source
 3212   2              msWrite2ByteMask(REG_ADC_ATOP_11_L, 0, BIT8);    // ADC phase alignment trigger
 3213   2      #if CHIP_ID == CHIP_TSUMF
                       msWriteByteMask(REG_ADC_ATOP_05_H, 0, BIT3); // phase digitizer to sync HSYNC (related to phase pe
-C51 COMPILER V9.60.0.0   DRVADC                                                            12/22/2020 19:50:39 PAGE 55  
+C51 COMPILER V9.60.0.0   DRVADC                                                            12/25/2020 09:24:53 PAGE 55  
 
              -rformance)
               #endif

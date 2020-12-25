@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 1   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE COLOR_VERIFY
@@ -62,7 +62,7 @@ line level    source
               //>>===========================================
               
               void msFCCLoader(void)
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 2   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 2   
 
               {
                   xdata BYTE  ucBank,ucTmp;
@@ -126,7 +126,7 @@ line level    source
                   printData("H_Start_(SC7_2524)==[%d]\n\r",h_start);
                   printData("H_End_(SC7_2726)==[%d]\n\r",h_end);
                   #endif
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 3   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 3   
 
               //<<-----------------------------------------------------------------------------------
               //>>--------------------Enable Histogram Report----------------
@@ -190,7 +190,7 @@ line level    source
               BYTE code DeGammaTbl[] =
               {
                    0x00,0x0F,0x1E,0x2C,0x3B,0x4A,0x59,0x67
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 4   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 4   
 
                   ,0x76,0x85,0x94,0xA2,0xB1,0xC0,0xCE,0xDD
                   ,0x76,0x7D,0x84,0x8B,0x92,0x99,0xA0,0xA7
@@ -254,7 +254,7 @@ line level    source
                   //msWriteByteMask( SCE_02, BIT0, BIT0 );
                   msWriteByte( SC0_00, ucBank );
               }
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 5   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 5   
 
               
               void msLinearFixGammaLoader(void)
@@ -318,7 +318,7 @@ line level    source
                            msWriteByteMask(SCB_38+uci*2   , (uci*2<<4)|(uci*2+1)  ,0x77);
                            msWriteByteMask(SCB_38+uci*2+1, (uci*2<<4)|(uci*2+1) ,0x77);
                       }
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 6   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 6   
 
                       #endif
               
@@ -382,7 +382,7 @@ line level    source
                       msWriteByte(SCB_2F,  ucSharpness);
               
                       if( NO_CHANGE_STEP == ucStep )
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 7   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 7   
 
                           ucStep = (msReadByte(SCB_2A)&0x03);                 // MWE window peaking step
                       else
@@ -446,7 +446,7 @@ line level    source
                       //C
                       msWriteByteMask(SCB_EA, (_bit2_(bScalerWin)?(BIT0):(0x00))  ,BIT0);     //reg_main_nm_low_y_en
                       msWriteByteMask(SCB_EC, u8THRD  ,0xFF);               //reg_main_nm_low_y_th
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 8   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 8   
 
                       msWriteByteMask(SCB_EE, (u8Strength<=0x3F? u8Strength:0x3F),0x3F);    //reg_main_nm_low_y_gain
                       msWriteByteMask(SCB_EF, (0x00)  ,BIT1|BIT0);                //reg_main_nm_low_y_step
@@ -510,7 +510,7 @@ line level    source
                     
                       msWriteByteMask(SCB_E0, (_bit2_(bScalerWin)?(BIT4):(0x00))  ,BIT4);     //reg_sub_nm_low_y_en
                       msWriteByteMask(SCB_E6, u8THRD  ,0xFF);               //reg_sub_nm_low_y_th
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 9   
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 9   
 
                       msWriteByteMask(SCB_E8, (u8Strength<=0x3F? u8Strength:0x3F),0x3F);    //reg_sub_nm_low_y_gain
                       msWriteByteMask(SCB_E9, (0x00)  ,BIT1|BIT0);                //reg_sub_nm_low_y_step
@@ -574,7 +574,7 @@ line level    source
                   msWriteByteMask(SC4_22, abs(0xFF-u8THRD)    ,0xFF);  //DMS threshold 1
                   msWriteByteMask(SC4_24, u8THRD    ,0xFF);  //DMS threshold 2  
               
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 10  
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 10  
 
                   //msWriteByteMask(SC4_23, BIT1|BIT0   ,BIT1|BIT0);  //reg_lut_step_hor_f2
                   //msWriteByteMask(SC4_25, BIT2|BIT1|BIT0    ,BIT2|BIT1|BIT0);  //reg_lut_step_cen_f2
@@ -638,7 +638,7 @@ line level    source
                   //msWriteByteMask(SC2_80, BIT3|BIT2 ,BIT3|BIT2);  //De-blocking coarse detect step F2
                 
                   msWriteByteMask(SC2_81, u8THRD  ,0xFF);  //De-blocking coarse active threshold F2
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 11  
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 11  
 
               
                 
@@ -702,7 +702,7 @@ line level    source
                 2.SCB_08[6:4]=111b      Step=MAX
                 3.SCB_08[7]=1          Highpass enable HPF ¶}Ãö¡]0¡Gcoring¡A1¡Gsharpness)
                 sub
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 12  
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 12  
 
                 4.SCB_08[9:8]=11b     Y Band1,2 enable 
                 5.SCB_08[14:12]=111b    Step=MAX
@@ -766,7 +766,7 @@ line level    source
               
               
               void Peaking_PostSNR(BYTE u8Enable, BYTE u8THRD)
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 13  
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 13  
 
               {
                 /*   2d Peaking- Post SNR 
@@ -830,7 +830,7 @@ line level    source
                           {
                               extern void drvGammaLoadTbl( BYTE GamaMode );
                               drvGammaLoadTbl(tb2);  //01 02 N
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 14  
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 14  
 
                           }
                           break;
@@ -894,7 +894,7 @@ line level    source
               
               
               
-C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/22/2020 19:50:44 PAGE 15  
+C51 COMPILER V9.60.0.0   COLOR_VERIFY                                                      12/25/2020 09:25:02 PAGE 15  
 
                   }
               }

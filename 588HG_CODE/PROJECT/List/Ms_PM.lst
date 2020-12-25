@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 1   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MS_PM
@@ -62,7 +62,7 @@ line level    source
   50          extern void Main_SlowTimerHandler(void);
   51          
   52          #if (MS_PM)
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 2   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 2   
 
   53          #if (FRAME_BFF_SEL == FRAME_BUFFER) || ENABLE_RTE
               extern  Bool msMemoryBist(void);
@@ -126,7 +126,7 @@ line level    source
  112          
  113          
  114          XDATA sPM_Info  sPMInfo;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 3   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 3   
 
  115          XDATA ePMStatus ucWakeupStatus;
  116          #if (CHIP_ID == CHIP_TSUMC) || (CHIP_ID==CHIP_TSUMK)
@@ -190,7 +190,7 @@ line level    source
  174   1          sPMInfo.sPMConfig.bMCCS_enable =0;
  175   1      #if( PM_SUPPORT_AC2DC )
                   sPMInfo.sPMConfig.bACtoDC_enable=0;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 4   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 4   
 
               #endif  // end of #if( PM_SUPPORT_AC2DC )
  178   1          sPMInfo.sPMConfig.bMCUSleep=0;
@@ -254,7 +254,7 @@ line level    source
  233   1      
  234   1          if (UserPrefInputPriorityType==Input_Priority_Auto||(UserPrefInputPriorityType!=Input_Priority_Auto &&
              - (UserPrefInputType == Input_Displayport||UserPrefInputType == Input_Displayport3)))
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 5   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 5   
 
  235   1          {
  236   2              sPMInfo.sPMConfig.bDP_enable=PM_SUPPORT_WAKEUP_DP;
@@ -318,7 +318,7 @@ line level    source
  293   1          sPMInfo.sPMConfig.bDP_enable=0;
  294   1          sPMInfo.sPMConfig.bSOG_enable =PM_POWEROFF_WAKEUP_SOG;
  295   1          sPMInfo.sPMConfig.bSAR_enable =PM_POWEROFF_WAKEUP_SAR;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 6   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 6   
 
  296   1          sPMInfo.sPMConfig.bGPIO_enable =PM_POWEROFF_WAKEUP_GPIO;
  297   1          sPMInfo.sPMConfig.bMCCS_enable =PM_POWEROFF_WAKEUP_MCCS;
@@ -382,7 +382,7 @@ line level    source
  355   1          if(bEnable)
  356   1          {
  357   2      #if( !PM_SUPPORT_SOG_TIME_SHARE )
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 7   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 7   
 
  358   2              msWriteBit(REG_PM_E9, FALSE, _BIT7);   // disable SoG time sharing option of VREF/BGAP to save pow
              -er of SoG wakeup
@@ -446,7 +446,7 @@ line level    source
  412          //                  Enable DVI clock amplifier control
  413          //  [Arguments]:
  414          //
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 8   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 8   
 
  415          //  [Return]:
  416          //
@@ -510,7 +510,7 @@ line level    source
  473   2              msWriteByteMask(REG_PM_8E, 0x0B, 0x0F); // DVI clock gating
  474   2              drvDVI_PowerCtrl(DVI_POWER_DOWN);
  475   2          #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD || CHIP_ID == CHIP_TSUM9||C
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 9   
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 9   
 
              -HIP_ID==CHIP_TSUMF)
  476   2              ComboInputControl(COMBO_INPUT_OFF);
@@ -574,7 +574,7 @@ line level    source
                   #if DVI_PORT==TMDS_PORT_C || HDMI_PORT==TMDS_PORT_C
                       msWriteByteMask(REG_PM_B3, BIT2|BIT0, BIT2|BIT0);// power down DVI(C) [0]:RCK,[2]:CLKIN
                       msWriteByteMask(REG_PM_8C, 0x0B, 0x0F);// DVI RAW clock(C)gating
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 10  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 10  
 
                   #endif
                   }
@@ -638,7 +638,7 @@ line level    source
                           break;
                       case ePMDVI_DVI1:
                           msWriteByteMask(REG_DVI_CHEN, BIT1, EN_DVI_CHEN_MASK);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 11  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 11  
 
                           break;
                       case ePMDVI_DVI0_DVI1:
@@ -702,7 +702,7 @@ line level    source
  655   3                      break;
  656   3                  case ePMSAR_SAR3:
  657   3                      msWriteByteMask(REG_SINGLE_KEY, 0x13, EN_SAR_SINGLE_MASK);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 12  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 12  
 
  658   3                      msWriteByteMask(REG_SAR_CMP, EN_SAR_05V, EN_SAR_CMP_MASK);
  659   3                      msWriteByteMask(REG_SAR_ANYKEY, 0, EN_SAR_ANYKEY_MASK);
@@ -766,7 +766,7 @@ line level    source
                                    INV_GPIO_POL_SET_Temp=(INV_GPIO_POL_SET_Temp)&~PM_VGACBL_DET;
               #endif
               #if !(CABLE_DETECT_VGA_USE_SAR)
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 13  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 13  
 
                          if(hwDVICable_Pin)
               
@@ -830,7 +830,7 @@ line level    source
  779          {
  780   1          if(bEnable)
  781   1          {
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 14  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 14  
 
  782   2              msWriteByte(REG_3E0A, 0xB7);  // enable DDC2Bi for A0
  783   2              msWriteByte(REG_3E0C, 0xB7);  // enable DDC2Bi for D0
@@ -894,7 +894,7 @@ line level    source
  837   2              msWriteByteMask(REG_3E45, 0x00, BIT7);  // disable DDC function for DVI_0
  838   2              msWriteByteMask(REG_3E4D, 0x00, BIT7);  // disable DDC function for DVI_1
  839   2              msWriteByteMask(REG_3E49, 0x00, BIT7);  // disable DDC function for ADC_0
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 15  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 15  
 
  840   2      #if (CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD|| CHIP_ID == CHIP_TSUMJ)
                       msWriteByteMask(REG_3E58, 0x00, BIT7);  // disable DDC function for DVI_2
@@ -958,7 +958,7 @@ line level    source
                       msWriteByteMask(REG_2508, 0x00, BIT1);
                if( !sPMInfo.sPMConfig.bSOG_enable )
                       msWriteByteMask(REG_2560, BIT0, BIT0);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 16  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 16  
 
                else
                {
@@ -1022,7 +1022,7 @@ line level    source
                   msWrite2Byte(REG_2C6A, ~0x0850);
                   msWrite2Byte(REG_2C6C, ~0x0800);
               
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 17  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 17  
 
                   //HDMI PLL
                   msWriteByteMask(REG_05B9, BIT0, BIT0);
@@ -1086,7 +1086,7 @@ line level    source
                   msWriteByteMask( REG_1783, BIT0, BIT0 );
                   //LPLL
                   msWriteByteMask( REG_3806, BIT5, BIT5);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 18  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 18  
 
                   //MPLL
                   msWriteByteMask(REG_1EDC, BIT4|BIT5, BIT4|BIT5);
@@ -1150,7 +1150,7 @@ line level    source
 1083   2      #if _NEW_SOG_DET_
 1084   2              msWrite2ByteMask(REG_25F0, 0x0002                   , 0xFFFF);
 1085   2              msWrite2ByteMask(REG_25F2, 0x00C8                   , 0xFFFF);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 19  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 19  
 
 1086   2              msWriteByteMask(REG_25F4, 0x04                      , 0x0E);
 1087   2      #endif
@@ -1214,7 +1214,7 @@ line level    source
 1145   1          //>>>MPLL_PD---------------------------------------------------------------------------------
 1146   1          //msWriteByteMask(REG_1ED1,BIT0, BIT0);             // [4]: MPLL power DOWN   //move to msPM_SetPMCloc
              -k()
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 20  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 20  
 
 1147   1          msWriteByteMask(REG_1EDC, BIT5|BIT4, BIT5|BIT4);                //[5][4]:Power Down MPLL 216/432
 1148   1          //<<<MPLL_PD---------------------------------------------------------------------------------
@@ -1278,7 +1278,7 @@ line level    source
                       msWriteByteMask(REG_1E37,BIT0, BIT0);//[0]clk_odclk1_I_gate
               #if CHIP_ID!=CHIP_TSUMV
                       msWriteByteMask(REG_1E3B,BIT6, BIT6);//[7]clk_miu_rec_gate
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 21  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 21  
 
               #endif
                       msWriteByteMask(REG_1E3E,BIT0, BIT0);//[0]clk_idclk_i_gate
@@ -1342,7 +1342,7 @@ line level    source
                   msWriteByte(REG_3200, 0x00); // sub bank 0
               #if 0  //For dc on  Panel power sequence
                   msWriteByteMask(REG_3250, 0x00, 0x1F);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 22  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 22  
 
                   msWriteByteMask(REG_3264, 0xFF, 0x1F);
                   msWriteByteMask(REG_3265, 0x00, BIT2|BIT6);
@@ -1406,7 +1406,7 @@ line level    source
                   msWriteByteMask(REG_1E2B, 0x00, BIT0);
                   msWriteByteMask(REG_1E2C, 0x00, BIT0);
                   msWriteByteMask(REG_1E35, 0x00, BIT0);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 23  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 23  
 
                   msWriteByteMask(REG_1E36, 0x00, BIT0);
                   msWriteByteMask(REG_1E37, 0x00, BIT0);
@@ -1470,7 +1470,7 @@ line level    source
                 msInitMemory();
               #endif
               #endif
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 24  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 24  
 
               #elif (CHIP_ID == CHIP_TSUMJ || CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)  //follow power down list to u
              -pdate it
@@ -1534,7 +1534,7 @@ line level    source
 1452   1      #if (CHIP_ID == CHIP_TSUM9||CHIP_ID==CHIP_TSUMF)
 1453   1      #if ENABLE_DP_INPUT
                   DPRxOutputEnable( TRUE );
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 25  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 25  
 
               #endif
 1456   1          msWriteByteMask(REG_1ECA, 0x00, 0x1F);  // osc432m power up
@@ -1598,7 +1598,7 @@ line level    source
                   mStar_Init();
               
               #endif
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 26  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 26  
 
 1517   1      
 1518   1          DDC2Bi_Init();
@@ -1662,7 +1662,7 @@ line level    source
               }
               #endif  // end of #if( PM_SUPPORT_AC2DC )
 1576          
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 27  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 27  
 
 1577          
 1578          //**************************************************************************
@@ -1726,7 +1726,7 @@ line level    source
 1635   1          #if PM_CABLE_DETECT_USE_SAR
                   if((abs(sPMInfo.bCABLE_SAR_VALUE-CABLE_DET_SAR)>5)&&(PowerOnFlag))
                       {
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 28  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 28  
 
                             ucWakeupStatus =ePMSTS_CABLESAR_ACT;
                       bResault = TRUE;
@@ -1790,7 +1790,7 @@ line level    source
                               ucWakeupStatus = ePMSTS_MCCS01_ACT;
                           else if( (VGA_mccsWakeUpStatus == 0x04) || (DVI_mccsWakeUpStatus == 0x04) )
                               ucWakeupStatus = ePMSTS_MCCS04_ACT;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 29  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 29  
 
                           else if( (VGA_mccsWakeUpStatus == 0x05) || (DVI_mccsWakeUpStatus == 0x05) )
                               ucWakeupStatus = ePMSTS_MCCS05_ACT;
@@ -1854,7 +1854,7 @@ line level    source
                                   SrcInputType = Input_Displayport;
                               else
                                   SrcInputType = Input_Displayport3;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 30  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 30  
 
                                  bResault = TRUE;
                           PM_printData("ePMSTS_DP_ACT NormalTraining:%d", ePMSTS_DP_ACT);
@@ -1918,7 +1918,7 @@ line level    source
               
                   #endif
 1816   2          #endif
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 31  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 31  
 
 1817   2      
 1818   2      
@@ -1982,7 +1982,7 @@ line level    source
 1875   1      
 1876   1          return  bResault;
 1877   1      }
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 32  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 32  
 
 1878          
 1879          //**************************************************************************
@@ -2046,7 +2046,7 @@ line level    source
                   mcuSetMcuSpeed( MCU_CLK_4M );
                   msWriteByteMask(REG_PM_8D, 0x00, 0xF0); // pm CLK select RCOSC mux
                   msWriteByteMask(REG_03A6, 0, _BIT2);    // SW XTAL off
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 33  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 33  
 
               #else
                   PM_printMsg(" \r\n***PM Clock =>XTAL ");
@@ -2110,7 +2110,7 @@ line level    source
                   if(bEnable)
                    {
               #if DISABLE_AUTO_SWITCH
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 34  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 34  
 
                       if(FIXED_PORT == Input_Displayport)
                       {
@@ -2174,7 +2174,7 @@ line level    source
 2058          //                  msPM_SetPMMode()
 2059          //  [Description]
 2060          //                  msPM_SetPMMode
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 35  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 35  
 
 2061          //  [Arguments]:
 2062          //
@@ -2238,7 +2238,7 @@ line level    source
 2119   2          }
 2120   1          else
 2121   1          {
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 36  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 36  
 
 2122   2              msPM_EnableGPIODetect(FALSE);
 2123   2          }
@@ -2302,7 +2302,7 @@ line level    source
 2179   1          msPM_PassWord(TRUE);
 2180   1          msPM_PowerDownMacro();
 2181   1          msPM_OutputTriState();
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 37  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 37  
 
 2182   1          msPM_ClearStatus(FALSE);
 2183   1      
@@ -2366,7 +2366,7 @@ line level    source
 2240   2              PM_printMsg("Enter SW PM Mode");
 2241   2      
 2242   2      
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 38  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 38  
 
 2243   2              sPMInfo.ePMState = ePM_WAIT_EVENT;
 2244   2          }
@@ -2430,7 +2430,7 @@ line level    source
 2302   1          return ucStatus;
 2303   1      }
 2304          
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 39  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 39  
 
 2305          #if 1
 2306          void msPM_InterruptEnable(Bool benable)
@@ -2494,7 +2494,7 @@ line level    source
 2363   1          msWriteByte(SC0_F0,0x00);
 2364   1          msWriteByte(REG_2E02,0x00);
 2365   1          msWriteByte(REG_2508,0x00);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 40  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 40  
 
 2366   1          msWriteByte(REG_2509,0x00);
 2367   1          //msWriteByteMask(REG_1EDC, 0, _BIT5|_BIT4);                //Power On MPLL 216MHz/432MHz
@@ -2558,7 +2558,7 @@ line level    source
 2424   1      #endif
 2425   1      
 2426   1      
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 41  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 41  
 
 2427   1      #if CHIP_ID!=CHIP_TSUMU && CHIP_ID < CHIP_TSUMC
                   msWriteByteMask(REG_29FE, 0x00, ~(BIT7|BIT6));
@@ -2622,7 +2622,7 @@ line level    source
                       {
                               //DDC2BI_DP() ;
                           if(DDCBuffer[2]==PowerMode)
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 42  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 42  
 
                           {
                               if((DDCBuffer[4] == 0x01)
@@ -2686,7 +2686,7 @@ line level    source
 2548   3                      bExitPM = TRUE;
 2549   3              PM_printMsg("ePM_POWEROFF --> ePM_POWERON");
 2550   3                  }
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 43  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 43  
 
 2551   2              }
 2552   1      #else
@@ -2750,7 +2750,7 @@ line level    source
 2610   2                  bExitPM = FALSE;
 2611   2          }
 2612   1      #endif
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 44  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 44  
 
 2613   1          else if(ucWakeupStatus == ePMSTS_GPIO_ACT)
 2614   1          {
@@ -2814,7 +2814,7 @@ line level    source
                   {
                       if(!PowerOnFlag)
                     bExitPM = TRUE;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 45  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 45  
 
                       else
                     bExitPM = FALSE;
@@ -2878,7 +2878,7 @@ line level    source
                   }
               #endif
 2736   1          else
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 46  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 46  
 
 2737   1              bExitPM = FALSE;
 2738   1      
@@ -2942,7 +2942,7 @@ line level    source
 2796   4          }
 2797   3            //PM_printMsg("44444444");
 2798   3                  bresult = TRUE;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 47  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 47  
 
 2799   3              }
 2800   2      #if (Customer_Type_Sel==Customer_XINTAO)
@@ -3006,7 +3006,7 @@ line level    source
 2857   3              /*
 2858   3                  if( SyncLossState() && IsCableNotConnected() )
 2859   3                  {
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 48  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 48  
 
 2860   3                      hw_ClrDDC_WP();
 2861   3                  }
@@ -3070,7 +3070,7 @@ line level    source
                       tempdata =temp22;
                       temp22 =0;
                       for(i =0;i<7;i++)
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 49  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 49  
 
                       {
                         temp22=(temp22 | (tempdata&0x01));
@@ -3134,7 +3134,7 @@ line level    source
 2981   2              msPM_ScanADCCh();
 2982   2      
 2983   2              if(msPM_GetPMStatus())
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 50  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 50  
 
 2984   2                  break;
 2985   2      
@@ -3198,7 +3198,7 @@ line level    source
 3043   2              case ePM_ENTER_PM:
 3044   2      
 3045   2      #if( ENABLE_WATCH_DOG )
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 51  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 51  
 
 3046   2                  Init_WDT( _DISABLE );
 3047   2      #endif
@@ -3262,7 +3262,7 @@ line level    source
 3105   4             if((ucWakeupStatus == ePMSTS_VGA_ACT)
 3106   4                          ||(ucWakeupStatus == ePMSTS_DVI_0_ACT)
 3107   4                          ||(ucWakeupStatus ==ePMSTS_DVI_1_ACT))
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 52  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 52  
 
 3108   4                          SrcFlags &= ~SyncLoss;    
 3109   4                      }
@@ -3326,7 +3326,7 @@ line level    source
 3167   1          {
 3168   2      #if( ENABLE_WATCH_DOG )
 3169   2              SetWDTClk(CLK_LIVE_XTAL);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 53  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 53  
 
 3170   2      #endif
 3171   2              msWriteByteMask(REG_PM_BC, 0, _BIT6);                // mcu clk Live select XTAL
@@ -3390,7 +3390,7 @@ line level    source
                   else if( ucCounter > RCOSC_TARGET )
                   {
                       i = 0x40;
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 54  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 54  
 
                       do
                       {
@@ -3454,7 +3454,7 @@ line level    source
 3291   2              else
 3292   2              {
 3293   3                  WRITE_CAL_VALUE(ucSetNow, ucTemp);
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 55  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 55  
 
 3294   3      
 3295   3                  //PM_printData("\r\n***RCOSC Set_old(%x)", ucSetOld);
@@ -3518,7 +3518,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CODE SIZE        =   4341    ----
    CONSTANT SIZE    =    522    ----
    XDATA SIZE       =      9    ----
-C51 COMPILER V9.60.0.0   MS_PM                                                             12/22/2020 19:50:41 PAGE 56  
+C51 COMPILER V9.60.0.0   MS_PM                                                             12/25/2020 09:24:57 PAGE 56  
 
    PDATA SIZE       =   ----    ----
    DATA SIZE        =   ----      32

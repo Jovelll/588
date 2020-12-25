@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MENUSTRFUNC                                                       12/22/2020 19:50:28 PAGE 1   
+C51 COMPILER V9.60.0.0   MENUSTRFUNC                                                       12/25/2020 09:24:29 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MENUSTRFUNC
@@ -62,7 +62,7 @@ line level    source
   46              //
   47              /*C0H*/0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   48              //
-C51 COMPILER V9.60.0.0   MENUSTRFUNC                                                       12/22/2020 19:50:28 PAGE 2   
+C51 COMPILER V9.60.0.0   MENUSTRFUNC                                                       12/25/2020 09:24:29 PAGE 2   
 
   49              /*D0H*/0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   50              //
@@ -126,7 +126,7 @@ line level    source
                   while( dispChar = *( str + dispPtr ) )
                       // display string font index
                   {
-C51 COMPILER V9.60.0.0   MENUSTRFUNC                                                       12/22/2020 19:50:28 PAGE 3   
+C51 COMPILER V9.60.0.0   MENUSTRFUNC                                                       12/25/2020 09:24:29 PAGE 3   
 
                       msWriteByte( OSD2_AA, OsdFontColor );
                       dispPtr++;

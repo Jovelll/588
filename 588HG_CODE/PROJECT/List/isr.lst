@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 1   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ISR
@@ -62,7 +62,7 @@ line level    source
               extern bit bMHLHandlerCntFlag;
               #endif
               #endif
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 2   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 2   
 
   54          #if ENABLE_FREESYNC
               extern xdata Bool bHDMIFreesyncChk;
@@ -126,7 +126,7 @@ line level    source
  112   1          SWDBCtrl.ucSWDB_Num = 1;
  113   1          msRegs[REG_3C25] &=0x3F;
  114   1      }
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 3   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 3   
 
  115          #endif
  116          
@@ -190,7 +190,7 @@ line level    source
  174   1      #if ENABLE_R2_2DTO3D
                   if(INT_STATUS_A_ISR(BIT2))  //Vsync INT
                   {
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 4   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 4   
 
                       MEM_SCWRITE_BYTE(SC0_CC,MEM_SCREAD_BYTE(SC0_CC)&(~BIT2));  //clear Vsync INT final status
                       MEM_MSWRITE_BYTE_MASK(REG_2B7C,BIT0,BIT0);  //51 INT R2
@@ -254,7 +254,7 @@ line level    source
  235   2          }
  236   1      #endif
  237   1      
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 5   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 5   
 
  238   1      }
  239          #endif
@@ -318,7 +318,7 @@ line level    source
                   u32UsbCount++;
               #endif
  298   1      
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 6   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 6   
 
  299   1      #if ENABLE_DEBUG
  300   1          if( u8ReSyncCounter )
@@ -382,7 +382,7 @@ line level    source
                          u16CDR_HPDCnt--;
               #endif
               #if 1
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 7   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 7   
 
                   if( bSkew_HPDCntFlag )
                       if( --u16Skew_HPDCnt == 0 )
@@ -446,7 +446,7 @@ line level    source
                               bMHLHandlerCntFlag = 0;
                       }
                   #elif (CHIP_ID == CHIP_TSUMC)||(CHIP_ID==CHIP_TSUMK)||(CHIP_ID == CHIP_TSUMD)||(CHIP_ID == CHIP_TSUM9)
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 8   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 8   
 
              -||(CHIP_ID == CHIP_TSUMF)
                       mapi_mhl_CbusTimerInterrupt();
@@ -510,7 +510,7 @@ line level    source
  478   3                  {
  479   4      #if _NEW_SOG_DET_
  480   4                      if(SyncLossState())
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 9   
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 9   
 
  481   4                          NEW_SOG_DET_FLUSH();
  482   4      #endif
@@ -574,7 +574,7 @@ line level    source
  537   1      
  538   1        #if ENABLE_MHL
                   if(_bit0_(msRegs[REG_2B2A]))
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 10  
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 10  
 
                   {
                       mapi_mhl_IsrHandler();
@@ -638,7 +638,7 @@ line level    source
  599          #if EnableTime1Interrupt
               void Time1Interrupt( void )interrupt 3
               {
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 11  
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 11  
 
                 bIrIoStatusFlag = IR_DataKey;
                 TF1=0;
@@ -702,7 +702,7 @@ line level    source
                         { 
                           --byIrDataCnt;
                           unIrData.dwIrData = (unIrData.dwIrData<<1);
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 12  
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 12  
 
               
                           byIrLowLevel_HighLevelCntTotal += byIrHighLevelCnt;
@@ -766,7 +766,7 @@ line level    source
  720   2              RI = 0;
  721   2              sioData = SBUF;
  722   2              if( SIORxIndex < _UART_BUFFER_LENGTH_ )
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 13  
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 13  
 
  723   2              {
  724   3                  SIORxBuffer[SIORxIndex++] = sioData;
@@ -830,7 +830,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.0.0   ISR                                                               12/22/2020 19:50:18 PAGE 14  
+C51 COMPILER V9.60.0.0   ISR                                                               12/25/2020 09:24:05 PAGE 14  
 
    DATA SIZE        =   ----       1
    IDATA SIZE       =   ----    ----

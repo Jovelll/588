@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 1   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE AUTOFUNC
@@ -62,7 +62,7 @@ line level    source
                       result = TRUE;
                   }
                   if( result )
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 2   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 2   
 
                   {
                       Power_TurnOffPanel();
@@ -126,7 +126,7 @@ line level    source
  112   1          for( thr = 4; thr < 0x10; thr++ )
  113   1          {
  114   2              AUTO_POSITION_SET_VALID_VALUE(thr);//msWriteByte(SC0_7C, thr << 4 );
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 3   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 3   
 
  115   2              drvADC_SetPhaseCode( 0 );
  116   2              Delay1ms( vsyncTime );
@@ -190,7 +190,7 @@ line level    source
              -lue(SC0_80);
  172   1          tempHTotal = StandardModeWidth / 3;
  173   1          if( labs( (DWORD)autoWidth - StandardModeWidth ) > tempHTotal )
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 4   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 4   
 
  174   1          {
  175   2              drvADC_SetPhaseCode( UserPrefPhase );
@@ -254,7 +254,7 @@ line level    source
  233   2          }
  234   1          drvADC_AdjustHTotal( UserPrefHTotal );
  235   1          drvADC_SetPhaseCode( UserPrefPhase );
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 5   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 5   
 
  236   1          return result;
  237   1      #undef result
@@ -318,7 +318,7 @@ line level    source
  295   1          for( adjPhase = 0; adjPhase < 0x80; adjPhase += 7 )
  296   1          {
  297   2              drvADC_SetPhaseCode( adjPhase );
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 6   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 6   
 
  298   2              Delay1ms( 2 * vsyncTime );
  299   2              AUTO_PHASE_RESULT_READY();//drvADC_WaitAutoStatusReady(SC0_8B, BIT1);
@@ -382,7 +382,7 @@ line level    source
  357   1          {
  358   2              if( vStart > ( 2 * StandardModeVStart ) )
  359   2              {
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 7   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 7   
 
  360   3                  UserPrefVStart = StandardModeVStart;
  361   3                  if( AUTO_POSITION_READ_VEND() < ( StandardModeVStart + StandardModeHeight - 10 ) ) //if( GetAu
@@ -446,7 +446,7 @@ line level    source
  417   4                      UserPrefHStart = StandardModeHStart;
  418   4                      UserPrefVStart = StandardModeVStart;
  419   4                      UserPrefAutoHStart = StandardModeHStart;
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 8   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 8   
 
  420   4                      UserPrefAutoVStart = StandardModeVStart;
  421   4      
@@ -510,7 +510,7 @@ line level    source
                       }
                       else if( retry == 2 )
                       {
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 9   
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 9   
 
                           tempHtotal = StandardModeHTotal;
                       }
@@ -574,7 +574,7 @@ line level    source
                           UserPrefHTotal = StandardModeHTotal + 2;
                       else if( temp3 > temp1 )
                           UserPrefHTotal = StandardModeHTotal;
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 10  
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 10  
 
                       else
                           UserPrefHTotal = StandardModeHTotal - 6;
@@ -638,7 +638,7 @@ line level    source
  602   2              if( InputTimingChangeFlag )
  603   2              {
  604   3                  result = FALSE;
-C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/22/2020 19:50:23 PAGE 11  
+C51 COMPILER V9.60.0.0   AUTOFUNC                                                          12/25/2020 09:24:17 PAGE 11  
 
  605   3                  goto AutoGeomtryFailed;
  606   3              }

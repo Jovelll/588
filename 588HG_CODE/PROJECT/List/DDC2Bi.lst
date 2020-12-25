@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 1   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DDC2BI
@@ -62,7 +62,7 @@ line level    source
   50          #define ASSETSTARTADDR          0x600
   51          #define ASSETLENGTH             64
   52          
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 2   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 2   
 
   53          #if ENABLE_DP_INPUT
               #if DPENABLEMCCS
@@ -126,7 +126,7 @@ line level    source
  112          };
  113          #endif
  114          void DDC2Bi_InitRx( void )
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 3   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 3   
 
  115          {
  116   1          rxStatus = DDC2B_CLEAR;
@@ -190,7 +190,7 @@ line level    source
  173   1          {
  174   2              DoDDCCI( InputCombo_D0 );
  175   2              CLR_DVI0_INT_FLAG();
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 4   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 4   
 
  176   2          }
  177   1        #endif
@@ -254,7 +254,7 @@ line level    source
                           if (u8DDC_Length)
                           {
               
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 5   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 5   
 
                               if(rxStatus == DDC2B_CLEAR && txLength)
                               {
@@ -318,7 +318,7 @@ line level    source
                                      msRegs[REG_06F0 ] = BIT1;
                                           DDCBuffer[rxIndex++] = msRegs[REG_0675];
                                           //DDCData[rxIndex++] = msRegs[REG_0675];
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 6   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 6   
 
                                   }
                               }
@@ -382,7 +382,7 @@ line level    source
                       }
                       //===============//<write>PC Write Command============================
                       else if(u8AUXCH_RxCmd==0x00 || u8AUXCH_RxCmd==0x04)    //DP Rx
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 7   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 7   
 
                                      {
                               if (u8DDC_Length)
@@ -446,7 +446,7 @@ line level    source
                   BYTE CommandCode, CPCode;
                   Bool bresult = TRUE;
               
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 8   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 8   
 
                   CommandCode = DDCBuffer[1];
                   CPCode = DDCBuffer[2];
@@ -510,7 +510,7 @@ line level    source
                           default:
                           break;
                       }
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 9   
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 9   
 
                   }
               
@@ -574,7 +574,7 @@ line level    source
  544   2          }
  545   1          else if( CommandCode == GETPagedVCP )
  546   1          {
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 10  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 10  
 
  547   2              PageValue = DDCBuffer[2];
  548   2              CPCode = DDCBuffer[3];
@@ -638,7 +638,7 @@ line level    source
  606   1          else if( CommandCode == AppTest )
  607   1          {
  608   2              DDCBuffer[0] = 0x80;
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 11  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 11  
 
  609   2              return 0; //0xFD;
  610   2          }
@@ -702,7 +702,7 @@ line level    source
  667   4                      return 3;
  668   4                  }
  669   3                  else
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 12  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 12  
 
  670   3                  {
  671   4                      bRunToolFlag = 0;
@@ -766,7 +766,7 @@ line level    source
  728   3                  DDCBuffer[4] = 0x01;
  729   3                  ValueH = 0x00;
  730   3                  ValueL = 0xFF;
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 13  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 13  
 
  731   3                  RetValueH = 0x00;
  732   3                  TPValue = 0x01;
@@ -830,7 +830,7 @@ line level    source
  790   3                  ValueL = 100;
  791   3                  TPValue = 0x00;
  792   3              }
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 14  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 14  
 
  793   2              else if( CPCode == ADJ_Brightness && PageValue == 0 )
  794   2              {
@@ -894,7 +894,7 @@ line level    source
  852   3                  RetValueH = ( MaxHStart - UserPrefHStart ) >> 8;
  853   3                  RetValueL = ( MaxHStart - UserPrefHStart ) & 0x00FF;
  854   3                  TPValue = 0x00;
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 15  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 15  
 
  855   3              }
  856   2              else if( CPCode == ADJ_VerticalPos && PageValue == 0 && CURRENT_INPUT_IS_VGA())
@@ -958,7 +958,7 @@ line level    source
  914   2              {
  915   3                  ValueH = 0xFF;
  916   3                  ValueL = 0xFF;
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 16  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 16  
 
  917   3                  WordValue = HFreq( SrcHPeriod ) * 10;
  918   3                  RetValueH = WordValue >> 8;
@@ -1022,7 +1022,7 @@ line level    source
                               RetValueL = 9;
                           else if( UserPrefLanguage == LANG_SChina )
                               RetValueL = 1;
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 17  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 17  
 
                           TPValue = 0x00;
               #endif
@@ -1086,7 +1086,7 @@ line level    source
 1038   3                  ValueL = 1;
 1039   3              }
 1040   2              else if( CPCode == BriCon_Reset && PageValue == 0 )
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 18  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 18  
 
 1041   2              {
 1042   3                  if( WordValue != 0 )
@@ -1150,7 +1150,7 @@ line level    source
 1099   3                 if(!UserPrefDcrMode&&(UserPrefECOMode==ECO_Standard))  //111108 add B/C adjustment condition - 
              -ID40189
 1100   3                  {
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 19  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 19  
 
 1101   4                      UserPrefBrightness = RetValueL + MinBrightnessValue;
 1102   4                      if( UserPrefColorTemp == CTEMP_USER )
@@ -1214,7 +1214,7 @@ line level    source
 1159   2              else if( CPCode == Select_Color_Preset && PageValue == 0 )
 1160   2              {
 1161   3                  if( RetValueL == 0x01 )
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 20  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 20  
 
 1162   3                      UserPrefColorTemp = CTEMP_SRGB;
 1163   3                  else if( RetValueL == 0x05 )
@@ -1278,7 +1278,7 @@ line level    source
 1218   3                  ValueL = 1;
 1219   3              }
 1220   2              else if( CPCode == Auto_Color && PageValue == 0 && CURRENT_INPUT_IS_VGA())
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 21  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 21  
 
 1221   2              {
 1222   3                  if( WordValue != 0 )
@@ -1342,7 +1342,7 @@ line level    source
 1280   4              UserPrefInputType=Input_Digital;
 1281   4              ChangeSource();
 1282   4              #endif
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 22  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 22  
 
 1283   4                  }
 1284   3      
@@ -1406,7 +1406,7 @@ line level    source
 1340   2              {
 1341   3                      return 0;
 1342   3              }
-C51 COMPILER V9.60.0.0   DDC2BI                                                            12/22/2020 19:50:33 PAGE 23  
+C51 COMPILER V9.60.0.0   DDC2BI                                                            12/25/2020 09:24:39 PAGE 23  
 
 1343   2              else
 1344   2              {

@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   COMMON                                                            12/22/2020 19:50:18 PAGE 1   
+C51 COMPILER V9.60.0.0   COMMON                                                            12/25/2020 09:24:06 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE COMMON
@@ -62,7 +62,7 @@ line level    source
   50   5                          WORD divider = 10000;
   51   5                          char dispValue;
   52   5                          if( sendData == ( char )'x' )
-C51 COMPILER V9.60.0.0   COMMON                                                            12/22/2020 19:50:18 PAGE 2   
+C51 COMPILER V9.60.0.0   COMMON                                                            12/25/2020 09:24:06 PAGE 2   
 
   53   5                          {
   54   6                              divider = 0x1000;
@@ -126,7 +126,7 @@ MODULE INFORMATION:   STATIC OVERLAYABLE
    CONSTANT SIZE    =   ----    ----
    XDATA SIZE       =   ----    ----
    PDATA SIZE       =   ----    ----
-C51 COMPILER V9.60.0.0   COMMON                                                            12/22/2020 19:50:18 PAGE 3   
+C51 COMPILER V9.60.0.0   COMMON                                                            12/25/2020 09:24:06 PAGE 3   
 
    DATA SIZE        =   ----      13
    IDATA SIZE       =   ----    ----

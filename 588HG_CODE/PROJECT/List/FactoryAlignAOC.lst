@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 1   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE FACTORYALIGNAOC
@@ -62,7 +62,7 @@ line level    source
   49          #if ENABLE_HDCP&&HDCPKEY_IN_Flash
   50          #if (HDCPKEY_USE_CODE==0 || ENABLE_NEWDFM_REQUEST)
   51          #if 0
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 2   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 2   
 
               WORD CRC16( BYTE nData, WORD nCRC )
               {
@@ -126,7 +126,7 @@ line level    source
                       }
                       else if( ucCmd == ADJ_Green_Gain )
                       {
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 3   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 3   
 
                           g_wFDCRCValue = appFactoryGetGreenGain();
                       }
@@ -190,7 +190,7 @@ line level    source
               
                           wAddr = (( WORD )ucData1 << 8 ) + ucData2;
                           ucLen = ucData3;
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 4   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 4   
 
               
                           appFactoryGetEDID( ucExt, wAddr, ( BYTE* )&DDC2BI_PRE1, ucLen );
@@ -254,7 +254,7 @@ line level    source
               #endif
               
                       if( ucCmd == TPV_FCode01 )
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 5   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 5   
 
                       {
                           if( ucExt == TPV_FactoryMode )
@@ -318,7 +318,7 @@ line level    source
               #endif
                           }
               #endif
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 6   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 6   
 
               #if HDCPKEY_IN_Flash
                           else if( ucExt == 0xE0 ) //for HDCP Write start or EDID write start
@@ -382,7 +382,7 @@ line level    source
               #endif
                       }
                       else if( ucCmd == ADJ_Red_Gain )        // Red Color
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 7   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 7   
 
                       {
                           appFactoryAdjRedGain( WordValue );
@@ -446,7 +446,7 @@ line level    source
                               if (appFactoryAutoColor())
                                   DDC2BI_REPLYBYTE = 0x02;
                               else
-C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/22/2020 19:50:35 PAGE 8   
+C51 COMPILER V9.60.0.0   FACTORYALIGNAOC                                                   12/25/2020 09:24:42 PAGE 8   
 
                                   DDC2BI_REPLYBYTE = 0x04;
                           }

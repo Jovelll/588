@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 1   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDSC_SETTING
@@ -62,7 +62,7 @@ line level    source
   48          xdata BYTE  u8Win = 0;
   49          xdata BYTE  Flag_DSC_Latch_Busy = 0;
   50          xdata WORD  CurxvYgain = 0x400;
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 2   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 2   
 
   51          
   52          //-------------------------------------------------------------------------------------------------
@@ -126,7 +126,7 @@ line level    source
               #endif
               #endif
  112          //========================================================================================================
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 3   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 3   
 
              -===========================================================:
  113          //========================================================================================================
@@ -190,7 +190,7 @@ line level    source
               void msWritexvYCCColorMatrix(BYTE bScalerWin, short sResult[3][3])
               {
               
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 4   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 4   
 
                    BYTE  LOCAL_TYPE i,j;
                   WORD  LOCAL_TYPE ucAddr;
@@ -254,7 +254,7 @@ line level    source
  228   1          SatGainTmp1[0][0]=(0x400<<1);
  229   1          SatGainTmp1[1][1]=(uwContrast<<1);
  230   1          SatGainTmp1[2][2]=(uwContrast<<1);
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 5   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 5   
 
  231   1          ArrayMultiply( SatGainTmp1,t_SDTVRgb2yuv, sResultTmp1,11);
  232   1          for(i=0; i<3; i++)
@@ -318,7 +318,7 @@ line level    source
                       DSC_printData("\r\n Sgain %x", YgainValue);
               #endif
  291   1      
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 6   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 6   
 
  292   1      if (CurxvYgain != YgainValue)
  293   1          msAdjustPCXvyccContrast ( u8Win, ( YgainValue & 0x0FFF ) ); // ratio: 0~3.99x
@@ -382,7 +382,7 @@ line level    source
                           scWriteByte ( SC7_B8, scReadByte ( SC7_B8 ) | BIT2 | BIT0 );    //scRegs[0xB8] = scRegs[0xB8]|
              -BIT2|BIT0;
                       }
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 7   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 7   
 
                   }
                   scWriteByte(SC0_00, 0x00);
@@ -446,7 +446,7 @@ line level    source
              -ST + 1 ) & 0xF0 ) | ( wHStart >> 8 ) );
  398   2              msWriteByte ( REG_ADDR_SATHISTOGRAM_RANGE_M_HEN, wHEnd );
  399   2              msWriteByte ( REG_ADDR_SATHISTOGRAM_RANGE_M_HEN + 1, ( msReadByte( REG_ADDR_SATHISTOGRAM_RANGE_M_H
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 8   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 8   
 
              -EN + 1 ) & 0xF0 ) | ( wHEnd >> 8 ) );
  400   2          }
@@ -510,7 +510,7 @@ line level    source
  454   1          if ( MAIN_WINDOW == u8Win ) // Main window
  455   1              msWriteByteMask ( REG_ADDR_SATHIS_HANDSHAKE, BIT2 | BIT1, BIT2 | BIT1 | BIT0 );
  456   1          else // Sub window
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 9   
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 9   
 
  457   1              msWriteByteMask ( REG_ADDR_SATHIS_HANDSHAKE, BIT2 | BIT0, BIT2 | BIT1 | BIT0 );
  458   1      #endif
@@ -574,7 +574,7 @@ line level    source
  513          {
  514   1          if (u8AresSelect==FadingArea_0)  //enable Fading area
  515   1          {
-C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/22/2020 19:50:46 PAGE 10  
+C51 COMPILER V9.60.0.0   MSDSC_SETTING                                                     12/25/2020 09:25:06 PAGE 10  
 
  516   2              msWriteByteMask ( SCF_C0, BIT0, BIT0 );
  517   2              msWriteByteMask ( SCF_C2, Fading_slop<<4|Fading_alpha, 0xFF );

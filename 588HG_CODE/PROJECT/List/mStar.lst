@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 1   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSTAR
@@ -62,7 +62,7 @@ line level    source
               #endif
   51          
   52          #endif
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 2   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 2   
 
   53          #if ENABLE_EDP_OUTPUT
               #include "DPTxApp.h"
@@ -126,7 +126,7 @@ line level    source
  112          // extern declaration
  113          //
  114          //*******************************************************************
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 3   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 3   
 
  115          //*******************************************************************
  116          //
@@ -190,7 +190,7 @@ line level    source
  172   1      
  173   1      #if (CHIP_ID == CHIP_TSUMJ) || (CHIP_ID == CHIP_TSUM9) || (CHIP_ID == CHIP_TSUMF)
  174   1          drvGPIO_PWMAlignHSync(BrightnessPWM, BRIGHTNESS_HSYNC_ALIGN);
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 4   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 4   
 
  175   1      #endif
  176   1      
@@ -254,7 +254,7 @@ line level    source
  234          {
  235   1          BYTE NOUSE=0;
  236   1      
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 5   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 5   
 
  237   1          if (NOUSE==0x01)
  238   1              SetSPI_Quad_En(TRUE);// reverse Qual enable function
@@ -318,7 +318,7 @@ line level    source
  295   1      #if defined(  FPGA)
               
               #else
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 6   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 6   
 
  298   1          #if ENABLE_HDCP
  299   1          //msDisableHDCP();
@@ -382,7 +382,7 @@ line level    source
  356   1        // mStar_SetupGamma( GAMA3 );
  357   1          UserPrefGamaOnOff=FALSE;
  358   1          drvGammaOnOff(UserPrefGamaOnOff, MAIN_WINDOW );
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 7   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 7   
 
  359   1          drvGammaOnOff(UserPrefGamaOnOff, SUB_WINDOW );
  360   1      #endif
@@ -446,7 +446,7 @@ line level    source
  417   2              //msWriteByte( SC0_CC, 0x00 );
  418   2              //msWriteByte( SC0_CD, 0x00 );
  419   2              INT_STATUS_CLEAR();
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 8   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 8   
 
  420   2      
  421   2              if (CURRENT_INPUT_IS_VGA())//(SrcInputType == Input_Analog1)
@@ -510,7 +510,7 @@ line level    source
  479   1      #if ENABLE_DVI_DUAL_LINK //&& DL_PXL_RAT_DET
                 if (IsSrcUseDualLinkDviPort())
                   msDVIDualLinkMode(msGetDVIDualLinkStatus());
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 9   
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 9   
 
               #endif
  483   1      
@@ -574,7 +574,7 @@ line level    source
  540   1          if( mStar_SetPanelTiming() == FALSE )        // set output dclk
  541   1          {
  542   2              #if DEBUG_PRINT_ENABLE
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 10  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 10  
 
  543   2              printMsg( "Dot clock --> not support" );
  544   2              #endif
@@ -638,7 +638,7 @@ line level    source
  602   1      #if ENABLE_LED_CONTROLLER     //111216 modified LED blacklit dimming PWMfreq setting
                   #if LED_CTRL_BRIGHTNESS_BY_CURRENT
                       SetDimmingPWMFreq( BRIGHTNESS_VSYNC_ALIGN, PWM_DIMMING_FREQ );
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 11  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 11  
 
                   #else
                       SetDimmingPWMFreq( BRIGHTNESS_VSYNC_ALIGN, 240 );
@@ -702,7 +702,7 @@ line level    source
  663   2              if(bInputVGAisYUV) //20150121
  664   2              {
  665   3                  //printMsg(">>SetAnaPort>> ADC_TABLE_SOURCE_YUV");
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 12  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 12  
 
  666   3                  drvADC_SetADCSource(ADC_TABLE_SOURCE_YUV);  // input is YUV
  667   3              }
@@ -766,7 +766,7 @@ line level    source
                       g_SetupPathInfo.ucSCFmtIn = SC_FMT_IN_NORMAL;
               #endif
  723   1      
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 13  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 13  
 
  724   1          Set_ShowInputInfoFlag();
  725   1      
@@ -830,7 +830,7 @@ line level    source
  780   1          else if(CURRENT_INPUT_IS_HDMI())//(SrcInputType == Input_HDMI)
  781   1          {
  782   2              mstar_HDMIInitialVariable();
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 14  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 14  
 
  783   2              drvmStar_SetupInputPort_HDMI();
  784   2      #if (CHIP_ID==CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID==CHIP_TSUMD || CHIP_ID==CHIP_TSUM9|| CHIP_ID==C
@@ -894,7 +894,7 @@ line level    source
  838   4                      u16OutputImgH = PanelWidth;
  839   4                      u16OutputImgV = ((DWORD)PanelWidth*N/M);
  840   4                  }
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 15  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 15  
 
  841   3                  else
  842   3                  {
@@ -958,7 +958,7 @@ line level    source
  900   4                      u16OutputImgH = ((DWORD)u16width * PanelHeight / u16height);
  901   4                      u16OutputImgV = PanelHeight;
  902   4                  }
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 16  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 16  
 
  903   3                  else
  904   3                  {
@@ -1022,7 +1022,7 @@ line level    source
  962   2              {
  963   3                  OverScanHCap = ((DWORD)width * OverScanSetting.OverScanH / OverScanHDisp);
  964   3                  CapWinHStart = UserPrefHStart + (width - OverScanHCap) / 2 / PANEL_H_DIV;
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 17  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 17  
 
  965   3                  width = OverScanHCap;
  966   3              }
@@ -1086,7 +1086,7 @@ line level    source
 1021   1          OverScanSetting.FinalCapWinHST=CapWinHStart;
 1022   1          OverScanSetting.FinalCapWinVST=CapWinVStart;
 1023   1          OverScanSetting.FinalCapWinWidth=width;
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 18  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 18  
 
 1024   1          OverScanSetting.FinalCapWinHeight=height;
 1025   1      
@@ -1150,7 +1150,7 @@ line level    source
 1082   4                      }
 1083   3      
 1084   3                  }
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 19  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 19  
 
 1085   2          }
 1086   1          else
@@ -1214,7 +1214,7 @@ line level    source
 1140          // Function Name: mStar_SetupClampingByMode
 1141          //
 1142          // Decscription: When input timing is reduced blanking, we have to reduce the
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 20  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 20  
 
 1143          //   duration of ADC calibration to avoid dark display.
 1144          //    The amount of calibration duration must be smaller than back-porch.
@@ -1278,7 +1278,7 @@ line level    source
 1201   5                          drvADC_AdjustCalDuring(15); //Back-porch=48 pixel
 1202   5                          break;
 1203   5                      }
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 21  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 21  
 
 1204   4                      #if 0  //Steven110608, disable, Update TSUMT_ADC_Driver table 0.8 to fix some timing clamp
              -ing issue.
@@ -1342,7 +1342,7 @@ line level    source
                                   drvADC_AdjustCalDuring(31); //Back-porch=80 pixel
                                   break;
                               }
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 22  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 22  
 
                       #endif
 1266   4      
@@ -1406,7 +1406,7 @@ line level    source
                    msWrite2Byte(REG_1201, 0x032e);
                    msWrite2Byte(REG_1201, 0x002e);
                    ForceDelay1ms(2);
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 23  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 23  
 
                    msWrite2Byte(REG_1247, 0xffff);
                    msWrite2Byte(REG_1201, 0x202e);
@@ -1470,7 +1470,7 @@ line level    source
 1382   1      
 1383   1          // 120229 coding check tsum2
 1384   1          WRITE_POWER_ON_TABLE();
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 24  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 24  
 
 1385   1      
 1386   1          mStar_IPPowerControl();
@@ -1534,7 +1534,7 @@ line level    source
               }
                 
               #endif
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 25  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 25  
 
 1446   1          drvADC_PowerCtrl((PowerOnFlag ? ADC_POWER_STANDBY : ADC_POWER_DOWN));
 1447   1          drvDVI_PowerCtrl((PowerOnFlag ? DVI_POWER_STANDBY : DVI_POWER_DOWN));
@@ -1598,7 +1598,7 @@ line level    source
 1502          //*******************************************************************
 1503          // Function Name: mStar_InitADC
 1504          //
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 26  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 26  
 
 1505          // Decscription: Initialize ADC bank registers
 1506          //
@@ -1662,7 +1662,7 @@ line level    source
 1561   2              msAccSetup( 0, PanelWidth, 0, PanelHeight );
 1562   2              msDlcInit( PanelWidth, PanelHeight );
 1563   2              msSetDlcStrength( g_LowStrength, g_HighStrength );
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 27  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 27  
 
 1564   2              LoadDLCTable( t_MWEDLC_Linear_Table );
 1565   2              //mStar_WriteByteMask( BK0_5C, BIT3, BIT3 ); //msWriteByte( BK0_5C, msReadByte( BK0_5C ) | BIT3 );
@@ -1726,7 +1726,7 @@ line level    source
 1620   1      #if ENABLE_DEBUG
 1621   1          printData("  BrightFreqByVfreq:%d", outVfreq);
 1622   1      #endif
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 28  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 28  
 
 1623   1      }
 1624          #endif
@@ -1790,7 +1790,7 @@ line level    source
 1682   1      #if  ENABLE_DP_INPUT
                   if(CURRENT_INPUT_IS_DISPLAYPORT()&&DPINPUT_COLORIMETRY_ITU709())
                   msACESetHDTVMode(YUV_Colorimetry_ITU709);
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 29  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 29  
 
                   else
               #endif
@@ -1854,7 +1854,7 @@ line level    source
                   #if CHIP_ID==CHIP_TSUMF
                   #define OSC432_TARGET               0x480   //0x3E0 for 372M, 0x480 for 432M
                   #else
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 30  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 30  
 
                   #define OSC432_TARGET               0x3E0   //0x3E0 for 372M, 0x480 for 432M
                   #endif
@@ -1918,7 +1918,7 @@ line level    source
 1806   3                SC0_HPEROID_DETECT_MODE(TRUE);
 1807   3                Delay1ms( u32sclk );
 1808   3                u16hPeriod = SC0_READ_HPEROID();
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 31  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 31  
 
 1809   3                SC0_HPEROID_DETECT_MODE(FALSE);
 1810   3                Delay1ms( u32sclk );
@@ -1982,7 +1982,7 @@ line level    source
 1866   1          )
 1867   1          {
 1868   2              mStar_AdjustContrast(UserPrefContrast);
-C51 COMPILER V9.60.0.0   MSTAR                                                             12/22/2020 19:50:22 PAGE 32  
+C51 COMPILER V9.60.0.0   MSTAR                                                             12/25/2020 09:24:14 PAGE 32  
 
 1869   2          }
 1870   1          else

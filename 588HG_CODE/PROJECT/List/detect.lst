@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 1   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DETECT
@@ -62,7 +62,7 @@ line level    source
   50          
   51          #define DETECT_DEBUG    0
   52          #if ENABLE_DEBUG&&DETECT_DEBUG
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 2   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 2   
 
                   #define DETECT_printData(str, value)   printData(str, value)
                   #define DETECT_printMsg(str)           printMsg(str)
@@ -126,7 +126,7 @@ line level    source
               #define SyncValidCount_Digital  SyncValidCount_HDMI
               #define SyncLossCount_Digital  SyncLossCount_HDMI
               #elif INPUT_TYPE == INPUT_1A2C || INPUT_TYPE == INPUT_1A3C || INPUT_TYPE == INPUT_1A1C2
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 3   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 3   
 
               #define SyncValidCount_Digital  ((CURRENT_INPUT_IS_DISPLAYPORT())?(SyncValidCount_DP):((CURRENT_INPUT_IS_H
              -DMI())?(SyncValidCount_HDMI):(SyncValidCount_DVI)))
@@ -190,7 +190,7 @@ line level    source
  163          //*******************************************************************
  164          // Function Name: mStar_MonitorInputTiming
  165          //
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 4   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 4   
 
  166          // Decscription: Detect input timing
  167          //
@@ -254,7 +254,7 @@ line level    source
               #endif
               #endif
  225   4                  }
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 5   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 5   
 
  226   3              }
  227   2          }
@@ -318,7 +318,7 @@ line level    source
  285   5      #if ENABLE_MHL
                                   MHLExtenCountFlag = 0;
               #endif
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 6   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 6   
 
  288   5      
  289   5      #if ENABLE_DEBUG_TIMING_CHANGE_POINT
@@ -382,7 +382,7 @@ line level    source
                           drv_TMDS_AUTOEQ_TRIG();
                   }
               #endif
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 7   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 7   
 
  347   1      #endif
  348   1      
@@ -446,7 +446,7 @@ line level    source
               #endif
  406   4                      mstar_HDMICheckAudio();
  407   4                      gScInfo.InputTmdsType = TMDS_HDMI;
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 8   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 8   
 
  408   4                      SC0_INPUT_SELECT(ISEL_HDMI_444); //msWriteByteMask(SC0_02, SCALER_ISEL_HDMI, BIT2|BIT1|BIT
              -0);
@@ -510,7 +510,7 @@ line level    source
  466   2          }
  467   1          Set_ReadyForChangeFlag();
  468   1      
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 9   
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 9   
 
  469   1          if( DisplayLogoFlag )
  470   1          {
@@ -574,7 +574,7 @@ line level    source
  527   2              if( DoBurninModeFlag )
  528   2              {
  529   3              #if 0
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 10  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 10  
 
                           if (!ProductModeFlag)                   //110916 Rick add condition for A027
                           Clr_DoBurninModeFlag();
@@ -638,7 +638,7 @@ line level    source
                      #if !USE_DAC_ADJ
                   msAudioLineOutGain( 0x3D );
                      #endif
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 11  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 11  
 
                   }
                   else
@@ -702,7 +702,7 @@ line level    source
  649   1          {
  650   2              if( !SyncLossState()&&!UnsupportedModeFlag)
  651   2                  {
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 12  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 12  
 
  652   3                      mStar_AdjustVolume( UserPrefVolume );
  653   3                  }
@@ -766,7 +766,7 @@ line level    source
  710   2              ForceDelay1ms(3);
  711   2              SC0_SCALER_RESET(0);//msWriteByte(SC0_F1, 0);
  712   2              ForceDelay1ms(10);
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 13  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 13  
 
  713   2          }
  714   1          Clr_InputTimingStableFlag(); // reset input timing stable and wait for timing stable
@@ -830,7 +830,7 @@ line level    source
  771   2              if( CableNotConnectedFlag )  // no Cable
  772   2              {
  773   3                  if( !IsCableNotConnected() )
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 14  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 14  
 
  774   3                  {
  775   4                      Clr_CableNotConnectedFlag();
@@ -894,7 +894,7 @@ line level    source
  831   3              }
  832   2          }
  833   1          else
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 15  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 15  
 
  834   1          {
  835   2          SyncActive:
@@ -958,7 +958,7 @@ line level    source
                     }
                       }
                       else
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 16  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 16  
 
                     #endif
  895   2              {
@@ -1022,7 +1022,7 @@ line level    source
  952   6      #if ENABLE_DEBUG_TIMING_CHANGE_POINT
                                       SetTimingChangeFirstPoint(TimingChange_SrcVTotal);
               #endif
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 17  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 17  
 
  955   6                  DETECT_printMsg( "Valid Timing : VTotal changed" );
  956   6                              return TRUE;
@@ -1086,7 +1086,7 @@ line level    source
 1014   5      
 1015   5                          tempPeriod = SC0_READ_AUTO_START_V();//msRead2Byte( SC0_7E ) & MASK_11BIT;
 1016   5                          if( labs( (DWORD)tempPeriod - SrcTMDSVStart ) > TMDS_TOLERANCE )
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 18  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 18  
 
 1017   5                          {
 1018   6                              DETECT_printData( "SrcTMDSVStart changed%d", tempPeriod );
@@ -1150,7 +1150,7 @@ line level    source
 1076   2          }
 1077   1      
 1078   1          status = SC0_READ_SYNC_STATUS();//msReadByte(SC0_E1);
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 19  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 19  
 
 1079   1      
 1080   1          fStatus |= ( status & 0x03 ); // Get input timing polarity
@@ -1214,7 +1214,7 @@ line level    source
 1136   4                       {
 1137   5                          //BYTE i;
 1138   5                          //for (i=0;i<10;i++)
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 20  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 20  
 
 1139   5                          {
 1140   6                              inputValue=GetVSyncWidth();
@@ -1278,7 +1278,7 @@ line level    source
                   BYTE retry_Key, temp, temp1;
                   retry_Key = 3;
                   while( retry_Key )
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 21  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 21  
 
                   {
                       temp = CABLE_DET_SAR;
@@ -1342,7 +1342,7 @@ line level    source
                           break;
                       retry_Key--;
                   }
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 22  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 22  
 
               
                   DETECT_printData( "CABEL ADC =%d", temp );
@@ -1406,7 +1406,7 @@ line level    source
                   }
                   else if(CURRENT_INPUT_IS_PURE_HDMI())
                   {
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 23  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 23  
 
                       BYTE tempValue = CABLE_DET_SAR;
                       if(abs(tempValue-JUST_HDMI_PLUG) > 10 || abs(tempValue -BOTH_VGA_HDMI_PLUG) > 10)
@@ -1470,7 +1470,7 @@ line level    source
               
               #if (CInput_HDMI_C3 != CInput_Nothing)
                   if(CURRENT_INPUT_IS_HDMI2())
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 24  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 24  
 
                   {
                       if(!IS_HDMI_PORT2_CABLE_CONNECT())
@@ -1534,7 +1534,7 @@ line level    source
               #if DEBUG_HDMI_MHL_CABLE_DETECT
               DEBUG_HDMI_MHL_CABLE( "MHL1 CableConnect:%x", hwDVI0Cable_Pin );
               #endif
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 25  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 25  
 
                       }
                       else
@@ -1598,7 +1598,7 @@ line level    source
 1505   1      #if (ENABLE_DP_INPUT&&(CHIP_ID == CHIP_TSUMC || CHIP_ID==CHIP_TSUMK || CHIP_ID == CHIP_TSUMD))
               //============================================================================================
               //  Please add Cable GND pin detect in  below condition
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 26  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 26  
 
               //  ((SrcInputType  == Input_Displayport)&&(msReadByte(REG_0232)&BIT0)&& (Cable GND pin Detect) )
               //===================================================================================== =======
@@ -1662,7 +1662,7 @@ line level    source
 1567   2          }
 1568   1      #if ENABLE_DP_INPUT
                   else if( CURRENT_INPUT_IS_DISPLAYPORT() )
-C51 COMPILER V9.60.0.0   DETECT                                                            12/22/2020 19:50:24 PAGE 27  
+C51 COMPILER V9.60.0.0   DETECT                                                            12/25/2020 09:24:19 PAGE 27  
 
                   {
                       u16ImageHeight=gDPInfo.uwDPVWidth;

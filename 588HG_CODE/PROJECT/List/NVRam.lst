@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   NVRAM                                                             12/22/2020 19:50:29 PAGE 1   
+C51 COMPILER V9.60.0.0   NVRAM                                                             12/25/2020 09:24:31 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE NVRAM
@@ -62,7 +62,7 @@ line level    source
               #endif
               #endif
   52          
-C51 COMPILER V9.60.0.0   NVRAM                                                             12/22/2020 19:50:29 PAGE 2   
+C51 COMPILER V9.60.0.0   NVRAM                                                             12/25/2020 09:24:31 PAGE 2   
 
   53          #ifdef Internal_EDID_Write_To_24C02
               #define NVRAM_DEVICE    0xA0

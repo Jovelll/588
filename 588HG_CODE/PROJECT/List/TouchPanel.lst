@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 1   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE TOUCHPANEL
@@ -62,7 +62,7 @@ line level    source
                           Set_SPI_MOSI();
                       }
                       else
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 2   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 2   
 
                       {
                           Clr_SPI_MOSI();
@@ -126,7 +126,7 @@ line level    source
                   BYTE tempcount = 0;
               
                   do{
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 3   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 3   
 
                       SPI_ReadRegister(ARC_SPICMD_ACCESS_STATUS, &i);
                       if(i == ACCESS_STATUS_READY)
@@ -190,7 +190,7 @@ line level    source
                   {
                       #if DEBUG_TOUCH_PANEL
                           TPL_DPRINTF(" R_BusBusy", 0);
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 4   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 4   
 
                       #endif
                       return FALSE;
@@ -254,7 +254,7 @@ line level    source
               void TPL_InitVariables(void)
               {
                   //GetXYMappingOffsetValue();
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 5   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 5   
 
                   //TPL_FingerStatus = FINGER_LIFT;
                   TPL_PollingCounter = SPI_POLLING_INTERVAL;
@@ -318,7 +318,7 @@ line level    source
               
                   temp = databuf[1];
                   databuf[1] = databuf[2];
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 6   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 6   
 
                   databuf[2] = temp;
               }
@@ -382,7 +382,7 @@ line level    source
                   {
                       printData("   TPL_Conatct0_X:%x", TPL_Conatct0_X);
                       printData("   TPL_Conatct0_Y:%x", TPL_Conatct0_Y);
-C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/22/2020 19:50:36 PAGE 7   
+C51 COMPILER V9.60.0.0   TOUCHPANEL                                                        12/25/2020 09:24:45 PAGE 7   
 
                   }
                   #endif

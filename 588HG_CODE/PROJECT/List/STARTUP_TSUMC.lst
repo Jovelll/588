@@ -1,4 +1,4 @@
-A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/20/2020 14:10:38 PAGE     1
+A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/25/2020 09:24:07 PAGE     1
 
 
 MACRO ASSEMBLER A51 V8.2.7.0
@@ -65,7 +65,7 @@ LOC  OBJ            LINE     SOURCE
                       55     ;------------------------------------------------------------------------------
                       56     ;
                       57     ;  Page Definition for Using the Compact Model with 64 KByte xdata RAM
-A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/20/2020 14:10:38 PAGE     2
+A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/25/2020 09:24:07 PAGE     2
 
                       58     ;
                       59     ;  The following EQU statements define the xdata page used for pdata
@@ -133,7 +133,7 @@ LOC  OBJ            LINE     SOURCE
                      121     IF XDATALEN <> 0
 0016 904000          122                     MOV     DPTR,#XDATASTART
 0019 7F00            123                     MOV     R7,#LOW (XDATALEN)
-A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/20/2020 14:10:38 PAGE     3
+A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/25/2020 09:24:07 PAGE     3
 
                      124       IF (LOW (XDATALEN)) <> 0
                                              MOV     R6,#(HIGH (XDATALEN)) +1
@@ -185,7 +185,7 @@ LOC  OBJ            LINE     SOURCE
 002D 020000   F      171                     LJMP    ?C_START
                      172     
                      173                     END
-A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/20/2020 14:10:38 PAGE     4
+A51 MACRO ASSEMBLER  STARTUP_TSUMC                                                        12/25/2020 09:24:07 PAGE     4
 
 SYMBOL TABLE LISTING
 ------ ----- -------

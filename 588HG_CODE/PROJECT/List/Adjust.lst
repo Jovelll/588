@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 1   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE ADJUST
@@ -62,7 +62,7 @@ line level    source
   50          extern Bool IsColorspaceRGB(void);
   51          #if ENABLE_POWER_PORTECT
               extern void PowerProtectInit(void);
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 2   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 2   
 
               #endif
   54          
@@ -126,7 +126,7 @@ line level    source
  111   3              }
  112   2              if(level>=p_curve[i-2] && level<=p_curve[i])
  113   2              {
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 3   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 3   
 
  114   3      
  115   3                  temp1 = p_curve[i] - p_curve[i-2];
@@ -190,7 +190,7 @@ line level    source
  170   5                      }
  171   4                      brightness = RealMinDcrBrightnessValue;  // set logical absolute dark value, // RealMinBri
              -ghtnessValue;
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 4   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 4   
 
  172   4                  }
  173   3                  else
@@ -254,7 +254,7 @@ line level    source
  229   1          if( brightness == RealAbsoluteMinBrightnessValue )
  230   1          {
  231   2      
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 5   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 5   
 
  232   2              if( BackLightActiveFlag )
  233   2                  hw_ClrBlacklit();
@@ -318,7 +318,7 @@ line level    source
  290   1          #if BRIGHTNESS_INVERSE  //+Duty power
                   drvGPIO_SetBacklightDuty(BrightnessPWM, 0xFF-brightness);
                   //drvGPIO_SetBacklightDuty(BrightnessPWM, 0);
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 6   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 6   
 
                   #else                           //-Duty power
  294   1          //drvGPIO_SetBacklightDuty(BrightnessPWM, 0xff);
@@ -382,7 +382,7 @@ line level    source
                 if (volume > MaxVolumeValue)
                   volume = MaxVolumeValue;
                 else if (volume < MinVolumeValue)
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 7   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 7   
 
                   volume = MinVolumeValue;
               
@@ -446,7 +446,7 @@ line level    source
                   hw_SetMute(); 
                     }
               #else  
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 8   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 8   
 
                       if ((volume!=0)&&(!UserOSDMuteOnFlag))
                       {
@@ -510,7 +510,7 @@ line level    source
               #if ENABLE_HDMI
                   if( CURRENT_INPUT_IS_TMDS()
                    && gScInfo.InputTmdsType == TMDS_HDMI 
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 9   
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 9   
 
                   )
                   {
@@ -574,7 +574,7 @@ line level    source
  533          #endif
  534          
  535          #define CONTRAST_MAX     200 //178 
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 10  
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 10  
 
  536          
  537          BYTE mStar_ChangeAdjContrastValue(BYTE contrast)
@@ -638,7 +638,7 @@ line level    source
  594   1      #else
                   if( DecVScaleFlag )
                   {
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 11  
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 11  
 
                       if( position <= ( VScaleDecValue / 2 ) )
                           position = VScaleDecValue / 2 + 1;
@@ -702,7 +702,7 @@ line level    source
                   // ForceDelay1ms( 10000 );
                     
                     }  
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 12  
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 12  
 
                   else if( pattern == 1 )
                  {
@@ -766,7 +766,7 @@ line level    source
  718   1      #if Customer_Type_Sel==Customer_GUANRONG  
                 //ForceDelay1ms( 3000 );
               #endif
-C51 COMPILER V9.60.0.0   ADJUST                                                            12/22/2020 19:50:31 PAGE 13  
+C51 COMPILER V9.60.0.0   ADJUST                                                            12/25/2020 09:24:36 PAGE 13  
 
  721   1      }
 

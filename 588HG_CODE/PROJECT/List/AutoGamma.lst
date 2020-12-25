@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 1   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE AUTOGAMMA
@@ -62,7 +62,7 @@ line level    source
               0xDB, 0x3A, 0xD4, 0x3B, 0xCF, 0x3C, 0xCD, 0x3D,
               0xCD, 0x3E, 0xCF, 0x3F, 0xD4, 0x40, 0xDB, 0x41,
               0xE4, 0x42, 0xF0, 0x43, 0xFF, 0x44, 0x10, 0x46,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 2   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 2   
 
               0x23, 0x47, 0x39, 0x48, 0x51, 0x49, 0x6B, 0x4A,
               0x88, 0x4B, 0xA8, 0x4C, 0xCA, 0x4D, 0xEF, 0x4E,
@@ -126,7 +126,7 @@ line level    source
               0x8B, 0x26, 0x55, 0x27, 0x22, 0x28, 0xF0, 0x28,
               0xC1, 0x29, 0x94, 0x2A, 0x6A, 0x2B, 0x40, 0x2C,
               0x1A, 0x2D, 0xF7, 0x2D, 0xD5, 0x2E, 0xB6, 0x2F,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 3   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 3   
 
               0x98, 0x30, 0x7D, 0x31, 0x65, 0x32, 0x4F, 0x33,
               0x3B, 0x34, 0x28, 0x35, 0x19, 0x36, 0x0C, 0x37,
@@ -190,7 +190,7 @@ line level    source
               0x1F, 0x23, 0x22, 0x27, 0x2A, 0x22,
               0x2E, 0x32, 0x22, 0x36, 0x39, 0x22,
               0x3D, 0x40, 0x22, 0x44, 0x48, 0x22,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 4   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 4   
 
               0x4B, 0x4F, 0x22, 0x52, 0x56, 0x22,
               0x59, 0x5C, 0x22, 0x60, 0x63, 0x22,
@@ -254,7 +254,7 @@ line level    source
               0xB9, 0xBE, 0x11, 0xC3, 0xC8, 0x11,
               0xCD, 0xD2, 0x11, 0xD6, 0xDB, 0x11,
               0xE0, 0xE5, 0x11, 0xE9, 0xEE, 0x11,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 5   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 5   
 
               0xF2, 0xF7, 0x11, 0xFB, 0xFF, 0x11,
               0x04, 0x08, 0x22, 0x0C, 0x10, 0x22,
@@ -318,7 +318,7 @@ line level    source
               code BYTE tFGamma[] =
               {
                0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 6   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 6   
 
                0x02, 0x03, 0x00, 0x04, 0x06, 0x00,
                0x08, 0x09, 0x00, 0x0c, 0x0e, 0x00,
@@ -382,7 +382,7 @@ line level    source
                0x57, 0x73, 0xee, 0x8e, 0xaa, 0xee,
                0xc6, 0xe2, 0xee, 0xfe, 0x1a, 0xfe,
                0x36, 0x53, 0xff, 0x6f, 0x8c, 0xff,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 7   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 7   
 
                0xa8, 0xc5, 0xff, 0xe2, 0xff, 0xff,
               
@@ -446,7 +446,7 @@ line level    source
                0x57, 0x74, 0xcc, 0x90, 0xad, 0xcc,
                0xc9, 0xe6, 0xcc, 0x03, 0x20, 0xdd,
                0x3d, 0x5a, 0xdd, 0x78, 0x95, 0xdd,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 8   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 8   
 
                0xb3, 0xd1, 0xdd, 0xef, 0x0d, 0xed,
                0x2b, 0x49, 0xee, 0x68, 0x86, 0xee,
@@ -510,7 +510,7 @@ line level    source
                0x20, 0x23, 0x33, 0x25, 0x28, 0x33,
                0x2b, 0x2e, 0x33, 0x30, 0x33, 0x33,
                0x35, 0x38, 0x33, 0x3b, 0x3d, 0x33,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 9   
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 9   
 
                0x40, 0x43, 0x33, 0x45, 0x48, 0x33,
                0x4b, 0x4d, 0x33, 0x50, 0x52, 0x33,
@@ -574,7 +574,7 @@ line level    source
                0x0b, 0x0d, 0x33, 0x10, 0x13, 0x33,
                0x15, 0x18, 0x33, 0x1a, 0x1d, 0x33,
                0x20, 0x22, 0x33, 0x25, 0x27, 0x33,
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 10  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 10  
 
                0x2a, 0x2c, 0x33, 0x2f, 0x31, 0x33,
                0x34, 0x36, 0x33, 0x39, 0x3b, 0x33,
@@ -638,7 +638,7 @@ line level    source
                   }
                   else
                   {
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 11  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 11  
 
                       ucAddr = SCE_24;
                   }
@@ -702,7 +702,7 @@ line level    source
               
                 msWriteBit(reg, bSwitch, _BIT1);
                 scWriteByte( 0, ucBank );
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 12  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 12  
 
               }
               
@@ -766,7 +766,7 @@ line level    source
                       msWriteBit(SCE_22, _BIT0, _BIT0);
                   else
                       msWriteBit(SCE_02, _BIT0, _BIT0);
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 13  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 13  
 
               
                 for(j = 0 ; j < 3; j++)
@@ -830,7 +830,7 @@ line level    source
                       ucTrigger = 0;
                   else if(j == 1) // G
                       ucTrigger = _BIT2;
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 14  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 14  
 
                   else if(j == 2) // B
                       ucTrigger = _BIT3;
@@ -894,7 +894,7 @@ line level    source
               
                       for (k = 0;k <128; k++)
                       {
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 15  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 15  
 
                           msWrite2Byte(SCE_E0, k*2);
                           wData = ucTab1[k*3] | ((ucTab1[k*3+2]&0x0F)<<8) ;
@@ -958,7 +958,7 @@ line level    source
                       }
                     msWriteByteMask(SCE_E2, 0x00, BIT1 | BIT0); //msWriteByteMask(SC25_F0, 0x00, 0xC0);
                 }
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 16  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 16  
 
                   scWriteByte( 0, ucBank );
               }
@@ -1022,7 +1022,7 @@ line level    source
                               GammaTbl[0] = 0;
                           }
                           else
-C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/22/2020 19:50:37 PAGE 17  
+C51 COMPILER V9.60.0.0   AUTOGAMMA                                                         12/25/2020 09:24:48 PAGE 17  
 
                           {
                               GammaTbl[0] = GammaTbl[3] ;

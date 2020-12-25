@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/22/2020 19:50:22 PAGE 1   
+C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/25/2020 09:24:15 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MS2DTO3D
@@ -62,7 +62,7 @@ line level    source
               #if CHIP_ID == CHIP_TSUMD
                   xdata DWORD dwBase;
               #elif CHIP_ID == CHIP_TSUM2
-C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/22/2020 19:50:22 PAGE 2   
+C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/25/2020 09:24:15 PAGE 2   
 
                   xdata DWORD dwDDBase,dwDRBase;
               #else
@@ -126,7 +126,7 @@ line level    source
                   dwBase = (MIU_DD_ADDR_START>>2);                //unit: 4 byte
                   msWrite2Byte(SC14_0E, dwBase);                  //dd det wr base low  sw allocate
                   msWrite2ByteMask(SC14_0C, dwBase>>16, 0x01FF);  //dd det wr base high sw allocate
-C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/22/2020 19:50:22 PAGE 3   
+C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/25/2020 09:24:15 PAGE 3   
 
               
                   msWriteByte(SC14_0D, 0x80); //enable dd to write miu
@@ -190,7 +190,7 @@ line level    source
                   msWrite2Byte(REG_24C2,ucRegVal);  //DPH e.g. ceiling(600/32)
               
                   msWrite2Byte(REG_24C8, PANEL_WIDTH); //PXW   e.g. 800
-C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/22/2020 19:50:22 PAGE 4   
+C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/25/2020 09:24:15 PAGE 4   
 
               
                   msWrite2Byte(REG_2402,PANEL_WIDTH); // H pixel number(low)
@@ -254,7 +254,7 @@ line level    source
               
               void Sc2DTo3DSetBLKOffset(BYTE blkOffset)
               {
-C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/22/2020 19:50:22 PAGE 5   
+C51 COMPILER V9.60.0.0   MS2DTO3D                                                          12/25/2020 09:24:15 PAGE 5   
 
                   msWriteByte(SC13_0C, blkOffset); //block left offset
                   msWriteByte(SC13_1C, blkOffset); //block right offset

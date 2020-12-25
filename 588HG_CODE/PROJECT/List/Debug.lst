@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 1   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE DEBUG
@@ -62,7 +62,7 @@ line level    source
   50          #if !USEFLASH || (defined(UseVGACableReadWriteAllPortsEDID)&&!defined(UseInternalDDCRam))
               extern void i2c_WriteTBL( BYTE deviceID, WORD addr, BYTE *buffer, BYTE count );
               extern void i2c_ReadTBL( BYTE deviceID, WORD addr, BYTE *buffer, BYTE count );
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 2   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 2   
 
               #endif
   54          
@@ -126,7 +126,7 @@ line level    source
  110   2              else
  111   2              {
  112   3                  if(UART_TI_FLAG())
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 3   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 3   
 
  113   3                  {
  114   4                      UART_CLR_TI_FLAG();
@@ -190,7 +190,7 @@ line level    source
  171          Ex:
  172          Resolution:800x600
  173          
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 4   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 4   
 
  174           (0,0)           (799,0)
  175              _____________
@@ -254,7 +254,7 @@ line level    source
                   scWriteByte(SC0_00, 0x00);
               }
               #endif
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 5   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 5   
 
  236          
  237          /*
@@ -318,7 +318,7 @@ line level    source
  294   1          msWrite2ByteMask(SCD_26, BIT7,BIT7);//0: positive initial offset, 1: negative initial offset"
  295   1          msWrite2ByteMask(SCD_27, BIT7, BIT7);//non-linear scaling enable
  296   1          msWriteByte(SCD_28, 0);//delta value in zone 0
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 6   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 6   
 
  297   1          msWriteByte(SCD_29, ucPara2);//delta value in zone 1
  298   1      }
@@ -382,7 +382,7 @@ line level    source
                   |  Arranged   | 128 K
                   |     IN          | 256 K
                   |---------- | 384 K - End
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 7   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 7   
 
               */
               void TestInternalEDID_256ByteWrite(BYTE SramIndex, BYTE StartIndex)
@@ -446,7 +446,7 @@ line level    source
                       {
                           msWriteByte(REG_3106, 0x00);
                           DB_printData("%x",0);
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 8   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 8   
 
                       }
                       msWrite2Byte(REG_3104, wCount|0x8000);//Od table sram1 address
@@ -510,7 +510,7 @@ line level    source
                       msWrite2Byte(REG_3110, wCount|0x4000);
                       while(_bit6_(msReadByte(REG_3111)));
                       DB_printData("%x",msReadByte(REG_3114));
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 9   
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 9   
 
                   }
                   for(wCount=0; wCount<256; wCount++)
@@ -574,7 +574,7 @@ line level    source
  537   2          }
  538   1      }
  539          
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 10  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 10  
 
  540          #endif //  CHIP_ID == CHIP_TSUMU ||CHIP_ID == CHIP_TSUMC
  541          
@@ -638,7 +638,7 @@ line level    source
                       //P30 and P31: GPIO40/41
                       case 0x01:
                           DB_printMsg("MCU Write P1_0=0");
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 11  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 11  
 
                           P1_0=0;
                       break;
@@ -702,7 +702,7 @@ line level    source
                           DB_printMsg("MCU Write P3_1=0");
                           P3_1=0;
                       break;
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 12  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 12  
 
                       case 0x24:
                           DB_printMsg("MCU Write P3_1=1");
@@ -766,7 +766,7 @@ line level    source
                           default:
                               DB_printMsg("More detaied pixelbased and blockbased gain seetings will provide.");
                       }
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 13  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 13  
 
                   break;
                   case 0x30:
@@ -830,7 +830,7 @@ line level    source
                       Sc2DTo3DSetBLKGain(ucPara1);
                       Sc2DTo3DSetBLKOffset(ucPara2);
                   break;
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 14  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 14  
 
               #endif
  789   2      
@@ -894,7 +894,7 @@ line level    source
  845   2              case 0x47:
  846   2                  TestInternalEDID_Read(ucPara1);
  847   2                  DB_printMsg( "Read Internal EDID" );
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 15  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 15  
 
  848   2              break;
  849   2      #if CHIP_ID==CHIP_TSUMJ
@@ -958,7 +958,7 @@ line level    source
  907   2                  break;
  908   2      #if ENABLE_DPS
  909   2              case 0x51:
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 16  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 16  
 
  910   2                  REG_DPS_RUN_Flag=0;//msDPS_Off_Setting();
  911   2                  DB_printMsg("...Disable DPS Function...");
@@ -1022,7 +1022,7 @@ line level    source
  969   2                  {
  970   3                      extern void msAdjustPCXvyccContrast ( BYTE bScalerWin, WORD uwContrast );
  971   3                      msAdjustPCXvyccContrast ( MAIN_WINDOW, ucPara1<<8|ucPara2 );
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 17  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 17  
 
  972   3                  }
  973   2                  break;
@@ -1086,7 +1086,7 @@ line level    source
               #endif
 1031   2      
 1032   2      #if CHIP_ID==CHIP_TSUMD && COLORVERIFY_DEBUG
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 18  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 18  
 
                           case 0x61:   //De-Mosquito
                               {
@@ -1150,7 +1150,7 @@ line level    source
 1092   2      
 1093   2      #if  ENABLE_LED_CONTROLLER
                       case 0x69:
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 19  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 19  
 
                       {
                           #if LED_CTRL_BRIGHTNESS_BY_CURRENT
@@ -1214,7 +1214,7 @@ line level    source
                       break;
                       case 0x6C:
                       {
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 20  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 20  
 
                           extern void msLED_Off(void);
                           DB_printMsg(" ------- msLED_Off");
@@ -1278,7 +1278,7 @@ line level    source
                       case 0x6F:
                       {
                           mhal_mhl_SetHPD(SIORxBuffer[2]);
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 21  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 21  
 
                           if(SIORxBuffer[2])
                               DB_printMsg( "<mhl_SetHPD HIGH>");
@@ -1342,7 +1342,7 @@ line level    source
 1278   2                  break;
 1279   2      
 1280   2      #if ENABLE_DEBUG && ENABLE_TOUCH_PANEL_DATA_FROM_USB
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 22  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 22  
 
                       case 0x80:
                       {
@@ -1406,7 +1406,7 @@ line level    source
                       if (ucPara1==0x01)
                       {
                           CACHE_ENABLE();
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 23  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 23  
 
                           DB_printMsg("AAA CACHE_ENABLE");
                       }
@@ -1470,7 +1470,7 @@ line level    source
                   WORD xdata Hi_Act=SC0_READ_AUTO_WIDTH();   //  OK
                   WORD xdata Vi_Act=SC0_READ_AUTO_HEIGHT();  //  OK
                   WORD xdata Hi_Total=mSTar_GetInputHTotal();   //  OK
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 24  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 24  
 
                   WORD xdata Vi_Total=SC0_READ_VTOTAL();           //  OK
               
@@ -1534,7 +1534,7 @@ line level    source
 1460   3        }
 1461   2        break;
 1462   2      #endif
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 25  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 25  
 
 1463   2      
 1464   2      #if ENABLE_TIME_MEASUREMENT
@@ -1598,7 +1598,7 @@ line level    source
                           else
               #endif
 1522   3                  {
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 26  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 26  
 
 1523   4                      const volatile BYTE ucBank = scReadByte( SC0_00 ); // store original bank
 1524   4                      scWriteByte( SC0_00, UART_CMD_MS_BANK );
@@ -1662,7 +1662,7 @@ line level    source
                           //if (g_bDebugASCIICommandFlag)
                           //{
                               //printData("EEPROM[0x%x]=", uwEEADDR);
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 27  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 27  
 
                               //printData("0x%x \r\n", SIORxBuffer[_UART_CMD_INDEX3_]);
                           //}
@@ -1726,7 +1726,7 @@ line level    source
                       ProcessCommand();
                       SIORxIndex = 0;
                       u8ReSyncCounter = 0;
-C51 COMPILER V9.60.0.0   DEBUG                                                             12/22/2020 19:50:42 PAGE 28  
+C51 COMPILER V9.60.0.0   DEBUG                                                             12/25/2020 09:24:58 PAGE 28  
 
                       Clr_RxBusyFlag();
                   }

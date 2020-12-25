@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 1   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDLC
@@ -62,7 +62,7 @@ line level    source
   50          XDATA BYTE g_HighStrength = 100;
   51          XDATA BYTE g_bDLCOnOff = 0;
   52          XDATA BYTE g_bNeedRequest = 0;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 2   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 2   
 
   53          XDATA BYTE ucDLCCCount = 0;
   54          XDATA BYTE BrightData = 0xff;
@@ -126,7 +126,7 @@ line level    source
  112   1          g_ucLumaCurve[3] = 0x37;
  113   1          g_ucLumaCurve[4] = 0x47;
  114   1          g_ucLumaCurve[5] = 0x57;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 3   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 3   
 
  115   1          g_ucLumaCurve[6] = 0x67;
  116   1          g_ucLumaCurve[7] = 0x77;
@@ -190,7 +190,7 @@ line level    source
  174   1          BYTE LOCAL_TYPE ucHighStrenght;
  175   1          ucLowStrength = pucLowStrength;
  176   1          ucHighStrenght = pucHighStrenght;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 4   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 4   
 
  177   1          if( 0 == ucLowStrength )
  178   1              ucLowStrength = 1;
@@ -254,7 +254,7 @@ line level    source
               #else
                   msWriteByte( BK3_B6, 0x20 );
                   msWriteByte( BK3_B7, 0x70 ); // 2005/1/24
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 5   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 5   
 
               #endif
                   msWriteByte( BK3_B5, BIT0 ); // Enable range for Histogram
@@ -318,7 +318,7 @@ line level    source
               #if 0
                   if( !SupportMWE() )
                       return ;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 6   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 6   
 
               #endif
                   //bWindow=1;
@@ -382,7 +382,7 @@ line level    source
  360          void msDlcHandler()
  361          {
  362   1          //BYTE LOCAL_TYPE ucBank; //, ucTmp;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 7   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 7   
 
  363   1          WORD retry = 2000;
  364   1          BYTE tempvalue = 0;
@@ -446,7 +446,7 @@ line level    source
  422   2              g_ucLumaCurve[17] = 0;
  423   2      
  424   2              TempVar1 = 0;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 8   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 8   
 
  425   2              TempVar2 = 0;
  426   2              for( i = 0; i < 32; i++ )
@@ -510,7 +510,7 @@ line level    source
  484   4                      if (g_ucLumaCurve[i]>TempVar1)
  485   4                      {
  486   5                          msWriteByte( SC8_AE+i, TempVar1+1 );
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 9   
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 9   
 
  487   5                      }
  488   4                      else if (g_ucLumaCurve[i]<TempVar1)
@@ -574,7 +574,7 @@ line level    source
                               }
                               else // set to upper of panel height
                               {
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 10  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 10  
 
                                   msWriteByte( BK3_B6, TopLimit_Upper );
                                   msWriteByte( BK3_B7, DownLimit_Upper );
@@ -638,7 +638,7 @@ line level    source
                               // 081117
                               if( ReadFrameDataCnt % 2 == 0 ) // get all display data
                               {
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 11  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 11  
 
                                   BYTE tempVal;
               
@@ -702,7 +702,7 @@ line level    source
              -( BackLightTargetValue ) : ( BacklightNow - DCRStepTransValue );
                                       }
                                   }
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 12  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 12  
 
                                   else
                                   {
@@ -766,7 +766,7 @@ line level    source
               #endif
                                       if(( BacklightNow != BacklightPrev ) || ( BrightData != PreBrightData ) )
                                       {
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 13  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 13  
 
                                           BacklightPrev = BacklightNow;
                                           PreBrightData = BrightData;
@@ -830,7 +830,7 @@ line level    source
               #if DYNAMIC_DLC// 2004/11/10
                           // 8 segment pixel count extraction
                           // Sequencial read
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 14  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 14  
 
                           for( ucTmp = 2; ucTmp < 3; ucTmp++ )
                               uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
@@ -894,7 +894,7 @@ line level    source
                           // Sequencial read
                           for( ucTmp = 7; ucTmp < 8; ucTmp++ )
                               uwArray[ucTmp] = (( WORD )msReadByte( BK3_BA ) ) * 0x100 + ( WORD )msReadByte( BK3_BA );
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 15  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 15  
 
               #endif
                           DLCStatus = DLC_CAL1;
@@ -958,7 +958,7 @@ line level    source
                               if( ucTmp > 10 )
                                   ucTmp = 10;
                               g_ucTable[2] = g_ucTable[2] + ucTmp;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 16  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 16  
 
                           }
                           //else
@@ -1022,7 +1022,7 @@ line level    source
                                   ucTmp = 8;
                               g_ucTable[13] = g_ucTable[13] - ucTmp;
                           }
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 17  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 17  
 
                           //else
                           //    g_ucTable[13] =g_ucTable[13];
@@ -1086,7 +1086,7 @@ line level    source
                                   g_ucTable[ucTmp] = 0x00;
                               else if( g_ucTable[ucTmp] > 0xFF )
                                   g_ucTable[ucTmp] = 0xFF;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 18  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 18  
 
                           }
               #if !DYNAMIC_DLC// 2004/11/10
@@ -1150,7 +1150,7 @@ line level    source
                       case DLC_WRITE4:
                           msWriteByte( BK0_00, REGBANK3 ); // bank 3
                           msWriteByte( BK3_B9, 0x16 );
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 19  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 19  
 
                           for( ucTmp = 6; ucTmp <= 7; ucTmp++ )
                           {
@@ -1214,7 +1214,7 @@ line level    source
                           msWriteByte( BK0_00, ucBank );
                           DLCStatus = DLC_WAIT;
                           msWriteByte( BK0_00, ucBank );
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 20  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 20  
 
                           return ;
                           break;
@@ -1278,7 +1278,7 @@ line level    source
 1219   2              else // 1: sub win
 1220   2              {
 1221   3                  MWE_FUNCTION_EN(1);//msWriteByteMask(SC0_5C, BIT3, BIT3);
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 21  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 21  
 
 1222   3                  STATISTIC_REQUEST_SUB_ENABLE();//msWriteByte(SC7_B8, (BIT2|BIT0));
 1223   3              }
@@ -1342,7 +1342,7 @@ line level    source
 1277   2              if( abs( BackLightTargetValue - BacklightPrev ) >= DCRStep )
 1278   2              {
 1279   3                  bDCRSmoothMotionFlag = 1;
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 22  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 22  
 
 1280   3                  DCRStepTransValue = DCRStep / 2; //abs(BackLightTargetValue-BacklightPrev)/DCRStep;
 1281   3              }
@@ -1406,7 +1406,7 @@ line level    source
 1335          
 1336          
 
-C51 COMPILER V9.60.0.0   MSDLC                                                             12/22/2020 19:50:27 PAGE 23  
+C51 COMPILER V9.60.0.0   MSDLC                                                             12/25/2020 09:24:26 PAGE 23  
 
 
 MODULE INFORMATION:   STATIC OVERLAYABLE

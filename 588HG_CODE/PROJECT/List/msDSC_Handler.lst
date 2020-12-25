@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 1   
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/25/2020 09:25:05 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSDSC_HANDLER
@@ -62,7 +62,7 @@ line level    source
   47   1              xdata BYTE  Flag_SceneChangeValid = 0;
   48   1              xdata BYTE  Flag_IsGrayPureColor = 0;
   49   1              xdata BYTE  Ygain_sign = 0;
-C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 2   
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/25/2020 09:25:05 PAGE 2   
 
   50   1              xdata BYTE  HistDiffCount = 0;
   51   1      #endif        
@@ -126,7 +126,7 @@ line level    source
  109   1              if(PseudoMaxPtr == 0)
  110   1                  Flag_IsGrayPureColor = 1;
  111   1              else
-C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 3   
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/25/2020 09:25:05 PAGE 3   
 
  112   1                  Flag_IsGrayPureColor = 0;
  113   1              
@@ -190,7 +190,7 @@ line level    source
  170   3                  }
  171   2              }
  172   1              
-C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/22/2020 19:50:46 PAGE 4   
+C51 COMPILER V9.60.0.0   MSDSC_HANDLER                                                     12/25/2020 09:25:05 PAGE 4   
 
  173   1              if ( DSC_YgainCycLoopCount == REG_DSC_YgainUpdateCyc )
  174   1              {

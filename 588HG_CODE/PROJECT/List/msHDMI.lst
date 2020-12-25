@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 1   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSHDMI
@@ -62,7 +62,7 @@ line level    source
   50   1          gScInfo.OutputAudioState = HDMI_AUDIO_OFF; //Mute
   51   1          gScInfo.OutputDataState = HDMI_DATA_OUTPUT_OFF;
   52   1      #if ENABLE_HDMI_SW_CTS_STABLE
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 2   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 2   
 
                   gScInfo.InputCTSValue = 0;
                   gScInfo.OutputAudioCnt = AudioDeBounce;
@@ -126,7 +126,7 @@ line level    source
                       msWriteByte( BK0_2D, 0x70 );
                       mStar_WriteByteMask( BK0_02, 0x00, BIT3 );  //msWriteByte( BK0_02, msReadByte( BK0_02 )&~BIT3 );
                       msWriteByte( BK0_00, REGBANK3 );
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 3   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 3   
 
                       msWriteByte( BK3_71, ucReg | BIT2 );
                       msWriteByte( BK3_70, 0x15 );
@@ -190,7 +190,7 @@ line level    source
  174   2              if(CURRENT_INPUT_IS_TMDS())//( SrcInputType == Input_Digital || SrcInputType == Input_Digital2 )
  175   2              {
  176   3                  if( SrcFlags&( SyncLoss | bUnsupportMode ) ) // unsupport mode
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 4   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 4   
 
  177   3      
  178   3                  {
@@ -254,7 +254,7 @@ line level    source
  236   4                      else
  237   4                      {
  238   5                          if( gScInfo.wAviPktLossCnt >= AviPktLossBound )
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 5   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 5   
 
  239   5                          {
  240   6                              if( gScInfo.InputColor != INPUT_RGB )
@@ -318,7 +318,7 @@ line level    source
                   ucCurInFreq = mstar_HDMICheckAudioFreq();
                   if( temp == HDMI_AUDIO_ON )
                   {
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 6   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 6   
 
                       if(( ucCurInFreq > AUD_FREQ_ERROR ) )
                       {
@@ -382,7 +382,7 @@ line level    source
                   if(gScInfo.InputSPDInfoReceived)
                       return drv_mstar_HDMIGetFreeSyncFlag();
                   else 
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 7   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 7   
 
                       return FALSE;
                 #endif
@@ -446,7 +446,7 @@ line level    source
                   drv_mstar_SetAudioClockLock(bLock);
               }
               #endif // #if EN_HDMI_SW_AUDCLK_CHECK
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 8   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 8   
 
  424          
  425          #if ENABLE_AUDIO_AUTO_MUTE || ENABLE_AUDIO_AUTO_FADING || ENABLE_CTSN_FILTER
@@ -510,7 +510,7 @@ line level    source
               //   0100: Quincunx matrix - Odd/Left  picture, Odd/Right  picture
               //   0101: Quincunx matrix - Odd/Left  picture, Even/Right picture
               //   0110: Quincunx matrix - Even/Left picture, Odd/Right  picture
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 9   
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 9   
 
               //   0111: Quincunx matrix - Even/Left picture, Even/Right picture
               //   1000 ~ 1111: Reserved
@@ -574,7 +574,7 @@ line level    source
                                   break;
                               case E_HDMI_3D_INPUT_LINE_ALTERNATIVE:
                                   ucSCFmtIn = SC_FMT_IN_3D_LA;
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 10  
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 10  
 
                                   break;
                               case E_HDMI_3D_INPUT_SIDE_BY_SIDE_FULL:
@@ -638,7 +638,7 @@ line level    source
               }
               #endif
  608          #endif
-C51 COMPILER V9.60.0.0   MSHDMI                                                            12/22/2020 19:50:48 PAGE 11  
+C51 COMPILER V9.60.0.0   MSHDMI                                                            12/25/2020 09:25:11 PAGE 11  
 
  609          
 

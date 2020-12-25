@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 1   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MSHDCP
@@ -62,7 +62,7 @@ line level    source
   49              0x4F, 0x74, 0x3C, 0xF8, 0xDA, 0x65, 0x6E, 0x2F, 0xB4, 0xAB, 0xAD, 0x7F,
   50              0x89, 0xA1, 0x92, 0x25, 0x1A, 0xCD, 0x50, 0x93, 0x50, 0x00, 0x63, 0x88,
   51              0x7B, 0xD0, 0xD8, 0x4D, 0x46, 0x95, 0xA8, 0xFC, 0x9B, 0x0D, 0xD1, 0x08,
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 2   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 2   
 
   52              0x06, 0xB2, 0x67, 0xBE, 0xA2, 0x90, 0xA7, 0x84, 0x2A, 0x4B, 0x28, 0xC8,
   53              0xDD, 0x8F, 0xC9, 0x48, 0xA3, 0x0A, 0x7D, 0xCA, 0xDA, 0xBC, 0xCE, 0xFA,
@@ -126,7 +126,7 @@ line level    source
  110   1          DVI_RELATED_CLOCK_CTRL_0(0xFFFF, 0xFFFF);
  111   1          DVI_RELATED_CLOCK_CTRL_1(0x3FFF, 0x3FFF);
  112   1      #else
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 3   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 3   
 
                   DVI_RELATED_CLOCK_CTRL(0, 0x601); //msWrite2ByteMask( REG_290C, 0, 0x601 ); // HDCP related power powe
              -r down
@@ -190,7 +190,7 @@ line level    source
                       //ucValue = FlashReadByte( HDCPKEYSET_START + BKSVDataAddr + wCount );
                       #else
                       Set_HdcpNVRamFlag();
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 4   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 4   
 
                       NVRam_ReadByte( RM_HDCP_KEY_BASEADDR1 + wCount, &ucValue );
                       Clr_HdcpNVRamFlag();
@@ -254,7 +254,7 @@ line level    source
                   HDCP_CPU_WRITE_BKSV_START();
               
                   for( wCount = 0; wCount < 5; wCount++ )
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 5   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 5   
 
                   {
                   #if HDCPKEY_USE_CODE
@@ -318,7 +318,7 @@ line level    source
                       while(HDCP_CPU_WR_BUSY()); // wait ready
                   }
               
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 6   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 6   
 
               #endif //CHIP_ID==CHIP_TSUMC && ENABLE_XIU_WRITE_KEY
  294   1      
@@ -382,7 +382,7 @@ line level    source
  349          //
  350          //
  351          ///////////////////////////////////////////////////////////////////////////////
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 7   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 7   
 
  352          void msPullLowHPD1( void )
  353          {
@@ -446,7 +446,7 @@ line level    source
  411   1          if(CURRENT_INPUT_IS_HDMI0() || CURRENT_INPUT_IS_DVI0())
  412   1        {
  413   2          #if ENABLE_DVI_DUAL_LINK
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 8   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 8   
 
                   DVI_C_RCK_CTRL(u8On);
                   #else
@@ -510,7 +510,7 @@ line level    source
  473   1          if( !PowerSavingFlag )
  474   1          {
  475   2              msDisableHDCP();
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 9   
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 9   
 
  476   2              ForceDelay1ms( 300 );
  477   2          }
@@ -574,7 +574,7 @@ line level    source
                   BYTE ucDualLinkStatus = 0, ucStableCnt,ucIntCount = 0;
                   WORD wHDE, wVDE;
               
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 10  
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 10  
 
                   for(ucStableCnt = 0; ucStableCnt < 5; ucStableCnt++)
                   {
@@ -638,7 +638,7 @@ line level    source
               void msHDCPDummy(void)
               {
                   BYTE xdata i = msHDCPNullData[0];
-C51 COMPILER V9.60.0.0   MSHDCP                                                            12/22/2020 19:50:49 PAGE 11  
+C51 COMPILER V9.60.0.0   MSHDCP                                                            12/25/2020 09:25:13 PAGE 11  
 
               }
               #endif

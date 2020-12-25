@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 1   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE MODE
@@ -62,7 +62,7 @@ line level    source
   51              { 884,  930},  // Res_884x930,
   52              {1024,  768},  // Res_1024x768,
   53              {1280, 1024},  // Res_1280x1024,
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 2   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 2   
 
   54              {1600, 1200},  // Res_1600x1200,
   55              {1152,  864},  // Res_1152x864,
@@ -126,7 +126,7 @@ line level    source
  113                  SyncHpVp | SyncHpVn | SyncHnVp | SyncHnVn,
  114                  Res_1366x768, // ResIndex
  115                  477, 598, // HFreq, VFreq
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 3   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 3   
 
  116                  1792, 798, // HTotal, VTotal
  117                  356 - 6, 27 - 3 - 1, // HStart, VStart
@@ -190,7 +190,7 @@ line level    source
  175                  //340 - 5, 27 - 7 - 1, // HStart, VStart
  176                  //JOVE ADD FOR CEHUA 1280*800
  177                  310 - 5, 27 - 7 - 1, // HStart, VStart
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 4   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 4   
 
  178              },
  179              // 4 // 6.1280X768 75Hz(VESA)
@@ -254,7 +254,7 @@ line level    source
  237                  1728, 1002,//1680, 1000, // HTotal, VTotal
  238                  360 - 5, 39 - 3 - 1, // HStart, VStart
  239              },
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 5   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 5   
 
  240              // 11 // 13. 1280x960 85Hz (VESA)
  241              {
@@ -318,7 +318,7 @@ line level    source
  299              },
  300              //Add a new mode for some PC 1080P timing
  301              // 1920X1080  60Hz        // 103 QD-CVT1960H , ouput DCLK=173MHz
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 6   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 6   
 
  302              {
  303              SyncHnVp | SyncHpVn | SyncHpVp | SyncHnVn, // Flags
@@ -382,7 +382,7 @@ line level    source
  360              },
  361              //23   // 25. 720x400 85Hz (VESA)     //Haven't tune Chroma No this Timing
  362              {
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 7   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 7   
 
  363                  SyncHpVp | SyncHnVp | SyncHnVn, // Flags
  364                  Res_720x400, // ResIndex
@@ -446,7 +446,7 @@ line level    source
  421                  832, 520, // HTotal, VTotal
  422                  160 - 5, 23 - 3 - 1, // HStart, VStart
  423              },
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 8   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 8   
 
  424              //30  // 32. 640x480 75Hz (VESA)
  425              {
@@ -510,7 +510,7 @@ line level    source
  483                  Res_832x624, // ResIndex
  484                  497, 746, // HFreq, VFreq
  485                  1152, 665,//667, // HTotal, VTotal
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 9   
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 9   
 
  486                  288 - 5, 42 - 3 - 1, // HStart, VStart
  487              },
@@ -574,7 +574,7 @@ line level    source
  545                  1376, 808, // HTotal, VTotal
  546                  304 - 5, 39 - 3 - 1, // HStart, VStart
  547              },
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 10  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 10  
 
  548              // 44// 46. 1152x864 60Hz(Tune For PC)
  549              {
@@ -638,7 +638,7 @@ line level    source
  607                  //210 - 5, 25 - 5 - 1, // HStart, VStart
  608              },
  609              //51 // 55. 1280x720 70Hz
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 11  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 11  
 
  610              {
  611                  SyncHpVp | SyncHpVn | SyncHnVp | SyncHnVn, // Flags
@@ -702,7 +702,7 @@ line level    source
  669              },
  670              // 57 //61. 1600x1200 65Hz (VESA)
  671              {
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 12  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 12  
 
  672                  SyncHpVp | SyncHpVn | SyncHnVp | SyncHnVn, // Flags
  673                  Res_1600x1200, // ResIndex
@@ -766,7 +766,7 @@ line level    source
  731                  2448, 1394, // HTotal, VTotal
  732                  528 - 6, 49 - 3 - 1, // HStart, VStart
  733              },
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 13  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 13  
 
  734              // 65 //69. 1920x1080 60Hz (VESA)
  735              /*
@@ -830,7 +830,7 @@ line level    source
  793                  748, 697, // HFreq, VFreq
  794                  1696, 1064, // HTotal, VTotal
  795                  378, 41, // HStart, VStart
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 14  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 14  
 
  796              },
  797          
@@ -894,7 +894,7 @@ line level    source
  855                  1480, 900, // HTotal, VTotal
  856                  264, 24, // HStart, VStart
  857              },
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 15  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 15  
 
  858              //79 //84. 576P(YCbCr)
  859              {
@@ -958,7 +958,7 @@ line level    source
  917              {
  918                  SyncHpVp | SyncHpVn | SyncHnVp | SyncHnVn,   // Flags
  919                  Res_1920x1080, // ResIndex
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 16  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 16  
 
  920                  674, 599, // HFreq, VFreq
  921                  2200, 1125,// HTotal, VTotal
@@ -1022,7 +1022,7 @@ line level    source
  979                  Res_1280x800, // ResIndex
  980                  628, 749, // HFreq, VFreq
  981                  1696, 838,// HTotal, VTotal
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 17  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 17  
 
  982                  336 - 5, 35 - 6 - 1, // HStart, VStart
  983                  //JOVE add for TENGSHAN
@@ -1086,7 +1086,7 @@ line level    source
 1041              112, 39,
 1042            },  
 1043          //, 2560x1440 60Hz
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 18  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 18  
 
 1044            {
 1045            SyncHpVp | SyncHpVn | SyncHnVp | SyncHnVn, // Flags
@@ -1150,7 +1150,7 @@ line level    source
 1103   1          return StandardMode[SrcModeIndex].HStart;
 1104   1      }
 1105          WORD GetStandardModeVStart( void)
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 19  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 19  
 
 1106          {
 1107   1          return StandardMode[SrcModeIndex].VStart;
@@ -1214,7 +1214,7 @@ line level    source
 1163   2              wWidth = (( DWORD )wWidth * StandardModeHTotal + 5000 ) / 10000; //dclk= hfreq * htotal
 1164   2              drvADC_SetModewithPLLProtection(g_bInputSOGFlag ? ADC_INPUTSOURCE_YPBPR : ADC_INPUTSOURCE_RGB, wWi
              -dth, StandardModeHTotal);
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 20  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 20  
 
 1165   2      
 1166   2              drvADC_AdjustHTotal(StandardModeHTotal);
@@ -1278,7 +1278,7 @@ line level    source
 1224   1          fStatus = mStar_GetInputStatus();
 1225   1          if( SyncPolarity( SrcFlags ) != SyncPolarity( fStatus ) )        // Sync polarity changed
 1226   1          {
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 21  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 21  
 
 1227   2              return FALSE;
 1228   2          }
@@ -1342,7 +1342,7 @@ line level    source
                       u16PixClk = msAPI_combo_IPGetPixelClk();
                       u16Htt = msAPI_combo_IPGetGetHTotal();
                       if((u16Htt!=0)&&(SrcVTotal!=0))
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 22  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 22  
 
                       {
                           hFreq = ((DWORD)u16PixClk * 100 + u16Htt/2)/u16Htt;
@@ -1406,7 +1406,7 @@ line level    source
 1348   3              tempWidth = SC0_READ_AUTO_WIDTH();//msRead2Byte(SC0_84)-msRead2Byte(SC0_80)+1; // get DE width
 1349   3              tempHeight = SC0_READ_AUTO_HEIGHT();//msRead2Byte(SC0_82)-msRead2Byte(SC0_7E)+1; // get DE Height
 1350   3              }
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 23  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 23  
 
 1351   2          }
 1352   1      
@@ -1470,7 +1470,7 @@ line level    source
 1407   2              {
 1408   3                  modePtr = StandardMode;
 1409   3                  ucHVtolerance_min = HFREQ_TOLERANCE_ENLARGE + VFREQ_TOLERANCE_ENLARGE;
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 24  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 24  
 
 1410   3                  ucVtotal_min = VTotal_Delta;
 1411   3      
@@ -1534,7 +1534,7 @@ line level    source
 1467   6                              found = TRUE;
 1468   6                              SrcFlags |= bUserMode;
 1469   6                              ucVtotal_min = ucVtotal;
-C51 COMPILER V9.60.0.0   MODE                                                              12/22/2020 19:50:28 PAGE 25  
+C51 COMPILER V9.60.0.0   MODE                                                              12/25/2020 09:24:27 PAGE 25  
 
 1470   6                              SrcModeIndex = ucModeIndex;
 1471   6                              ucSimilarTimingBuffer[ucSimilarindex] = ucModeIndex;

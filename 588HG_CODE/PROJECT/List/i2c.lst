@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 1   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE I2C
@@ -62,7 +62,7 @@ line level    source
               {
                   BYTE i;
                   for( i = 0; i < 5; i++ )
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 2   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 2   
 
                   {     
                       Delay4us();
@@ -126,7 +126,7 @@ line level    source
                   {
                       Clr_i2c_SDA();
                   }
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 3   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 3   
 
                   else
                   {
@@ -190,7 +190,7 @@ line level    source
                               return TRUE;
                       }
                       else
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 4   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 4   
 
                       {
                           if (i2c_SendByte(NVRAM_DEVICE)==TRUE) // send address success
@@ -254,7 +254,7 @@ line level    source
                   i2c_Stop();
               }
               
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 5   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 5   
 
               void i2c_ReadTBL( BYTE deviceID, WORD addr, BYTE *buffer, BYTE count )
               {
@@ -318,7 +318,7 @@ line level    source
                   while( count )
                   {
                       slaveAddr = i2cSlaveAddr( deviceID, addr + offset );
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 6   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 6   
 
                       wordAddr = i2cWordAddr( addr + offset );
                       if( i2c_MasterStart( I2C_WRITE, slaveAddr ) == FALSE )
@@ -382,7 +382,7 @@ line level    source
               void i2c_Start1(void)
               {
                   Set_i2c_SDA();
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 7   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 7   
 
                   Delay4us();
                   Set_i2c_SCL();
@@ -446,7 +446,7 @@ line level    source
                       _nop_();
                       _nop_();
                   }
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 8   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 8   
 
               
                   if(NVRAM_i2c_SDA_IS_LO())
@@ -510,7 +510,7 @@ line level    source
                 result = NVRAM_CheckIICAck();
                 Set_NVRAM_i2c_SCL();
                 NVRAM_i2c_Delay();
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 9   
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 9   
 
                 NVRAM_i2cSCL_Chk();
                 Clr_NVRAM_i2c_SCL();
@@ -574,7 +574,7 @@ line level    source
                     //printMsg("SendByte Fail");
                     ForceDelay1ms(2);
                   }
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 10  
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 10  
 
                 return FALSE;
               }
@@ -638,7 +638,7 @@ line level    source
               
                       while(ucBufLen) // loop to burst read
                       {
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 11  
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 11  
 
                           ucBufLen--;
                           *pBuf = NVRAM_i2c_ReceiveByte(ucBufLen); // receive byte
@@ -702,7 +702,7 @@ line level    source
                   { if (NVRAM_i2c_SendByte(*(buffer++))==FALSE)
                       return FALSE;
                   }
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 12  
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 12  
 
                return TRUE;
               }
@@ -766,7 +766,7 @@ line level    source
               
                 slaveAddr=i2cSlaveAddr(deviceID, addr);
                 wordAddr=i2cWordAddr(addr);
-C51 COMPILER V9.60.0.0   I2C                                                               12/22/2020 19:50:35 PAGE 13  
+C51 COMPILER V9.60.0.0   I2C                                                               12/25/2020 09:24:43 PAGE 13  
 
                 while (retry--)
                   { if (NVRAM_i2c_MasterStart(I2C_WRITE, slaveAddr)==FALSE)

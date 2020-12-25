@@ -1,4 +1,4 @@
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 1   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 1   
 
 
 C51 COMPILER V9.60.0.0, COMPILATION OF MODULE LEDCONTROL
@@ -62,7 +62,7 @@ line level    source
               BYTE xdata StringShortOpenStatus = 0;
               BYTE xdata StringErrorCounter = 0;
               BYTE xdata StringRecoverCounter = 0;
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 2   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 2   
 
               bit StringShortOpenChecking = 0;
               bit StringShortOpenFlag = 0;
@@ -126,7 +126,7 @@ line level    source
               #else
                   msWriteByteMask(REG_0A84,0x01,0x0F);    // 256T before Neg PWM  Prepare timt
               #endif
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 3   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 3   
 
                   msWrite2Byte(REG_0A88, VOL_TO_SAR(NORMAL_UP));   // 1V = 0x12
                   msWrite2Byte(REG_0A8A, VOL_TO_SAR(NORMAL_LOW));  // 0.55V = 0x0A
@@ -190,7 +190,7 @@ line level    source
                       SetBoostCounter(0);        
                       //u16BoostCounter = 0;
                       //bBoostCounterFlag = 0;
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 4   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 4   
 
                   }
               }
@@ -254,7 +254,7 @@ line level    source
                    #endif
                   }
               }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 5   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 5   
 
               
               #if ENABLE_TSUML_NEWOVP
@@ -318,7 +318,7 @@ line level    source
                       msWriteByteMask(REG_0AFA, 0x0F<<4,0xF0);    //OVP2 THR2
               #endif
                   }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 6   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 6   
 
               }
               #endif
@@ -382,7 +382,7 @@ line level    source
                   {
                     break;
                   }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 7   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 7   
 
                 }
                 msWriteByteMask(REG_0AE1, ((u8I >= BST_Slcomp_maxSEL)?(BST_Slcomp_maxSEL):(u8I)), BIT2|BIT1|BIT0);
@@ -446,7 +446,7 @@ line level    source
              -                  // OCP 10b =REG_0AE3/IFB_R Current
                   msSetOCPLevel();    //follow formula to set OCP level 20130307
               #endif
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 8   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 8   
 
               
                   //msWriteByteMask(REG_0AE1,   BIT0,   BIT2|BIT1|BIT0);                // Slope compensation
@@ -510,7 +510,7 @@ line level    source
               {
                   DWORD xdata SAR_T;
                   BYTE divisior_m;
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 9   
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 9   
 
                   WORD xdata DimmingFreq, divisior;
               
@@ -574,7 +574,7 @@ line level    source
                   BYTE current, i;
               
                   // brightness 0~100 mapping to real current
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 10  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 10  
 
                   if(value >= 100)
                       current = LEDBL_PanelDefaultCurrent;
@@ -638,7 +638,7 @@ line level    source
               #else
               
                   for (i=1,j=0; j<LED_STRING_NUM; j++,i=i*2)
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 11  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 11  
 
                   {
                       msLED_SetDimCurrent(i, gLEDInfo.bCurrent[j]);// need to check this function
@@ -702,7 +702,7 @@ line level    source
               
               #if ENABLE_TSUML_NEWOVP
                   #if OVP2_INTERRUPT
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 12  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 12  
 
               
                   if (msRegs[REG_0AC6]&BIT5)
@@ -766,7 +766,7 @@ line level    source
                           LEDOpenShortString |= BIT4;
                       #endif
                           msRegs[REG_0A52] |= BIT4;   // enable interrupt mask
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 13  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 13  
 
                           msRegs[REG_0A4C] |= BIT4; // clear interrupt status
                       }
@@ -830,7 +830,7 @@ line level    source
                       #if ENABLE_DETECT_LED_CH_1
                           LEDOpenShortString |= BIT1;
                       #endif
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 14  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 14  
 
                           msRegs[REG_0A4E] |= BIT1; // enable interrupt mask
                           msRegs[REG_0A48] |= BIT1; // clear interrupt status
@@ -894,7 +894,7 @@ line level    source
                   #if LED_CH_2
               
                       if (msRegs[REG_0A5E]&BIT6)
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 15  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 15  
 
                       {
                           //msRegs[REG_0A80]=msRegs[REG_0A80]&(~BIT2);
@@ -958,7 +958,7 @@ line level    source
                           msRegs[REG_0A80]=msRegs[REG_0A80]&(~BIT1);
                           msRegs[REG_0A68]=msRegs[REG_0A68]&(~BIT5);
                       #if LED_SAR_VOLTAGE_MEASURE_ENABLE
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 16  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 16  
 
                           msRegs[REG_0AD0]=msRegs[REG_0AD0]&(~(BIT1|BIT5));
                       #endif
@@ -1022,7 +1022,7 @@ line level    source
                   bEnterOpen_Interrput=TRUE;
                   wINT_CHECK_5352=msRegs[REG_0A53]<<7|msRegs[REG_0A52];
                   wINT_CHECK_5F5E=msRegs[REG_0A5F]<<7|msRegs[REG_0A5E];
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 17  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 17  
 
                   wINT_CHECK_6968=msRegs[REG_0A69]<<7|msRegs[REG_0A68];
                   wINT_CHECK_8180=msRegs[REG_0A81]<<7|msRegs[REG_0A80];
@@ -1086,7 +1086,7 @@ line level    source
                   #if 0//OCP_INTERRUPT
                     msWriteByteMask(REG_0AC4,   BIT6        ,BIT6);
                     msWrite2ByteMask(REG_0AC0,   0x00   ,BIT6); //enable OCP interrupt
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 18  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 18  
 
                     LED_printData("%%%%%    REG_0AC0======>>%x",msRead2Byte(REG_0AC0));
                   #endif
@@ -1150,7 +1150,7 @@ line level    source
                   WORD u16DetectedGDRV;
                   BYTE waits = 5;
                   BOOL result = FALSE;
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 19  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 19  
 
                   msWriteByteMask(REG_0AE1,BIT6,BIT6);    // [6]Bias Enable ;
               
@@ -1214,7 +1214,7 @@ line level    source
                   #if ENABLE_DETECT_LED_CH_1
                   StringDetectAndEnable |= DETECT_LED_CH_1;
                   #endif
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 20  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 20  
 
                   #if ENABLE_DETECT_LED_CH_2
                   StringDetectAndEnable |= DETECT_LED_CH_2;
@@ -1278,7 +1278,7 @@ line level    source
               
                   gLEDInfo.bBoostClkODClk = Boost_216MClk;//Boost_ODClk; //Boost_ODClk;      // different ???
                   gLEDInfo.bControlModeHW = HW_Mode;
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 21  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 21  
 
               
                   gLEDInfo.ucBoostPwmStep = BOOST_PWM_TUNING_STEP;//0x05;
@@ -1342,7 +1342,7 @@ line level    source
               //==============================================================================
               void msLED_CheckFlag(void)
               {
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 22  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 22  
 
                   BYTE xdata reg_value;
               
@@ -1406,7 +1406,7 @@ line level    source
                       Flag= Min_PWM;
                   }
                   else if (gLEDInfo.WCurrentPWM > MAX_BOOST_PWM)
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 23  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 23  
 
                   {
                       gLEDInfo.WCurrentPWM = MAX_BOOST_PWM;
@@ -1470,7 +1470,7 @@ line level    source
                           break;
               
                       case eLED_ADJUST_DIMCURRENT:
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 24  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 24  
 
                           //msLED_SetDimCurrent()
                           break;
@@ -1534,7 +1534,7 @@ line level    source
               void msLED_Get_Led_Status(void)
               {
                   BYTE xdata i=0;
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 25  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 25  
 
                   WORD xdata SAR_VD_DATA[LED_STRING_NUM] = {0,0,0,0};
                   WORD xdata SAR_VS_DATA[LED_STRING_NUM] = {0,0,0,0};
@@ -1598,7 +1598,7 @@ line level    source
                               msLED_DimmingEnable(_DISABLE, gLEDAlert.wLED_TwoFail);
                               msLED_SetDimCurrent(gLEDAlert.wLED_TwoFail, 0);
                           }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 26  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 26  
 
                           if ((SAR_VD_DATA[i] < SAR_V_8p00)&&(SAR_VD_DATA[i] >SAR_V_4p50))  // 1 LED fail   led short
                           {
@@ -1662,7 +1662,7 @@ line level    source
                           gLEDAlert.wLED_TwoFail =(msRead2Byte( REG_0A5A )|gLEDAlert.wLED_TwoFail)&STREAM_VALUE_D;
                           for (i = 0; i < LED_STRING_NUM ; i++)
                           {
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 27  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 27  
 
                               //LED_printData("FW: SAR_DATA[i] = %x " , SAR_DATA[i] );
                               if(Stream_D[i][0]==0)   // this CH is Close
@@ -1726,7 +1726,7 @@ line level    source
                               }
                           }
                           msLED_DimmingEnable(_DISABLE, gLEDAlert.wLED_TwoFail);
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 28  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 28  
 
                           msLED_SetDimCurrent(gLEDAlert.wLED_TwoFail, 0);
                           LED_printData("Dimming_DISABLE:  = %x " , gLEDAlert.wLED_TwoFail );
@@ -1790,7 +1790,7 @@ line level    source
                               }
                           }
                           msLED_DimmingEnable(_DISABLE, gLEDAlert.wLED_TwoFail);
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 29  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 29  
 
                           msLED_SetDimCurrent(gLEDAlert.wLED_TwoFail, 0);
                           LED_printData("Dimming_DISABLE:  = %x " , gLEDAlert.wLED_TwoFail );
@@ -1854,7 +1854,7 @@ line level    source
               
                   if ((Num!=0)&&(value == _DISABLE))
                   {
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 30  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 30  
 
                       if (u16TotalPower >= LIMIT_POWER)
                       {
@@ -1918,7 +1918,7 @@ line level    source
               
               
                           default:
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 31  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 31  
 
                               gLEDAlert.bSYStemFail = 1;
                               gLEDInfo.bTurnOn_Delay = TIME_TURN_ON_DELAY;
@@ -1982,7 +1982,7 @@ line level    source
                       LED_printData("SAR_DATA[i] = %x " , SAR_DATA[i] );
               
               #if LED_SKIP_DIMMING
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 32  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 32  
 
                       if (!(((WORD)(1<<i))&msRead2Byte(REG_0A80)))
                           continue;
@@ -2046,7 +2046,7 @@ line level    source
                               msLED_DimmingEnable(_DISABLE, (1<<i));
               
                               msLED_SetDimCurrent(i, 0);
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 33  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 33  
 
               
                               u8LEDState = eLED_IDLE;
@@ -2110,7 +2110,7 @@ line level    source
                       else if (Flag ==3)
                       {
                           LED_printData(" bBOOST_PWM_States==>%x " , gLEDAlert.bBOOST_PWM_States );
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 34  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 34  
 
               
                           if (gLEDAlert.bBOOST_PWM_States == Min_PWM)
@@ -2174,7 +2174,7 @@ line level    source
               
                       }
                       else if (Flag == 5) // Normal
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 35  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 35  
 
                       {
                           LED_printMsg(" =Normal=");
@@ -2238,7 +2238,7 @@ line level    source
                               if ( LEDSatus.Separate.bCross_Boundary_Error )
                                   LED_printMsg("==>Cross_Boundary_Error");
                               if (LEDSatus.Separate.bBoost_High_low_Error )
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 36  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 36  
 
                                   LED_printMsg("==>Boost_High_low_Error");
                               if (LEDSatus.Separate.bBoost_Clock_Fail)
@@ -2302,7 +2302,7 @@ line level    source
                           LED_printData("3333 BSTCAL_EN_34===%x",wINT_CHECK_6968);
                           LED_printData("4444 DIM_ENABLE_40===%x",wINT_CHECK_8180);
                           LED_printData("5555 Which STRING is OPEN===%x",wINT_CHECK_5F5E&0x00F);
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 37  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 37  
 
                           bEnterOpen_Interrput=FALSE;
               
@@ -2366,7 +2366,7 @@ line level    source
                                   u8SymState = eLEDSTATE_Check;
               
                       #if LED_AUTO_RECOVER
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 38  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 38  
 
                           if(LEDSatus.Separate.bBoost_Data_Fnish && LEDSatus.Separate.bBoost_Tuning_Finish)
                           {
@@ -2430,7 +2430,7 @@ line level    source
                   LED_printMsg("\r\n  ========msLED_Off=========");
               
               #if ENABLE_LED_OPEN_SHORT_DEBOUNCE
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 39  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 39  
 
                   bLEDOpenShortFlag = 0;
               #endif
@@ -2494,7 +2494,7 @@ line level    source
                           {
                               LightBarCounter = 0;
               
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 40  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 40  
 
                   #if OCP_INTERRUPT
                               msWriteByteMask(REG_0AC4,   BIT6        ,BIT6); // clear OCP interrupt status
@@ -2558,7 +2558,7 @@ line level    source
                   StringRecoverCounter = 0;
                   StringRebootNormalCounter = 0;
               }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 41  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 41  
 
               
               void msLED_FastReboot(void)
@@ -2622,7 +2622,7 @@ line level    source
                   {
                       if(StringRebootNormalCounter < STRING_REBOOT_NORMAL_PERIOD)
                       {
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 42  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 42  
 
                           StringRebootNormalCounter++;
                       }
@@ -2686,7 +2686,7 @@ line level    source
                           msRegs[REG_0A80] = 0x00; // disable all dimming
                           msRegs[REG_0A68] = 0x00; // disable all boost ch 
                       #if LED_SAR_VOLTAGE_MEASURE_ENABLE
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 43  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 43  
 
                           msRegs[REG_0AD0] = 0x00; // disable all sar
                       #endif
@@ -2750,7 +2750,7 @@ line level    source
                   {
                       msRegs[REG_0A80] &= (~BIT1); 
                       msRegs[REG_0A68] &= (~BIT5);
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 44  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 44  
 
                   #if LED_SAR_VOLTAGE_MEASURE_ENABLE
                       msRegs[REG_0AD0] &= (~(BIT1|BIT5));
@@ -2814,7 +2814,7 @@ line level    source
                       
                           LED1_printData("open dis ch23:%x", msRead2Byte(REG_0A2C)&0x3FF);
                       }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 45  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 45  
 
                       else // enable ch2, use ch2 to detect
                       {
@@ -2878,7 +2878,7 @@ line level    source
                       msRegs[REG_0A52] |= BIT7;
               
                       LED1_printData("open dis ch3:%x", msRead2Byte(REG_0A2E)&0x3FF);
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 46  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 46  
 
                   }
               #endif
@@ -2942,7 +2942,7 @@ line level    source
                   }
               #endif
               
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 47  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 47  
 
                   bLEDOpenShortIntEnFlag = 1;
               }
@@ -3006,7 +3006,7 @@ line level    source
                   {
                       LED_SET_INIT_BOOST_DUTY_14();
                   }
-C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/22/2020 19:50:40 PAGE 48  
+C51 COMPILER V9.60.0.0   LEDCONTROL                                                        12/25/2020 09:24:55 PAGE 48  
 
                   else if(brightness < 50)
                   {

@@ -1,4 +1,4 @@
-A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/20/2020 14:10:38 PAGE     1
+A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/25/2020 09:24:08 PAGE     1
 
 
 MACRO ASSEMBLER A51 V8.2.7.0
@@ -65,7 +65,7 @@ LOC  OBJ            LINE     SOURCE
                      141     ;                                                                             *
                      142     ;******************************************************************************
                      143     ;                                                                             *
-A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/20/2020 14:10:38 PAGE     2
+A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/25/2020 09:24:08 PAGE     2
 
                      144     ; THEORY OF OPERATION                                                         *
                      145     ; -------------------                                                         *
@@ -133,7 +133,7 @@ LOC  OBJ            LINE     SOURCE
                      465     BANKN           MACRO   N
                      466     BANK&N           EQU     N SHL ?B_FIRSTBIT
                      467                     ENDM
-A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/20/2020 14:10:38 PAGE     3
+A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/25/2020 09:24:08 PAGE     3
 
                      468     
   0000               469     CNT             SET     0
@@ -201,7 +201,7 @@ LOC  OBJ            LINE     SOURCE
                      653                     MOV     A,#BANK&N
                      654                     MOV     DPTR,#?B_XDATAPORT
                      655                     MOV     ?B_CURRENTBANK,A
-A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/20/2020 14:10:38 PAGE     4
+A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/25/2020 09:24:08 PAGE     4
 
                      656                     MOVX    @DPTR,A
                      657                     MOV     A,R0
@@ -269,7 +269,7 @@ LOC  OBJ            LINE     SOURCE
                      919+1                   SWITCH  %CNT
                      932+1                   SWITCH  %CNT
                      945     
-A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/20/2020 14:10:38 PAGE     5
+A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/25/2020 09:24:08 PAGE     5
 
                                ENDIF
                      954     
@@ -313,7 +313,7 @@ LOC  OBJ            LINE     SOURCE
                     1115     
                              ENDIF  ; close block IF ?B_VAR_BANKING ****************************************
                     1528     
-A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/20/2020 14:10:38 PAGE     6
+A51 MACRO ASSEMBLER  L51_MST_8BANK                                                        12/25/2020 09:24:08 PAGE     6
 
 SYMBOL TABLE LISTING
 ------ ----- -------
